@@ -63,8 +63,6 @@ int main() {
 
     // Set the camera's refresh rate
     MLX90640_SetRefreshRate(MLX90640_ADDRESS, camera_rate_value);
-    std::cout << "Setting camera refresh rate to " << DESIRED_REFRESH_RATE << " Hz." << std::endl;
-
 
     float emissivity = 0.95;
     uint16_t frameData[FRAME_SIZE];
@@ -89,7 +87,7 @@ int main() {
                 char outChar;
 
                 if (temp < 30.0f) {
-                    outChar = '.'; // explicit low marker
+                    outChar = ' '; // Low Pass Filter removing all sub 30C values
                 }
                 else if (temp < 40.0f) {
                     // Split [30,40) into 3 equal bins of ~3.3333°C
