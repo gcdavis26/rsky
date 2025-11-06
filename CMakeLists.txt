@@ -12,4 +12,6 @@ include_directories(${myInclude} ${myLib}/eigen-5.0.0)
 
 add_executable(rsky ${mySRC}/main.cpp)
 add_executable(throttle ${mySRC}/throttle_pass.cpp)
-target_link_libraries(throttle PRIVATE Navio2 thermal-camera)
+target_link_libraries(throttle PRIVATE Navio2 Common thermal-camera)
+target_link_libraries(rsky PRIVATE Navio2 Common thermal-camera)
+

@@ -4,7 +4,7 @@
 
 #include "RCInput_Navio2.h"
 #include "RCOutput_Navio2.h"
-#include "Common/Util.h"
+#include "Util.h"
 
 constexpr int INPUT_CHANNEL = 2;      // RC input channel to read (throttle)
 constexpr int OUTPUT_CHANNEL = 0;     // PWM output channel to control motor
