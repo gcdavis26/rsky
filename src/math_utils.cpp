@@ -40,7 +40,7 @@ Eigen::Matrix<double, 15, 1> get_xdot(Eigen::Matrix<double, 15, 1> x, Eigen::Vec
 	return xdot;
 }
 //GET DYNAMICS DOES NOT USE THE SAME STATES AS X
-Eigen::Matrix<double, 12, 1> get_dynamics(Eigen::Matrix<double, 12, 1> x, Eigen::Vector3d g, double m, Eigen::Vector3d inertias,Eigen::Vector3d forces, Eigen::Vector3d moments)
+Eigen::Matrix<double, 12, 1> get_dynamics(Eigen::Matrix<double, 12, 1> x, Eigen::Vector3d g, double m, Eigen::Vector3d inertias, double thrust, Eigen::Vector3d moments)
 {
 //x = n e d, vn ve vd, phi theta psi, p q r
 //xdot = vn ve vd, an ae ad, euler_rates, omegadot
@@ -55,6 +55,8 @@ Eigen::Matrix<double, 12, 1> get_dynamics(Eigen::Matrix<double, 12, 1> x, Eigen:
 		0, cos(x(6)), -sin(x(6)),
 		0, sin(x(6)) / cos(x(7)), cos(x(6)) / cos(x(7));
 	Eigen::Matrix<double, 12, 1> xdot;
+	Eigen::Vector3d forces;
+	forces << 0,0,-thrust;
 	xdot.block(0, 0, 3, 1) = x.block(3, 0, 3, 1);
 	xdot.block(3, 0, 3, 1) = dcmI_B(x(6), x(7), x(8)) * forces / m + g;
 	xdot.block(6, 0, 3, 1) = to_euler * x.block(9, 0, 3, 1);
@@ -99,7 +101,7 @@ double wrapPi(double angle)
 	return std::fmod(angle + M_PI, 2 * M_PI) - M_PI;
 }
 
-double saturate(double command, double saturation, bool ismax = true)
+double saturate(double command, double saturation, bool ismax)
 {
 	if (ismax == true)
 	{
