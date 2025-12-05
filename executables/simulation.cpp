@@ -54,7 +54,7 @@ int main() {
 	Eigen::Matrix<double, 12, 1> sigmaw;
 	sigmaw << .1, .1, .1, .01, .01, .01, 1e-2,1e-2,1e-2,1e-4,1e-4,1e-4; //gyro,accelerometer, bias_accel, bias_gyro
 	Eigen::Matrix<double, 4, 1> sigmav;
-	sigmav << .1, .1, .1, .1; //psi, n,e,d
+	sigmav << M_PI / 180, .001, .001, .001; //psi, n,e,d
 	
 	//for noise simulation
 	std::random_device rd;

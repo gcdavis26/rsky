@@ -1,7 +1,6 @@
 #ifndef EKF_H
 #define EKF_H
 #include <Eigen/Dense>
-
 class EKF
 {
 private:
@@ -23,6 +22,7 @@ public:
 	void estimate(Eigen::Vector3d omega, Eigen::Vector3d body_accels);
 	void update(Eigen::Matrix<double, 4, 1> m);
 	Eigen::Matrix<double, 15, 1> getState();
+	Eigen::Vector3d getOmega();
 };
 
 #endif

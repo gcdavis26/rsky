@@ -61,3 +61,8 @@ Eigen::Matrix<double, 15, 1> EKF::getState()
 {
 	return x;
 }
+
+Eigen::Vector3d EKF::getOmega()
+{
+	return omega_measured;
+}
