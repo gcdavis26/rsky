@@ -1,0 +1,55 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="18.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\executables\sim_main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\sim\logger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\common\math_util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\plant\quad_dynamics_euler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\control\quad_mixer_x.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\plant\motor_model_first_order.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\control\inner_loop_attitude_pd.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\control\outer_loop_position_pd.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\control\coverage_vector_field.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\control\outer_loop_coverage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\guidance\mode_manager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\sensors\imu_sim.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\sensors\optitrack_sim.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\estimation\ekf15_full.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{0245D597-CE89-3BBF-BB4A-940278BA7A1E}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

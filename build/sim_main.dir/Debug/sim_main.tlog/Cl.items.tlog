@@ -1,0 +1,14 @@
+C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\executables\sim_main.cpp;C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\build\sim_main.dir\Debug\sim_main.obj
+C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\sim\logger.cpp;C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\build\sim_main.dir\Debug\logger.obj
+C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\common\math_util.cpp;C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\build\sim_main.dir\Debug\math_util.obj
+C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\plant\quad_dynamics_euler.cpp;C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\build\sim_main.dir\Debug\quad_dynamics_euler.obj
+C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\control\quad_mixer_x.cpp;C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\build\sim_main.dir\Debug\quad_mixer_x.obj
+C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\plant\motor_model_first_order.cpp;C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\build\sim_main.dir\Debug\motor_model_first_order.obj
+C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\control\inner_loop_attitude_pd.cpp;C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\build\sim_main.dir\Debug\inner_loop_attitude_pd.obj
+C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\control\outer_loop_position_pd.cpp;C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\build\sim_main.dir\Debug\outer_loop_position_pd.obj
+C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\control\coverage_vector_field.cpp;C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\build\sim_main.dir\Debug\coverage_vector_field.obj
+C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\control\outer_loop_coverage.cpp;C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\build\sim_main.dir\Debug\outer_loop_coverage.obj
+C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\guidance\mode_manager.cpp;C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\build\sim_main.dir\Debug\mode_manager.obj
+C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\sensors\imu_sim.cpp;C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\build\sim_main.dir\Debug\imu_sim.obj
+C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\sensors\optitrack_sim.cpp;C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\build\sim_main.dir\Debug\optitrack_sim.obj
+C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\src\estimation\ekf15_full.cpp;C:\Users\milpa\OneDrive\Desktop\QuadcopterGNC\build\sim_main.dir\Debug\ekf15_full.obj
