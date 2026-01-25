@@ -109,7 +109,7 @@ Eigen::Vector3d sim_gyro_rates(Eigen::Matrix<double, 12, 1> x_true, Eigen::Vecto
 	return x_true.block(3, 0, 3, 1) + gyronoise;
 }
 
-Eigen::Vector4d sim_measurement(Eigen::Vector4d x_true_measured, Eigen::Vector4d m_noise)
+Eigen::Vector3d sim_measurement(Eigen::Vector3d x_true_measured, Eigen::Vector3d m_noise)
 {
 	return x_true_measured + m_noise;
 }
@@ -170,13 +170,13 @@ Eigen::Matrix<double, 12, 1> noise12d()
 	return noise;
 }
 
-Eigen::Matrix<double, 4, 1> noise4d()
+Eigen::Vector3d noise3d()
 {
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::normal_distribution<double> dist(0.0, 1.0);
-	Eigen::Matrix<double, 4, 1> noise;
-	for (int i = 0; i < 4; i++)
+	Eigen::Matrix<double, 3, 1> noise;
+	for (int i = 0; i < 3; i++)
 	{
 		noise(i) = dist(gen);
 	}

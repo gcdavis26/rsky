@@ -8,7 +8,7 @@ private:
 	Eigen::Matrix<double, 15, 15> P;
 	Eigen::Matrix<double, 15, 15> A;
 	Eigen::Matrix<double, 12, 12> Q;
-	Eigen::Matrix4d R;
+	Eigen::Matrix3d R;
 	Eigen::Vector3d g;
 	Eigen::Vector3d alpha;
 	Eigen::Vector3d body_accels;
@@ -18,9 +18,9 @@ private:
 
 public:
 	//Constructor. Need gravity vector in NED, 
-	EKF::EKF(Eigen::Vector3d r, Eigen::Matrix<double, 15, 1> x0, Eigen::Vector3d gyro0, Eigen::Vector3d accel0, Eigen::Matrix<double, 12, 1> sigmaw, Eigen::Vector4d sigmav, double freq);
+	EKF::EKF(Eigen::Vector3d r, Eigen::Matrix<double, 15, 1> x0, Eigen::Vector3d gyro0, Eigen::Vector3d accel0, Eigen::Matrix<double, 12, 1> sigmaw, Eigen::Vector3d sigmav, double freq);
 	void EKF::estimate(Eigen::Vector3d omega, Eigen::Vector3d new_imu_accels);
-	void update(Eigen::Vector4d m);
+	void EKF::update(Eigen::Vector3d m);
 	Eigen::Matrix<double, 15, 1> getState();
 	Eigen::Matrix<double, 12, 1> getControlState();
 	Eigen::Vector3d getOmega();

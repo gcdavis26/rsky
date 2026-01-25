@@ -15,8 +15,24 @@
 
 int main() {
 
+	//BASE SETUP OF ROOM
+	Eigen::Vector3d pos0 = Eigen::Vector3d::Zero();
+	double psi0 = 0;
+
+	Eigen::Vector2d n_bounds;
+	n_bounds << 0, 30 * .3048;
+	Eigen::Vector2d e_bounds;
+	e_bounds << 0, 15 * .3048;
+	double cruise = .5;
+	double takeoff_height = 2;
+	Eigen::Vector3d target_pos;
+	target_pos << 3, 6, 0;
+
+
+
 	//BASE SETUP OF PHYSICS
 	Eigen::Matrix<double, 12, 1> x_true = Eigen::Matrix<double, 12, 1>::Zero();
+	x_true.block(6, 0, 3, 1) = pos0;
 	Eigen::Vector3d g;
 	double m = .75;
 	Eigen::Vector3d inertias;
@@ -65,18 +81,20 @@ int main() {
 	//SETUP OF STOCHASTIC STUFF FOR EKF
 	Eigen::Matrix<double, 12, 1> sigmaw;
 	sigmaw << .1, .1, .1, .01, .01, .01, 1e-2, 1e-2, 1e-2, 1e-4, 1e-4, 1e-4; //gyro,accelerometer, bias_accel, bias_gyro
-	Eigen::Vector4d sigmav;
-	sigmav << M_PI / 180, .001, .001, .001; //psi, n,e,d
+	Eigen::Vector3d sigmav;
+	sigmav << .001, .001, .001; //n,e,d
 	Eigen::Matrix<double, 12, 1> w;
 	w = noise12d().asDiagonal() * sigmaw; 
-	Eigen::Vector4d v;
-	v = noise4d().asDiagonal() * sigmav;
+	Eigen::Vector3d v;
+	v = noise3d().asDiagonal() * sigmav;
 
 	//EKF SETUP, INITIAL MEASUREMENTS
 	Eigen::Matrix<double, 15, 1> x0 = Eigen::Matrix<double, 15, 1>::Zero();
-	Eigen::Vector4d truth_measured = x0.block(2, 0, 4, 1);
-	Eigen::Vector4d measurement = sim_measurement(truth_measured, v);
-	x0.block(2, 0, 4, 1) = measurement; 
+	x0.block(3, 0, 3, 1) = pos0;
+	x0(2) = psi0;
+	Eigen::Vector3d truth_measured = x0.block(2, 0, 3, 1);
+	Eigen::Vector3d measurement = sim_measurement(truth_measured, v);
+	x0.block(2, 0, 3, 1) = measurement; 
 	Eigen::Vector3d imu_accels = sim_imu_accels(x_true, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), w.block(3, 0, 3, 1));
 	Eigen::Vector3d imu_omega = sim_gyro_rates(x_true, w.block(0, 0, 3, 1));
 	EKF ekf(r, x0, imu_omega, imu_accels, sigmaw, sigmav, freq);
@@ -87,7 +105,7 @@ int main() {
 	controller.update(x);
 	//controller.update(x_true); //for testing
 
-	Guidance guidance(Eigen::Vector3d::Zero(), 0, 0, 0, 0, 0, 0, 0);
+	Guidance guidance(x,e_bounds, n_bounds, 5, cruise, takeoff_height,.4);
 	double t = 0;
 	
 
@@ -141,13 +159,12 @@ int main() {
 		imu_accels = sim_imu_accels(x_true, specific_thrust, xdot.block(3,0,3,1), r, w.block(3, 0, 3, 1));
 		//estimate
 		ekf.estimate(imu_omega, imu_accels); //note that the estimate stores the new imu readings, but uses the older ones in the prediction
-		if (k % 5 == 0)
-		{
-			v = noise4d().asDiagonal() * sigmav;
-			truth_measured << x_true(2), x_true(6), x_true(7), x_true(8);
-			measurement = sim_measurement(truth_measured, v);
-			ekf.update(measurement);
-		}
+		
+		v = noise3d().asDiagonal() * sigmav;
+		truth_measured << x_true(6), x_true(7), x_true(8);
+		measurement = sim_measurement(truth_measured, v);
+		ekf.update(measurement);
+		
 		x = ekf.getControlState();
 		controller.update(x); //update internal control state
 		//controller.update(x_true); //for testing
@@ -178,7 +195,7 @@ int main() {
 		}
 		//std::cout << "Specific thrust: " << specific_thrust << std::endl << "IMU: " << imu_accels << std::endl << "NEXT: " << std::endl;
 		//std::cout << "Measurement: " << measurement << std::endl << "Actual: " << truth_measured << std::endl;
-		//std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 	outfile.close();
 	return 0;

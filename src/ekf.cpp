@@ -3,7 +3,7 @@
 #include "math_utils.h"
 #include <iostream>
 
-EKF::EKF(Eigen::Vector3d r, Eigen::Matrix<double, 15, 1> x0, Eigen::Vector3d gyro0, Eigen::Vector3d accel0,Eigen::Matrix<double, 12, 1> sigmaw, Eigen::Vector4d sigmav, double freq)
+EKF::EKF(Eigen::Vector3d r, Eigen::Matrix<double, 15, 1> x0, Eigen::Vector3d gyro0, Eigen::Vector3d accel0, Eigen::Matrix<double, 12, 1> sigmaw, Eigen::Vector3d sigmav, double freq)
 {
 	//r = IMU - CG position = IMU pos (CG = 0,0,0).
 	//constructor, setting up important vectors, matrices
@@ -45,13 +45,13 @@ void EKF::estimate(Eigen::Vector3d omega, Eigen::Vector3d new_imu_accels)
 	body_accels = new_imu_accels;
 }
 
-void EKF::update(Eigen::Vector4d m)
+void EKF::update(Eigen::Vector3d m)
 {
 	//incorporate a measurement model measurement into state estimate
-	Eigen::Matrix<double, 4, 15> H = Eigen::Matrix<double, 4, 15>::Zero();
-	H.block(0, 2, 4, 4) = Eigen::Matrix4d::Identity();
-	Eigen::Vector4d res = m - H * x; //calculating residual
-	Eigen::Matrix<double, 15, 4> K = P * H.transpose() * (H * P * H.transpose() + R).inverse();
+	Eigen::Matrix<double, 3, 15> H = Eigen::Matrix<double, 3, 15>::Zero();
+	H.block(0, 3, 3, 3) = Eigen::Matrix3d::Identity();
+	Eigen::Vector3d res = m - H * x; //calculating residual
+	Eigen::Matrix<double, 15, 3> K = P * H.transpose() * (H * P * H.transpose() + R).inverse();
 
 	x = x + K * res; //incorporating residual via kalman gain
 	P = (Eigen::Matrix<double, 15, 15>::Identity() - K * H) * P * (Eigen::Matrix<double, 15, 15>::Identity() - K * H).transpose() + K * R * K.transpose();

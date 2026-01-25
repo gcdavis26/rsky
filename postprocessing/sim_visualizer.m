@@ -3,7 +3,7 @@ clear
 close all
 %put absolute path 
 
-simulation = 0;
+simulation = 2;
 
 switch simulation
     case 0
@@ -34,7 +34,7 @@ switch simulation
         zlabel("Up")
         title("Controls Isolated Simulation")
     case 2
-        controltable = readtable('..\build\path_test.csv');
+        controltable = readtable('..\build\sim_results.csv');
         t = controltable{:,'t'};
         pos = 3.048 * controltable{:,{'n','e','d'}};
         plot3(pos(:,1),pos(:,2),-pos(:,3))
