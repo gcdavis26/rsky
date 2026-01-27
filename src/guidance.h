@@ -7,14 +7,15 @@ private:
 	Eigen::Matrix<double, 12, 1> x0;
 	int phase; //1 = takeoff. 2 = search. 3 = descend. 4 = Hover, drop payload. 5 = retreat to some point. 6 = land. 
 	int passes;
-	double stripe_x;
-	Eigen::Vector2d xbounds; 
-	Eigen::Vector2d ybounds; 
+	Eigen::Index stripe_index;
+	Eigen::Vector2d nbounds; 
+	Eigen::Vector2d ebounds; 
 	double cruise;
 	double takeoff_height;
 	bool found;
-	double delta_x;
-	int dir; 
+	double delta_e;
+	int edir; 
+	int ndir;
 	bool at_end;
 	double fov;
 	double K;

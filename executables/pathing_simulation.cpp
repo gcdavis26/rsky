@@ -23,7 +23,7 @@ int main() {
 	n_bounds << 0, 30 * .3048;
 	Eigen::Vector2d e_bounds;
 	e_bounds << 0, 15 * .3048;
-	double cruise = .5;
+	double cruise = 1;
 	double takeoff_height = 2;
 	Eigen::Vector3d target_pos;
 	target_pos << 3, 6, 0;
@@ -52,7 +52,7 @@ int main() {
 	//GAINS CHANGE HERE
 	///////////////////
 	Eigen::Vector3d Kp_outer;
-	Kp_outer << 0.7, 0.5, 2;
+	Kp_outer << 0.7, 0.7, 2;
 	Eigen::Vector3d Kd_outer;
 	Kd_outer << 1.5, 1.5, 3;
 	Eigen::Vector3d Kp_inner;
@@ -105,7 +105,7 @@ int main() {
 	controller.update(x);
 	//controller.update(x_true); //for testing
 
-	Guidance guidance(x,e_bounds, n_bounds, 5, cruise, takeoff_height,.4);
+	Guidance guidance(x,n_bounds, e_bounds, 5, cruise, takeoff_height,.1);
 	double t = 0;
 	
 
@@ -195,7 +195,7 @@ int main() {
 		}
 		//std::cout << "Specific thrust: " << specific_thrust << std::endl << "IMU: " << imu_accels << std::endl << "NEXT: " << std::endl;
 		//std::cout << "Measurement: " << measurement << std::endl << "Actual: " << truth_measured << std::endl;
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		//std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 	outfile.close();
 	return 0;
