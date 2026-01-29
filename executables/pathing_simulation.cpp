@@ -23,7 +23,7 @@ int main() {
 	n_bounds << 0, 30 * .3048;
 	Eigen::Vector2d e_bounds;
 	e_bounds << 0, 15 * .3048;
-	double cruise = 1;
+	double cruise = .75;
 	double takeoff_height = 2;
 	Eigen::Vector3d target_pos;
 	target_pos << 3, 6, 0;
@@ -67,8 +67,8 @@ int main() {
 	T_sat.first = .2 * m * g(2); //min
 	T_sat.second = 2.0 * m * g(2); //max
 	std::pair<double, double> acc_sat;
-	acc_sat.first = g(2) / 4; //xy
-	acc_sat.second = g(2); //z
+	acc_sat.first = g(2) / 4; //n e
+	acc_sat.second = g(2); //d
 	double max_angle = 15 * M_PI / 180;
 
 	//MIXER
@@ -88,24 +88,24 @@ int main() {
 	Eigen::Vector3d v;
 	v = noise3d().asDiagonal() * sigmav;
 
-	//EKF SETUP, INITIAL MEASUREMENTS
-	Eigen::Matrix<double, 15, 1> x0 = Eigen::Matrix<double, 15, 1>::Zero();
-	x0.block(3, 0, 3, 1) = pos0;
-	x0(2) = psi0;
-	Eigen::Vector3d truth_measured = x0.block(2, 0, 3, 1);
+	//EKF creation, initialization
+	EKF ekf(r, sigmaw, sigmav, freq); //ekf created
+
+	Eigen::Vector3d truth_measured = x_true.block(3, 0, 3, 1);
 	Eigen::Vector3d measurement = sim_measurement(truth_measured, v);
-	x0.block(2, 0, 3, 1) = measurement; 
 	Eigen::Vector3d imu_accels = sim_imu_accels(x_true, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), w.block(3, 0, 3, 1));
 	Eigen::Vector3d imu_omega = sim_gyro_rates(x_true, w.block(0, 0, 3, 1));
-	EKF ekf(r, x0, imu_omega, imu_accels, sigmaw, sigmav, freq);
+	ekf.initialize(measurement, imu_omega, imu_accels); //initializing with values. Can be done after a wait as well.
 	Eigen::Matrix<double, 12, 1> x = ekf.getControlState();
+
+
 
 	//CONTROLLER SETUP
 	Controller controller(Kp_outer, Kd_outer, Kp_inner, Kd_inner, T_sat, acc_sat, max_angle, m);
 	controller.update(x);
 	//controller.update(x_true); //for testing
 
-	Guidance guidance(x,n_bounds, e_bounds, 5, cruise, takeoff_height,.1);
+	Guidance guidance(x,n_bounds, e_bounds, 4, cruise, takeoff_height,.5);
 	double t = 0;
 	
 
@@ -148,7 +148,7 @@ int main() {
 		}
 	}
 
-	for (int k =1; k < 80*freq+1; k++)
+	for (int k =1; k < 120*freq+1; k++)
 	{
 		t += deltat; //propagate truth
 		x_true += xdot * deltat;
@@ -158,13 +158,12 @@ int main() {
 		imu_omega = sim_gyro_rates(x_true, w.block(0, 0, 3, 1));
 		imu_accels = sim_imu_accels(x_true, specific_thrust, xdot.block(3,0,3,1), r, w.block(3, 0, 3, 1));
 		//estimate
-		ekf.estimate(imu_omega, imu_accels); //note that the estimate stores the new imu readings, but uses the older ones in the prediction
-		
+		ekf.estimate(); 
+		ekf.imureading(imu_omega, imu_accels);
 		v = noise3d().asDiagonal() * sigmav;
 		truth_measured << x_true(6), x_true(7), x_true(8);
 		measurement = sim_measurement(truth_measured, v);
 		ekf.update(measurement);
-		
 		x = ekf.getControlState();
 		controller.update(x); //update internal control state
 		//controller.update(x_true); //for testing
@@ -178,7 +177,6 @@ int main() {
 		specific_thrust << 0, 0, -forces(0);
 		specific_thrust = specific_thrust / m;
 		xdot = get_dynamics(x_true, g, m, inertias, forces(0), forces.block(1, 0, 3, 1)); //true state derivative
-		
 		outfile << t << ',';
 		for (int l = 0; l < 12; l++)
 		{

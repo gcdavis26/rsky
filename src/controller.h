@@ -20,6 +20,7 @@ public:
 		std::pair<double, double> acc_sat, double angle_maximum,double m);
 	void Controller::update(Eigen::Matrix<double, 12, 1> x); //This is from no ekf simulation
 	Eigen::Matrix<double, 4, 1> Controller::achieveState(double psi_cmd, Eigen::Vector3d omega_cmd, Eigen::Vector3d p_cmd, Eigen::Vector3d v_cmd); //returns T L M N
+	Eigen::Matrix<double, 4, 1> Controller::innerTest(Eigen::Vector3d att_cmd, Eigen::Vector3d omega_cmd);
 	Eigen::Matrix<double, 12, 1> Controller::getState();
 
 };

@@ -63,9 +63,17 @@ Eigen::Matrix<double, 4, 1> Controller::achieveState(double psi_cmd, Eigen::Vect
 	att_cmd << outer_output(0), outer_output(1), psi_cmd;
 	Eigen::Vector3d moments = inner_achieveAtt(att_cmd, omega_cmd);
 	Eigen::Matrix<double, 4, 1> commands;
-	commands(0) = outer_output(2); //thrust 
-	commands.block(1, 0, 3, 1) = moments;
+	commands << outer_output(2), moments;
 	return commands;
+}
+
+Eigen::Matrix<double, 4, 1> Controller::innerTest(Eigen::Vector3d att_cmd, Eigen::Vector3d omega_cmd) // for inner loop control only: For test stand and manual
+{
+	Eigen::Vector3d moments = inner_achieveAtt(att_cmd, omega_cmd);
+	Eigen::Matrix<double, 4, 1> commands;
+	commands << 0, moments;
+	return commands;
+
 }
 
 Eigen::Matrix<double, 12, 1> Controller::getState()

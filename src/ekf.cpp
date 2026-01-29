@@ -3,29 +3,40 @@
 #include "math_utils.h"
 #include <iostream>
 
-EKF::EKF(Eigen::Vector3d r, Eigen::Matrix<double, 15, 1> x0, Eigen::Vector3d gyro0, Eigen::Vector3d accel0, Eigen::Matrix<double, 12, 1> sigmaw, Eigen::Vector3d sigmav, double freq)
+EKF::EKF(Eigen::Vector3d r, Eigen::Matrix<double, 12, 1> sigmaw, Eigen::Vector3d sigmav, double freq)
 {
 	//r = IMU - CG position = IMU pos (CG = 0,0,0).
 	//constructor, setting up important vectors, matrices
-	g = Eigen::Vector3d::Zero();
+	g.setZero();
 	g(2) = 9.81; //setting up gravity
-	alpha = Eigen::Vector3d::Zero();
-	omega_measured = gyro0;
-	body_accels = accel0;
+	alpha.setZero();
+	omega_measured.setZero();
+	body_accels.setZero();
 	dt = 1 / freq;
-	x = x0; //phi, theta, psi, n, e, d, vn,ve,vd, b_ax,b_ay,b_az, b_p,b_q,b_r
+	x.setZero(); //phi, theta, psi, n, e, d, vn,ve,vd, b_ax,b_ay,b_az, b_p,b_q,b_r
 	Q = sigmaw.asDiagonal() * sigmaw.asDiagonal();
 	R = sigmav.asDiagonal() * sigmav.asDiagonal();
 	P = Eigen::Matrix<double, 15, 15>::Zero();
 	radius = r;
 }
 
-void EKF::estimate(Eigen::Vector3d omega, Eigen::Vector3d new_imu_accels) 
+void EKF::initialize(Eigen::Vector3d measurement, Eigen::Vector3d gyro0, Eigen::Vector3d accel0) //set up initial states. Initial measurement, per se
 {
-	
-	//despite how this looks, the omega and body_accels collected here are not used in the state estimation
-	//at the time collected. The priori information from the previous timestep are used. Derivatives at time t 
-	//are not useful for calculating state at time t.
+	omega_measured = gyro0;
+	body_accels = accel0;
+	x.block(6, 0, 3, 1) = measurement;
+}
+void EKF::imureading(Eigen::Vector3d omega, Eigen::Vector3d new_imu_accels)
+{
+	Eigen::Vector3d alpha_raw = (omega - omega_measured) / dt;//updating our rates and accelerations for the next prediction 
+	alpha = alpha * .7 + (1.0 - .7) * alpha_raw;
+	alpha = alpha_raw; //for testing
+	omega_measured = omega; //updating the process model measurements for the next step
+	body_accels = new_imu_accels;
+}
+
+void EKF::estimate() 
+{
 	//correct body_accels to be acting on CG. Rigid body means that omega isn't impacted
 	Eigen::Vector3d com_body_accels =  body_accels + alpha.cross(-radius) + omega_measured.cross(omega_measured.cross(-radius)); //moving imu stuff to COM
 	//everything here uses the prior omega, body_accels from previous timestep. 
@@ -37,12 +48,6 @@ void EKF::estimate(Eigen::Vector3d omega, Eigen::Vector3d new_imu_accels)
 	P = P + pdot * dt; //euler integration
 	P = (P + P.transpose()) / 2.0; //enforcing symmetry 
 	//std::cout <<"Velocity derivative: " << std::endl << get_xdot(x, g, com_body_accels, omega_measured).block(6, 0, 3, 1) << std::endl << "Body accels: " << std::endl << com_body_accels << std::endl;
-
-	Eigen::Vector3d alpha_raw = (omega - omega_measured) / dt;//updating our rates and accelerations for the next prediction 
-	alpha = alpha * .7 + (1.0 - .7) * alpha_raw;
-	alpha = alpha_raw; //for testing
-	omega_measured = omega; //updating the process model measurements for the next step
-	body_accels = new_imu_accels;
 }
 
 void EKF::update(Eigen::Vector3d m)

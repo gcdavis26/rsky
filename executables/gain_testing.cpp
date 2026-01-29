@@ -1,0 +1,151 @@
+#define _USE_MATH_DEFINES
+#include <Eigen/Dense>
+#include "controller.h"
+#include "ekf.h"
+#include "guidance.h"
+#include "math_utils.h"
+#include <cmath>
+#include <random>
+#include <iostream>
+#include <fstream>
+#include <algorithm>
+
+#include <chrono>
+#include <thread>
+
+int main() {
+
+	//BASE SETUP OF PHYSICS
+	Eigen::Vector3d g;
+	double m = .75;
+	Eigen::Vector3d inertias;
+	inertias << .00756, .00757, .01393;
+	g << 0, 0, 9.81;
+	double freq = 100.0;
+	double m_freq = 100.0;
+	double deltat = 1.0 / freq;
+	double tc = .028;
+	double Kt = 4.0;
+	double Kq = 2.35;
+	double d_arm = .15;
+	Eigen::Vector3d r = Eigen::Vector3d::Zero(); //can be changed to add an IMU offset
+
+
+	///////////////////
+	//GAINS CHANGE HERE
+	///////////////////
+	Eigen::Vector3d Kp_outer;
+	Kp_outer << 0.7, 0.7, 2;
+	Eigen::Vector3d Kd_outer;
+	Kd_outer << 1.5, 1.5, 3;
+	Eigen::Vector3d Kp_inner;
+	Kp_inner << .5, .5, .5;
+	Eigen::Vector3d Kd_inner;
+	Kd_inner << .1,.1,.1;
+	std::pair<double, double> T_sat;
+
+	////////////////
+	//SATURATION
+	////////////////
+	T_sat.first = .2 * m * g(2); //min
+	T_sat.second = 2.0 * m * g(2); //max
+	std::pair<double, double> acc_sat;
+	acc_sat.first = g(2) / 4; //n e
+	acc_sat.second = g(2); //d
+	double max_angle = 15 * M_PI / 180;
+
+	//MIXER
+	Eigen::Matrix4d mixer;
+	mixer << Kt, Kt, Kt, Kt,
+		-d_arm * Kt, -d_arm * Kt, d_arm* Kt, d_arm* Kt,
+		d_arm* Kt, -d_arm * Kt, -d_arm * Kt, d_arm* Kt,
+		Kq, -Kq, Kq, -Kq;
+
+	//SETUP OF STOCHASTIC STUFF FOR EKF
+	Eigen::Matrix<double, 12, 1> sigmaw;
+	sigmaw << .1, .1, .1, .01, .01, .01, 1e-2, 1e-2, 1e-2, 1e-4, 1e-4, 1e-4; //gyro,accelerometer, bias_accel, bias_gyro
+	Eigen::Vector3d sigmav;
+	sigmav << .001, .001, .001; //n,e,d
+
+	//MAYBE WAIT FOR SOME PERIOD OF TIME HERE BEFORE INITITALIZING CLASSES
+
+
+	//EKF SETUP, INITIAL MEASUREMENTS
+	EKF ekf(r, sigmaw, sigmav, freq);
+	//CONTROLLER SETUP
+	Controller controller(Kp_outer, Kd_outer, Kp_inner, Kd_inner, T_sat, acc_sat, max_angle, m);
+	//controller.update(x_true); //for testing
+
+
+
+	double t = 0;
+	
+
+
+	//These are derivatives and controls etc at initial state
+	Eigen::Vector3d imu_omega;
+	Eigen::Vector3d imu_accels;
+	Eigen::Vector4d controls;
+	Eigen::Vector4d motor_cmds;
+	Eigen::Vector4d forces;
+
+
+	//SOME SORT OF TELEMETRY STUFF HERE
+
+	Eigen::Vector3d imu_omega = ?; //read measurements from IMU
+	Eigen::Vector3d imu_accels = ?; //IMU
+	Eigen::Vector3d measurement = ?; //Optitrack
+	ekf.initialize(measurement, imu_omega, imu_accels);
+
+	auto t_ref = std::chrono::system_clock::now();
+	for (int k =1; k < 80*freq+1; k++)
+	{
+		//WAIT FUNCTION TO PAD THE .01 seconds.
+
+		ekf.estimate(); //predict state at current time step
+x		if hasmeasurement
+		{
+			measurement = ? ; //optitrack
+			ekf.update(measurement); //update our state estimate
+		}
+		Eigen::Matrix<double,12,1> x = ekf.getControlState();
+		controller.update(x); //update internal control state
+		
+		//get commanded quantities
+		commands = //NEED CODE TO READ MANUAL COMMANDS INTO MATRIX OF DESIRED QUANTITIES
+		controls = controller.achieveState(commands(0), commands.block(1, 0, 3, 1), commands.block(4, 0, 3, 1), commands.block(7, 0, 3, 1)); //get forces
+		motor_cmds = mixer.inverse() * controls; //get motor commands
+		motor_cmds = (motor_cmds.array().min(1)).max(0); //force motor throttle between 0 and 1
+		forces = mixer * motor_cmds; //get actual forces
+		//COMMAND THE MOTORS
+		
+				//PROBABLY WANT SOME SORT OF FAILSAFE. IF CANT GET MEAUSURMENTS, USE LAST AVAILABLE
+		if hasmeasurements //grab new imu measurements
+		{
+			imu_omega = ? ; //read measurements from IMU
+			imu_accels = ? ; //IMU
+			ekf.imureading(imu_omega, imu_accels);
+		}//otherwise the imu doesnt update inside ekf, and we use old info (may or may not be catastrophic)
+		else
+		{
+			//maybe send a warning via telemetry?
+		}
+		auto current_time = std::chrono::system_clock::now();
+		if(current_time - now <= deltat)
+		{
+			std::this_thread::sleep_for(deltat - (current_time - now))
+		}
+		else
+		{
+			//SEND SOME WARNING TO GROUND STATION. THIS MEANS THAT OUR CODE IS SLOWER THAN OUR PROCESS MODEL
+		}
+		now = current_time;
+		//else, it stays the same
+
+
+		//TELEMETRY REPORTING STATE HERE. Maybe this will be a separate thread, so architecture may change
+		
+
+	}
+	return 0;
+}

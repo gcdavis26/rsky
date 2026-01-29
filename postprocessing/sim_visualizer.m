@@ -41,6 +41,6 @@ switch simulation
         xlabel("North")
         ylabel("East")
         zlabel("Up")
-        title("Controls Isolated Simulation")
+        title("Full Simulation")
 
 end

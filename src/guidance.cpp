@@ -18,10 +18,10 @@ Guidance::Guidance(Eigen::Matrix<double,12,1> x, Eigen::Vector2d n_bounds, Eigen
 	fov = 6 * .3048; //6 foot
 	lawnmower_stripes.resize(passes);
 	lawnmower_stripes.setZero();
-	delta_e = (ebounds(1) - ebounds(0) - fov) / (passes - 1); //distance between stripes
+	delta_e = (ebounds(1) - ebounds(0) - fov/2) / (passes - 1); //distance between stripes
 	for (int i = 0; i < passes; i++)
 	{
-		lawnmower_stripes(i) = ebounds(0) + fov / 2 + i * delta_e; 
+		lawnmower_stripes(i) = ebounds(0) + fov / 4 + i * delta_e; 
 	}
 	std::cout << "All planned stripes: " << std::endl << lawnmower_stripes << std::endl;
 	((lawnmower_stripes.array() - x(7)).cwiseAbs()).minCoeff(&stripe_index); //initializing stripe 
@@ -29,6 +29,7 @@ Guidance::Guidance(Eigen::Matrix<double,12,1> x, Eigen::Vector2d n_bounds, Eigen
 	edir = 1;
 	ndir = 1;
 
+	//north is to the right, east is up. Stripes will be along east. 
 
 }
 Eigen::Matrix<double, 10, 1> Guidance::getTarget(Eigen::Matrix<double, 12, 1> x)
@@ -44,7 +45,7 @@ Eigen::Matrix<double, 10, 1> Guidance::getTarget(Eigen::Matrix<double, 12, 1> x)
 	{
 		Eigen::Vector2d center;
 		center <<nbounds.mean(), ebounds.mean();
-		Eigen::Vector2d ne_des = (center - x0.block(6, 0, 2, 1)) / (center - x0.block(6, 0, 2, 1)).norm() * fov / 2;
+		Eigen::Vector2d ne_des = (center - x0.block(6, 0, 2, 1)) / (center - x0.block(6, 0, 2, 1)).norm() * fov;
 
 		psides = x(2);
 		omegades = Eigen::Vector3d::Zero();
@@ -85,32 +86,64 @@ Eigen::Matrix<double, 10, 1> Guidance::getTarget(Eigen::Matrix<double, 12, 1> x)
 	case 2: //searching
 	{	
 		double target_e = lawnmower_stripes(stripe_index);
-		if (!at_end && (x(6) > nbounds(1) || x(6) < nbounds(0))) //!at_end prevents this from triggering constantly outside of bounds
+		double buffer = fov/4;
+		double ve;
+		double vn;
+		if (x(6) > nbounds(1)-buffer || x(6) < nbounds(0)+buffer) //!at_end prevents this from triggering constantly outside of bounds
 		{
-			at_end = true;
-			ndir *= -1; //switch direction along stripe
-			if ((stripe_index + edir) >= passes || (stripe_index + edir) < 0) //if we're at the end of the lawnmower, restart by going the other way
+			if (!at_end)
 			{
-				edir = -edir;
+				at_end = true;
+				ndir *= -1; //switch direction along stripe
+				if ((stripe_index + edir) >= passes || (stripe_index + edir) < 0) //if we're at the end of the lawnmower, restart by going the other way
+				{
+					edir = -edir;
+				}
+				std::cout << "OLD stripe:" << std::endl << lawnmower_stripes(stripe_index) << std::endl;
+				stripe_index += edir; //move to next stripe
+				target_e = lawnmower_stripes(stripe_index);
+				std::cout << "NEW stripe:" << std::endl << lawnmower_stripes(stripe_index) << std::endl;
+				std::cout << "POS" << std::endl << x.block(6, 0, 2, 1) << std::endl << std::endl;
+				ve = 0;
 			}
-			std::cout << "OLD stripe:" << std::endl << lawnmower_stripes(stripe_index) << std::endl; 
-			stripe_index += edir; //move to next stripe
-			target_e = lawnmower_stripes(stripe_index);
-			std::cout << "NEW stripe:" << std::endl << lawnmower_stripes(stripe_index) << std::endl;
-			std::cout << "POS" << std::endl << x.block(6, 0, 2, 1) << std::endl << std::endl;
-
-
+			else if (x(9)*ndir < 0)
+			{
+				ve = 0;
+			}
+			else
+			{
+				ve = K * (target_e - x(7));
+			}
 		}
-		else if (x(6) <= nbounds(1) && x(6) >= nbounds(0)) //when we go back in bounds
-			at_end = false; 
-
-		double ve = K * (target_e - x(7)); //restoring velocity proportional to error from stripe
+		else
+		{//when we go back in bounds
+			ve = K * (target_e - x(7));
+			at_end = false;
+		}
 		ve = saturate(ve,cruise);
-		double vn = ndir * cruise * .7;
+		vn = ndir * cruise;
+		pdes << x(6), x(7), -takeoff_height; //not commanding n and e: Error is 0, velocity field should keep these in touch
+		
+		//extra nudge to push in bounds if we're going outside of the true bounds, as this can be catastrophic.
+		if (x(6) > nbounds(1))
+		{
+			pdes(0) = x(6) - fov / 8;
+		}
+		else if (x(6) < nbounds(0))
+		{
+			pdes(0) = x(6) + fov / 8;
+		}
+		if (x(7) > ebounds(1))
+		{
+			pdes(1) = x(7) - fov / 8;
+		}
+		else if (x(7) < ebounds(0))
+		{
+			pdes(1) = x(7) + fov / 8;
+		}
 		
 		psides = x(2); 
 		omegades = Eigen::Vector3d::Zero();
-		pdes << x(6), x(7), -takeoff_height; //not commanding n and e: Error is 0, velocity field should keep these in touch
 		vdes << vn, ve, 0;
 		break;
 	}
