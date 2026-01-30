@@ -9,11 +9,14 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include "network.h"
 
 #include <chrono>
 #include <thread>
 
 int main() {
+
+	openPort();
 
 	//BASE SETUP OF PHYSICS
 	Eigen::Vector3d g;
@@ -89,12 +92,14 @@ int main() {
 	Eigen::Vector4d motor_cmds;
 	Eigen::Vector4d forces;
 
-
 	//SOME SORT OF TELEMETRY STUFF HERE
+
+
+	Eigen::Matrix<double,5,1> mocapData = readDatalink();
 
 	Eigen::Vector3d imu_omega = ?; //read measurements from IMU
 	Eigen::Vector3d imu_accels = ?; //IMU
-	Eigen::Vector3d measurement = ?; //Optitrack
+	Eigen::Vector3d measurement = mocapData.head<3>(); //Optitrack
 	ekf.initialize(measurement, imu_omega, imu_accels);
 
 	auto t_ref = std::chrono::system_clock::now();
@@ -103,7 +108,7 @@ int main() {
 		//WAIT FUNCTION TO PAD THE .01 seconds.
 
 		ekf.estimate(); //predict state at current time step
-x		if hasmeasurement
+x		if hasmeasurement  // 5th value in mocapData matrix is valid bit
 		{
 			measurement = ? ; //optitrack
 			ekf.update(measurement); //update our state estimate
