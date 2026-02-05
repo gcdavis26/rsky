@@ -39,6 +39,6 @@
 
 # debug information files
 *.dwo
-build/
-test.cpp
-ext_libs/
+out/
+external/
+*.vs
