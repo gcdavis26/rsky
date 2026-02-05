@@ -1,7 +1,6 @@
 #include "MotorDriver.h"
 #include <algorithm>
 
-
 // For Main
 // Constuctor Line: MotorDriver motors;
 // Initialisation Line: motors.initialize();
@@ -41,9 +40,16 @@ void MotorDriver::command(const Eigen::Vector4d& pwm_values) {
     }
 }
 
-void MotorDriver::wind_down() {
+void MotorDriver::wind_down() 
+{
     for (int pin : motor_pins) {
         pwm_driver.set_duty_cycle(pin, (float)PWM_MIN);
     }
     usleep(50000);
+}
+
+Eigen::Vector4d throttle2pwm(Eigen::Vector4d throttles)
+{
+    Eigen::Vector4d pwms = (throttles.array() + 1.0) * 1000;
+    return pwms;
 }

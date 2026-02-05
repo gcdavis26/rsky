@@ -28,4 +28,5 @@ private:
     const std::vector<int> motor_pins = {0, 1, 2, 3};
 };
 
+Eigen::Vector4d throttle2pwm(Eigen::Vector4d throttles);
 #endif

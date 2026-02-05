@@ -28,8 +28,6 @@ int main() {
 	Vector3d target_pos;
 	target_pos << 3, 6, 0;
 
-
-
 	//BASE SETUP OF PHYSICS
 	Vector12d x_true = Vector12d::Zero();
 	x_true.block(6, 0, 3, 1) = pos0;

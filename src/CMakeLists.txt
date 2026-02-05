@@ -21,3 +21,4 @@ target_include_directories(drone_interface PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}
 	${extlibs}/eigen
 )
+target_link_libraries(drone_interface Common Navio2)

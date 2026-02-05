@@ -10,6 +10,8 @@
 #include <fstream>
 #include <algorithm>
 #include "network.h"
+#include "RCInput.h"
+#include "MotorDriver.h"
 
 #include <chrono>
 #include <thread>
@@ -19,9 +21,9 @@ int main() {
 	openPort();
 
 	//BASE SETUP OF PHYSICS
-	Eigen::Vector3d g;
+	Vector3d g;
 	double m = .75;
-	Eigen::Vector3d inertias;
+	Vector3d inertias;
 	inertias << .00756, .00757, .01393;
 	g << 0, 0, 9.81;
 	double freq = 100.0;
@@ -31,19 +33,19 @@ int main() {
 	double Kt = 4.0;
 	double Kq = 2.35;
 	double d_arm = .15;
-	Eigen::Vector3d r = Eigen::Vector3d::Zero(); //can be changed to add an IMU offset
+	Vector3d r = Vector3d::Zero(); //can be changed to add an IMU offset
 
 
 	///////////////////
 	//GAINS CHANGE HERE
 	///////////////////
-	Eigen::Vector3d Kp_outer;
+	Vector3d Kp_outer;
 	Kp_outer << 0.7, 0.7, 2;
-	Eigen::Vector3d Kd_outer;
+	Vector3d Kd_outer;
 	Kd_outer << 1.5, 1.5, 3;
-	Eigen::Vector3d Kp_inner;
+	Vector3d Kp_inner;
 	Kp_inner << .5, .5, .5;
-	Eigen::Vector3d Kd_inner;
+	Vector3d Kd_inner;
 	Kd_inner << .1,.1,.1;
 	std::pair<double, double> T_sat;
 
@@ -65,15 +67,15 @@ int main() {
 		Kq, -Kq, Kq, -Kq;
 
 	//SETUP OF STOCHASTIC STUFF FOR EKF
-	Eigen::Matrix<double, 12, 1> sigmaw;
+	Vector12d sigmaw;
 	sigmaw << .1, .1, .1, .01, .01, .01, 1e-2, 1e-2, 1e-2, 1e-4, 1e-4, 1e-4; //gyro,accelerometer, bias_accel, bias_gyro
-	Eigen::Vector3d sigmav;
+	Vector3d sigmav;
 	sigmav << .001, .001, .001; //n,e,d
 
 	//THESE SHOULDNT BE ZERO.
-	Eigen::Vector3d accel_bias;
+	Vector3d accel_bias;
 	accel_bias.setZero();
-	Eigen::Vector3d gyro_bias;
+	Vector3d gyro_bias;
 	gyro_bias.setZero();
 	//MAYBE WAIT FOR SOME PERIOD OF TIME HERE BEFORE INITITALIZING CLASSES
 
@@ -85,30 +87,31 @@ int main() {
 	//controller.update(x_true); //for testing
 
 
-
-	double t = 0;
-	
+	//MOTOR SETUP
+	MotorDriver motordriver;
+	RCInput_Navio2 rc_controller;
 
 
 	//These are derivatives and controls etc at initial state
-	Eigen::Vector3d imu_omega;
-	Eigen::Vector3d imu_accels;
-	Eigen::Vector4d controls;
-	Eigen::Vector4d motor_cmds;
-	Eigen::Vector4d forces;
+	Vector3d imu_omega;
+	Vector3d imu_accels;
+	Vector4d controls;
+	Vector4d motor_cmds;
+	Vector4d forces;
 
 	//SOME SORT OF TELEMETRY STUFF HERE
 
 
 	Eigen::Matrix<double,5,1> mocapData = readDatalink();
 
-	Eigen::Vector3d imu_omega = ?; //read measurements from IMU
-	Eigen::Vector3d imu_accels = ?; //IMU
-	Eigen::Vector3d measurement = mocapData.head<3>(); //Optitrack
+	Vector3d imu_omega = ?; //read measurements from IMU
+	Vector3d imu_accels = ?; //IMU
+	Vector3d measurement = mocapData.head<3>(); //Optitrack
 	ekf.initialize(measurement, imu_omega, imu_accels, accel_bias, gyro_bias);
 
+	double t = 0;
 	auto t_ref = std::chrono::system_clock::now();
-	for (int k =1; k < 80*freq+1; k++)
+	while(true)
 	{
 		//WAIT FUNCTION TO PAD THE .01 seconds.
 
@@ -118,16 +121,21 @@ x		if hasmeasurement  // 5th value in mocapData matrix is valid bit
 			measurement = ? ; //optitrack
 			ekf.update(measurement); //update our state estimate
 		}
-		Eigen::Matrix<double,12,1> x = ekf.getControlState();
+		Vector12d x = ekf.getControlState();
 		controller.update(x); //update internal control state
 		
 		//get commanded quantities
+
 		commands = //NEED CODE TO READ MANUAL COMMANDS INTO MATRIX OF DESIRED QUANTITIES
-		controls = controller.achieveState(commands(0), commands.block(1, 0, 3, 1), commands.block(4, 0, 3, 1), commands.block(7, 0, 3, 1)); //get forces
+			controls = controller.achieveState(commands(0), commands.block(1, 0, 3, 1), commands.block(4, 0, 3, 1), commands.block(7, 0, 3, 1)); //get forces
 		motor_cmds = mixer.inverse() * controls; //get motor commands
 		motor_cmds = (motor_cmds.array().min(1)).max(0); //force motor throttle between 0 and 1
-		forces = mixer * motor_cmds; //get actual forces
 		//COMMAND THE MOTORS
+		
+		if (armed)
+		{
+			motordriver.
+		}
 		
 				//PROBABLY WANT SOME SORT OF FAILSAFE. IF CANT GET MEAUSURMENTS, USE LAST AVAILABLE
 		if hasmeasurements //grab new imu measurements
