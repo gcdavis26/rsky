@@ -10,3 +10,14 @@ target_include_directories(gnclib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 	${extlibs}/eigen
 )
+
+set(interface_sources
+${CMAKE_CURRENT_SOURCE_DIR}/network.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/MotorDriver.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/RCInput.cpp
+)
+add_library(drone_interface STATIC ${interface_sources})
+target_include_directories(drone_interface PUBLIC
+	${CMAKE_CURRENT_SOURCE_DIR}
+	${extlibs}/eigen
+)

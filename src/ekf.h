@@ -1,31 +1,32 @@
 #ifndef EKF_H
 #define EKF_H
 #include <Eigen/Dense>
+#include "math_utils.h"
 class EKF
 {
 private:
-	Eigen::Matrix<double, 15, 1> x;
-	Eigen::Matrix<double, 15, 15> P;
-	Eigen::Matrix<double, 15, 15> A;
-	Eigen::Matrix<double, 12, 12> Q;
-	Eigen::Matrix3d R;
-	Eigen::Vector3d g;
-	Eigen::Vector3d alpha;
-	Eigen::Vector3d body_accels;
-	Eigen::Vector3d radius;
-	Eigen::Vector3d omega_measured;
+	Vector15d x;
+	Matrix15d P;
+	Matrix15d A;
+	Matrix12d Q;
+	Matrix3d R;
+	Vector3d g;
+	Vector3d alpha;
+	Vector3d body_accels;
+	Vector3d radius;
+	Vector3d omega_measured;
 	double dt;
 
 public:
 	//Constructor. Need gravity vector in NED, 
-	EKF::EKF(Eigen::Vector3d r, Eigen::Matrix<double, 12, 1> sigmaw, Eigen::Vector3d sigmav, double freq);
-	void EKF::initialize(Eigen::Vector3d measurement, Eigen::Vector3d gyro0, Eigen::Vector3d accel0); //set up initial state
-	void EKF::imureading(Eigen::Vector3d omega, Eigen::Vector3d new_imu_accels);
+	EKF::EKF(Vector3d r, Vector12d sigmaw, Vector3d sigmav, double freq);
+	void EKF::initialize(Vector3d measurement, Vector3d gyro0, Vector3d accel0, Vector3d bias_accel, Vector3d bias_gyro); //set up initial states. Initial measurement, per se
+	void EKF::imureading(Vector3d omega, Vector3d new_imu_accels);
 	void EKF::estimate();
-	void EKF::update(Eigen::Vector3d m);
-	Eigen::Matrix<double, 15, 1> getState();
-	Eigen::Matrix<double, 12, 1> getControlState();
-	Eigen::Vector3d getOmega();
+	void EKF::update(Vector3d m);
+	Vector15d getState();
+	Vector12d getControlState();
+	Vector3d getOmega();
 };
 
 #endif

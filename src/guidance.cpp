@@ -4,7 +4,7 @@
 #include <cmath>
 #include <iostream>
 
-Guidance::Guidance(Eigen::Matrix<double,12,1> x, Eigen::Vector2d n_bounds, Eigen::Vector2d e_bounds, int numpasses, double cruise_speed, double takeoff, double gain)
+Guidance::Guidance(Vector12d x, Vector2d n_bounds, Vector2d e_bounds, int numpasses, double cruise_speed, double takeoff, double pgain, double vgain)
 {
 	x0 = x;
 	phase = 1;
@@ -26,30 +26,31 @@ Guidance::Guidance(Eigen::Matrix<double,12,1> x, Eigen::Vector2d n_bounds, Eigen
 	}
 	std::cout << "All planned stripes: " << std::endl << lawnmower_stripes << std::endl;
 	((lawnmower_stripes.array() - x(7)).cwiseAbs()).minCoeff(&stripe_index); //initializing stripe 
-	K = gain;
+	Kp = pgain;
+	Kd = vgain;
 	edir = 1;
 	ndir = 1;
 	//north is to the right, east is up. Stripes will be along east. 
 }
 
-Eigen::Matrix<double, 10, 1> Guidance::getTarget(Eigen::Matrix<double, 12, 1> x)
+Vector10d Guidance::getTarget(Vector12d x)
 {
-	Eigen::Matrix<double, 10, 1> commands;
+	Vector10d commands;
 	double psides;
-	Eigen::Vector3d omegades;
-	Eigen::Vector3d pdes;
-	Eigen::Vector3d vdes;
+	Vector3d omegades;
+	Vector3d pdes;
+	Vector3d vdes;
 	switch (phase)
 	{
 	case 1: //takeoff
 	{
-		Eigen::Vector2d ne_des;
+		Vector2d ne_des;
 		ne_des << x0(0) + std::copysign(buffer + .1, (nbounds.mean() - x0(0))), lawnmower_stripes(stripe_index);
 
 		psides = x(2);
-		omegades = Eigen::Vector3d::Zero();
+		omegades = Vector3d::Zero();
 		pdes << ne_des(0), ne_des(1), -takeoff_height;
-		vdes = Eigen::Vector3d::Zero();
+		vdes = Vector3d::Zero();
 		double res = (pdes - x.block(6, 0, 3, 1)).norm();
 		if (res < .02)
 		{
@@ -100,23 +101,16 @@ Eigen::Matrix<double, 10, 1> Guidance::getTarget(Eigen::Matrix<double, 12, 1> x)
 				stripe_index += edir; //move to next stripe
 				target_e = lawnmower_stripes(stripe_index);
 				std::cout << "NEW stripe:" << std::endl << lawnmower_stripes(stripe_index) << std::endl;
-				std::cout << "POS" << std::endl << x.block(6, 0, 2, 1) << std::endl << std::endl;
-				ve = 0;
-			}
-			else if (x(9) * ndir < 0)
-			{
-				ve = 0;
-			}
-			else
-			{
-				ve = K * (target_e - x(7));
+				std::cout << "POS" << std::endl << x.block(6, 0, 2, 1) << std::endl;
+
 			}
 		}
 		else
-		{//when we go back in bounds
-			ve = K * (target_e - x(7));
+		{
 			at_end = false;
 		}
+		ve = Kp * (target_e - x(7)) - Kd * x(10);
+		
 		ve = saturate(ve, cruise);
 		vn = ndir * cruise;
 		pdes << x(6), x(7), -takeoff_height; //not commanding n and e: Error is 0, velocity field should keep these in touch
@@ -141,7 +135,7 @@ Eigen::Matrix<double, 10, 1> Guidance::getTarget(Eigen::Matrix<double, 12, 1> x)
 		}
 		
 		psides = x(2);
-		omegades = Eigen::Vector3d::Zero();
+		omegades = Vector3d::Zero();
 		vdes << vn, ve, 0;
 		break;
 	}

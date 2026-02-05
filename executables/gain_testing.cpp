@@ -70,6 +70,11 @@ int main() {
 	Eigen::Vector3d sigmav;
 	sigmav << .001, .001, .001; //n,e,d
 
+	//THESE SHOULDNT BE ZERO.
+	Eigen::Vector3d accel_bias;
+	accel_bias.setZero();
+	Eigen::Vector3d gyro_bias;
+	gyro_bias.setZero();
 	//MAYBE WAIT FOR SOME PERIOD OF TIME HERE BEFORE INITITALIZING CLASSES
 
 
@@ -100,7 +105,7 @@ int main() {
 	Eigen::Vector3d imu_omega = ?; //read measurements from IMU
 	Eigen::Vector3d imu_accels = ?; //IMU
 	Eigen::Vector3d measurement = mocapData.head<3>(); //Optitrack
-	ekf.initialize(measurement, imu_omega, imu_accels);
+	ekf.initialize(measurement, imu_omega, imu_accels, accel_bias, gyro_bias);
 
 	auto t_ref = std::chrono::system_clock::now();
 	for (int k =1; k < 80*freq+1; k++)

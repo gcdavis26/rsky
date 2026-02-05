@@ -36,8 +36,13 @@ switch simulation
     case 2
         controltable = readtable('..\build\sim_results.csv');
         t = controltable{:,'t'};
-        pos = 3.048 * controltable{:,{'n','e','d'}};
-        plot3(pos(:,1),pos(:,2),-pos(:,3))
+        true_pos = 3.048 * controltable{:,{'n','e','d'}};
+        e_pos = 3.048 * controltable{:,{'n_est','e_est','d_est'}}; 
+        plot3(true_pos(:,1),true_pos(:,2),-true_pos(:,3), color='k')
+        hold on
+        plot3(e_pos(:,1),e_pos(:,2),-e_pos(:,3))
+
+        legend('True', 'Estimated')
         xlabel("North")
         ylabel("East")
         zlabel("Up")

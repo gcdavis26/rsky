@@ -16,26 +16,26 @@
 int main() {
 
 	//BASE SETUP OF ROOM
-	Eigen::Vector3d pos0 = Eigen::Vector3d::Zero();
+	Vector3d pos0 = Vector3d::Zero();
 	double psi0 = 0;
 
-	Eigen::Vector2d n_bounds;
+	Vector2d n_bounds;
 	n_bounds << 0, 30 * .3048;
-	Eigen::Vector2d e_bounds;
+	Vector2d e_bounds;
 	e_bounds << 0, 15 * .3048;
 	double cruise = .75;
 	double takeoff_height = 2;
-	Eigen::Vector3d target_pos;
+	Vector3d target_pos;
 	target_pos << 3, 6, 0;
 
 
 
 	//BASE SETUP OF PHYSICS
-	Eigen::Matrix<double, 12, 1> x_true = Eigen::Matrix<double, 12, 1>::Zero();
+	Vector12d x_true = Vector12d::Zero();
 	x_true.block(6, 0, 3, 1) = pos0;
-	Eigen::Vector3d g;
+	Vector3d g;
 	double m = .75;
-	Eigen::Vector3d inertias;
+	Vector3d inertias;
 	inertias << .00756, .00757, .01393;
 	g << 0, 0, 9.81;
 	double freq = 100.0;
@@ -45,19 +45,19 @@ int main() {
 	double Kt = 4.0;
 	double Kq = 2.35;
 	double d_arm = .15;
-	Eigen::Vector3d r = Eigen::Vector3d::Zero(); //can be changed to add an IMU offset
+	Vector3d r = Vector3d::Zero(); //can be changed to add an IMU offset
 
 
 	///////////////////
 	//GAINS CHANGE HERE
 	///////////////////
-	Eigen::Vector3d Kp_outer;
-	Kp_outer << 0.7, 0.7, 2;
-	Eigen::Vector3d Kd_outer;
-	Kd_outer << 1.5, 1.5, 3;
-	Eigen::Vector3d Kp_inner;
-	Kp_inner << .5, .5, .5;
-	Eigen::Vector3d Kd_inner;
+	Vector3d Kp_outer;
+	Kp_outer << 0.5, 0.5, 2;
+	Vector3d Kd_outer;
+	Kd_outer << 1, 1, 3;
+	Vector3d Kp_inner;
+	Kp_inner << .5, .5, .75;
+	Vector3d Kd_inner;
 	Kd_inner << .1,.1,.1;
 	std::pair<double, double> T_sat;
 
@@ -69,34 +69,41 @@ int main() {
 	std::pair<double, double> acc_sat;
 	acc_sat.first = g(2) / 4; //n e
 	acc_sat.second = g(2); //d
-	double max_angle = 15 * M_PI / 180;
+	double max_angle = 10 * M_PI / 180;
 
 	//MIXER
-	Eigen::Matrix4d mixer;
+	Matrix4d mixer;
 	mixer << Kt, Kt, Kt, Kt,
 		-d_arm * Kt, -d_arm * Kt, d_arm* Kt, d_arm* Kt,
 		d_arm* Kt, -d_arm * Kt, -d_arm * Kt, d_arm* Kt,
 		Kq, -Kq, Kq, -Kq;
+	//1 2
+	//4 3 motor config
+	//1 and 3 ccw, 2 and 4 are cw
 
 	//SETUP OF STOCHASTIC STUFF FOR EKF
-	Eigen::Matrix<double, 12, 1> sigmaw;
+	Vector12d sigmaw;
 	sigmaw << .1, .1, .1, .01, .01, .01, 1e-2, 1e-2, 1e-2, 1e-4, 1e-4, 1e-4; //gyro,accelerometer, bias_accel, bias_gyro
-	Eigen::Vector3d sigmav;
+	Vector3d sigmav;
 	sigmav << .001, .001, .001; //n,e,d
-	Eigen::Matrix<double, 12, 1> w;
+	Vector12d w;
 	w = noise12d().asDiagonal() * sigmaw; 
-	Eigen::Vector3d v;
+	Vector3d v;
 	v = noise3d().asDiagonal() * sigmav;
+	Vector3d accel_bias;
+	accel_bias.setZero();
+	Vector3d gyro_bias;
+	gyro_bias.setZero();
 
 	//EKF creation, initialization
 	EKF ekf(r, sigmaw, sigmav, freq); //ekf created
 
-	Eigen::Vector3d truth_measured = x_true.block(3, 0, 3, 1);
-	Eigen::Vector3d measurement = sim_measurement(truth_measured, v);
-	Eigen::Vector3d imu_accels = sim_imu_accels(x_true, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), w.block(3, 0, 3, 1));
-	Eigen::Vector3d imu_omega = sim_gyro_rates(x_true, w.block(0, 0, 3, 1));
-	ekf.initialize(measurement, imu_omega, imu_accels); //initializing with values. Can be done after a wait as well.
-	Eigen::Matrix<double, 12, 1> x = ekf.getControlState();
+	Vector3d truth_measured = x_true.block(3, 0, 3, 1);
+	Vector3d measurement = sim_measurement(truth_measured, v);
+	Vector3d imu_accels = sim_imu_accels(x_true, Vector3d::Zero(), Vector3d::Zero(), Vector3d::Zero(), w.block(3, 0, 3, 1));
+	Vector3d imu_omega = sim_gyro_rates(x_true, w.block(0, 0, 3, 1));
+	ekf.initialize(measurement, imu_omega, imu_accels,accel_bias,gyro_bias); //initializing with values. Can be done after a wait as well.
+	Vector12d x = ekf.getControlState();
 
 
 
@@ -105,21 +112,21 @@ int main() {
 	controller.update(x);
 	//controller.update(x_true); //for testing
 
-	Guidance guidance(x,n_bounds, e_bounds, 4, cruise, takeoff_height,.8);
+	Guidance guidance(x,n_bounds, e_bounds, 4, cruise, takeoff_height,1,.5);
 	double t = 0;
 	
 
 
 	//These are derivatives and controls etc at initial state
-	Eigen::Matrix<double, 10, 1> commands = guidance.getTarget(x);
-	Eigen::Vector4d controls = controller.achieveState(commands(0), commands.block(1, 0, 3, 1), commands.block(4, 0, 3, 1), commands.block(7, 0, 3, 1));
-	Eigen::Vector4d motor_cmds = mixer.inverse() * controls;
+	Vector10d commands = guidance.getTarget(x);
+	Vector4d controls = controller.achieveState(commands(0), commands.block(1, 0, 3, 1), commands.block(4, 0, 3, 1), commands.block(7, 0, 3, 1));
+	Vector4d motor_cmds = mixer.inverse() * controls;
 	motor_cmds = (motor_cmds.array().min(1)).max(0);
-	Eigen::Vector4d forces = mixer * motor_cmds;
-	Eigen::Vector3d specific_thrust;
+	Vector4d forces = mixer * motor_cmds;
+	Vector3d specific_thrust;
 	specific_thrust << 0,0, -forces(0);
 	specific_thrust = specific_thrust / m;
-	Eigen::Matrix<double, 12, 1> xdot = get_dynamics(x_true, g, m, inertias, forces(0), forces.block(1, 0, 3, 1));
+	Vector12d xdot = get_dynamics(x_true, g, m, inertias, forces(0), forces.block(1, 0, 3, 1));
 
 	std::cout << "Simulation has begun" << std::endl;
 	std::cout << "Initial controller state estimate: " << x << std::endl;

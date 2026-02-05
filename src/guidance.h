@@ -1,6 +1,6 @@
 #pragma once
 #include <Eigen/Dense>
-
+#include "math_utils.h"
 class Guidance
 {
 private:
@@ -19,11 +19,11 @@ private:
 	bool at_end;
 	double fov;
 	double buffer;
-	double K;
+	double Kp;
+	double Kd;
 	Eigen::VectorXd lawnmower_stripes;
-
 public:
-	Guidance::Guidance(Eigen::Matrix<double, 12, 1> x, Eigen::Vector2d x_bounds, Eigen::Vector2d y_bounds, int numpasses, double cruise_speed, double takeoff, double gain);
-	Eigen::Matrix<double, 10, 1> Guidance::getTarget(Eigen::Matrix<double, 12, 1> x);
+	Guidance::Guidance(Vector12d x, Vector2d n_bounds, Vector2d e_bounds, int numpasses, double cruise_speed, double takeoff, double pgain, double vgain);
+	Vector10d Guidance::getTarget(Vector12d x);
 };
 
