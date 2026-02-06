@@ -2,7 +2,7 @@
 
 #include <cstddef>
 #include <Eigen/Dense>
-#include <Common/RCInput.h>
+#include <Navio2/RCInput_Navio2.h>
 
 class RCInput_Navio2 : public RCInput
 {

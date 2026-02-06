@@ -12,9 +12,18 @@
 #include "network.h"
 #include "RCInput.h"
 #include "MotorDriver.h"
-
 #include <chrono>
 #include <thread>
+#include <functional>
+
+void datacollection(Vector3d gyro_data, Vector3d imu_data, Vector3d optitrack_data)
+{
+	gyro_data = ? ;
+	imu_data = ? ;
+	Eigen::Matrix<double, 5, 1> opti_data = readDatalink();
+	optitrack_data = opti_data.block(0, 0, 3, 1);
+}
+
 
 int main() {
 
@@ -104,8 +113,8 @@ int main() {
 
 	Eigen::Matrix<double,5,1> mocapData = readDatalink();
 
-	Vector3d imu_omega = ?; //read measurements from IMU
-	Vector3d imu_accels = ?; //IMU
+	Vector3d imu_omega; //read measurements from IMU
+	Vector3d imu_accels; //IMU
 	Vector3d measurement = mocapData.head<3>(); //Optitrack
 	ekf.initialize(measurement, imu_omega, imu_accels, accel_bias, gyro_bias);
 

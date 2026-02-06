@@ -41,4 +41,6 @@
 *.dwo
 out/
 external/
+testing/
+ext_libs/
 *.vs

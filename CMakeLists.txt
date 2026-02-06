@@ -13,14 +13,10 @@ add_executable(simulation ${myExec}/pathing_simulation.cpp)
 target_include_directories(simulation PUBLIC ${extlibs}/eigen)
 target_link_libraries(simulation PRIVATE gnclib)
 
-add_executable(gain_testing ${myExec}/gain_testing.cpp)
-target_include_directories(gain_testing PUBLIC ${extlibs}/eigen)
-target_link_libraries(gain_testing PRIVATE gnclib)
+add_executable(drone ${myExec}/gain_testing.cpp)
+target_include_directories(drone PUBLIC ${extlibs}/eigen)
+target_link_libraries(drone PRIVATE gnclib)
 
-
-add_executable(ekfsim ${myExec}/ekf_simulation.cpp)
-target_include_directories(ekfsim PUBLIC ${extlibs}/eigen)
-target_link_libraries(ekfsim PRIVATE gnclib)
 
 add_executable(throttle ${myExec}/throttle_pass.cpp)
-target_link_libraries(throttle PRIVATE thermal-camera Common Navio2)
+target_link_libraries(throttle PRIVATE thermal-camera Navio2)
