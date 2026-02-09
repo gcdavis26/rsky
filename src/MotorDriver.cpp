@@ -1,6 +1,7 @@
 #include "MotorDriver.h"
 #include <algorithm>
 #include <unistd.h>
+
 // For Main
 // Constuctor Line: MotorDriver motors;
 // Initialisation Line: motors.initialize();
@@ -16,7 +17,7 @@ MotorDriver::~MotorDriver() {
     wind_down();
 }
 
-void MotorDriver::initialize() {
+bool MotorDriver::initialize() {
     for (int pin : motor_pins) {
         pwm_driver.initialize(pin);
         pwm_driver.set_frequency(pin, PWM_FREQ);
@@ -28,7 +29,32 @@ void MotorDriver::initialize() {
         pwm_driver.set_duty_cycle(pin, (float)PWM_SAFE);
     }
 
-    sleep(0.2);
+    calibrate();
+
+    usleep(50000);
+    return true;
+}
+
+void MotorDriver::calibrate() {
+    const int FEED_US = 50000; // 50ms
+    // 5 seconds / 0.05 seconds = 100 loops
+    const int loops = static_cast<int>(5.0 * 1000000 / FEED_US);
+
+    // High Signal Max PWM
+    for (int i = 0; i < loops; ++i) {
+        for (int pin : motor_pins) {
+            pwm_driver.set_duty_cycle(pin, (float)PWM_MAX);
+        }
+        usleep(FEED_US);
+    }
+
+    // Low Signal Min PWM
+    for (int i = 0; i < loops; ++i) {
+        for (int pin : motor_pins) {
+            pwm_driver.set_duty_cycle(pin, (float)PWM_MIN);
+        }
+        usleep(FEED_US);
+    }
 }
 
 void MotorDriver::command(const Eigen::Vector4d& pwm_values) {

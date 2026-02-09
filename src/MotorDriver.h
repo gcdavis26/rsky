@@ -2,7 +2,6 @@
 #define MOTOR_DRIVER_H
 
 #include <vector>
-#include <unistd.h>
 #include <Eigen/Dense>
 #include "Navio2/RCOutput_Navio2.h"
 
@@ -17,7 +16,8 @@ public:
     MotorDriver();
     ~MotorDriver();
 
-    void initialize();
+    bool initialize();
+    void calibrate(); // Add this line
 
     void command(const Eigen::Vector4d& pwm_values);
 
@@ -25,7 +25,7 @@ public:
 
 private:
     RCOutput_Navio2 pwm_driver;
-    const std::vector<int> motor_pins = {0, 1, 2, 3};
+    const std::vector<int> motor_pins = { 0, 1, 2, 3 }; //
 };
 
 Eigen::Vector4d throttle2pwm(Eigen::Vector4d throttles);
