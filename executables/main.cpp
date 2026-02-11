@@ -1,0 +1,352 @@
+#include <iostream>
+#include <iomanip>
+
+#ifdef _WIN32
+    #include <WinSock2.h>
+    #include <Windows.h>
+#endif
+
+#include "common/TimeKeeper.h"
+#include "common/MathUtils.h"
+#include "control/InnerLoop.h"
+#include "control/OuterLoop.h"
+#include "control/QuadMixer.h"
+#include "estimation/EKF.h"
+#include "guidance/ModeManager.h"
+#include "sensors/ImuSim.h"
+#include "sensors/OptiSim.h"
+#include "simulator/Dynamics.h"
+#include "simulator/MotorModel.h"
+#include "telemetry/udp_sender.h"
+
+#ifdef PLATFORM_LINUX
+    #include "drivers/MotorDriver.h"
+    #include "drivers/RCIn.h"
+#endif
+
+int main() {
+
+    std::cout << std::fixed << std::setprecision(3);
+
+    TimeKeeper clock;
+    Dynamics dynamics;
+    ImuSim imu;
+    OptiSim opti;
+    EKF ekf;
+    ModeManager MM;
+    OuterLoop outer;
+    InnerLoop inner;
+    QuadMixer mixer;
+    MotorModel motormodel;
+    UdpSender udp("127.0.0.1", 8080);
+#ifdef PLATFORM_LINUX
+    RCIn rcin;
+    rcin.initialize();
+#endif
+    double lastPrint = 0.0;
+    const double printDt = 0.1; 
+
+    Vec<4> thrustCmd = Vec<4>::Zero();
+    Vec<4> wrenchCmd = Vec<4>::Zero();
+    Vec<4> pwmCmd = Vec<4>::Zero();
+
+    int step = 0;
+    double Hz = 0.0;
+
+    bool autopilot = false;
+    bool printOn = true;
+    bool armed = true;
+
+    while (true) {
+
+        const double dt = clock.dt();
+        const double t = clock.elapsed();
+        clock.stepClocks(dt);
+        step++;
+
+        Hz += 1 / dt;
+
+        if (clock.taskClock.imu >= clock.rates.imu) {
+            imu.step(dynamics.getTrueState(), dt);
+        }
+        if (clock.taskClock.opti >= clock.rates.opti) {
+            opti.step(dynamics.getTrueState());
+        }
+        // ---------------- EKF ----------------
+        if (!ekf.init) {
+            ekf.initializeFromOpti(opti.opti);
+            ekf.init = true;
+        }
+
+        if (clock.taskClock.navPred >= clock.rates.navPred) {
+            ekf.predict(imu.imu, clock.taskClock.navPred);
+            clock.taskClock.navPred = 0.0;
+        }
+
+        if (clock.taskClock.navCorr >= clock.rates.navCorr) {
+            ekf.correct(opti.opti);
+            clock.taskClock.navCorr = 0.0;
+        }
+        const Vec<15> navState = ekf.getx();
+
+        // ---------------- Mode Manager ----------------
+        MM.in.state = navState;
+        MM.in.dt = dt;
+        MM.update();
+
+        // Manual Command Types
+        Vec<3> manVel = Vec<3>::Zero();
+        double manPsi = 0.0;
+        // ---------------- Manual Keyboard Controls (Windows Only) -----------
+
+#ifdef _WIN32
+
+        Vec<3> keyVel = Vec<3>::Zero();
+        double keyPsi = 0.0;
+
+
+
+        if (GetAsyncKeyState('W') & 0x8000) {
+            keyVel(0) = 1.0;
+        }
+        else if (GetAsyncKeyState('S') & 0x8000) {
+            keyVel(0) = -1.0;
+        }
+
+        if (GetAsyncKeyState('A') & 0x8000) {
+            keyVel(1) = -1.0;
+        }
+        else if (GetAsyncKeyState('D') & 0x8000) {
+            keyVel(1) = 1.0;
+        }
+
+        if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
+            keyVel(2) = -1.0;
+        }
+        else if (GetAsyncKeyState(VK_SHIFT) & 0x8000) {
+            keyVel(2) = 1.0;
+        }
+
+        if (GetAsyncKeyState('Q') & 0x8000) {
+            keyPsi = -5 * PI / 180;
+        }
+        else if (GetAsyncKeyState('E') & 0x8000) {
+            keyPsi = 5 * PI / 180;
+        }
+        if (armed) {
+            manVel = keyVel;
+            manPsi = keyPsi;
+        }
+#endif
+
+        // ---------------- Manual RC Controls (Linux Only) -------------------
+#ifdef PLATFORM_LINUX
+        Vec<3> rcVel = Vec<3>::Zero();
+        double rcPsi = 0.0;
+
+        Vec<6> rcPWM = rcin.read_ppm_vector();
+
+        if (rcPWM(4) > 1500) {
+            bool armed = true;
+        }
+        else
+            bool armed = false;
+        }
+
+	    Vec<4> normPWM = normPWM(rcPWM.segment<4>(0));
+
+        rcVel(0) = normPWM(1);
+	    rcVel(1) = normPWM(0);
+	    rcVel(2) = normPWM(2);
+
+	    rcPsi = 5 * PI / 180 * normPWM(3); 
+
+        if (armed) {
+	        manPsi = rcPsi; 
+	        manVel = rcVel; // 1m/s max speed in each direction 
+        }
+#endif
+        // ---------------- Outer Loop ----------------
+
+        if (clock.taskClock.conOuter >= clock.rates.conOuter) {
+            if (autopilot) {
+                outer.in.state = navState.segment<6>(3);
+                outer.in.posCmd = MM.out.posCmd;
+                outer.in.psi = navState(2);
+                outer.in.mode = MM.out.mode;
+                outer.update();
+            }
+            else {
+                outer.in.state = navState.segment<6>(3);
+                outer.in.posCmd = navState.segment<3>(3);
+                outer.in.psi = navState(2);
+                outer.in.mode = ModeManager::NavMode::Manual;
+                outer.in.velCmd = manVel;
+                outer.update();
+                outer.out.attCmd(2) = navState(2) + manPsi;
+            }
+
+            clock.taskClock.conOuter = 0.0;
+        }
+        // ---------------- Inner Loop ----------------
+        if (clock.taskClock.conInner >= clock.rates.conInner) {
+            
+            const Vec<3> momentsCmd =
+                inner.computeWrench(
+                    outer.out.attCmd,
+                    navState.segment<3>(0),
+                    imu.imu.gyro);
+
+            wrenchCmd << outer.out.Fz,
+                momentsCmd(0),
+                momentsCmd(1),
+                momentsCmd(2);
+
+            thrustCmd = mixer.mix2Thrust(wrenchCmd);
+
+            pwmCmd = mixer.thr2PWM(thrustCmd);
+
+            clock.taskClock.conInner = 0.0;
+        }
+
+        // ---------------- Telemetry -----------------
+        if (clock.taskClock.tele >= clock.rates.tele) {
+            udp.sendFromSim(
+                t, dt, Hz / step,
+                navState,
+                MM,
+                outer,
+                imu, 
+                armed
+            );
+            clock.taskClock.tele = 0.0;
+        }
+        // ---------------- Simulation ----------------
+        const Vec<4> thrustAct = motormodel.step(dt, thrustCmd);
+        const Vec<4> wrenchAct = mixer.mix2Wrench(thrustAct);
+
+        dynamics.step(dt, wrenchAct);
+
+        // ---------------- Console Print ----------------
+        if (t - lastPrint >= printDt && printOn) {
+
+            // Clear screen + cursor home (no helpers)
+            std::cout << "\033[2J\033[H";
+
+            const Vec<3> pos = navState.segment<3>(3);
+            const Vec<3> vel = navState.segment<3>(6);
+            const Vec<3> rpy = navState.segment<3>(0);
+
+            const Vec<3> posCmd = MM.out.posCmd;
+            const Vec<3> attCmd = outer.out.attCmd;
+
+            const Vec<3> gyro = imu.imu.gyro;
+            const Vec<3> accel = imu.imu.accel;
+
+            const Vec<3> optPos = opti.opti.pos;
+            const double optPsi = opti.opti.psi;
+
+            std::cout
+                << "====================== QUADCOPTER STATE ======================\n"
+                << "  Time [s]: " << std::setw(8) << t
+                << " Rate [Hz]: " << std::setw(8) << Hz / step
+                << "      Mode: " << std::setw(8) << static_cast<int>(MM.out.mode) 
+                << "     Armed: " << std::setw(8) << armed << "\n"
+                << "--------------------------------------------------------------\n"
+
+                << " NAV (EKF)\n"
+                << "   Pos [N E D] : "
+                << std::setw(8) << pos(0) << " "
+                << std::setw(8) << pos(1) << " "
+                << std::setw(8) << pos(2) << "\n"
+
+                << "   Vel [N E D] : "
+                << std::setw(8) << vel(0) << " "
+                << std::setw(8) << vel(1) << " "
+                << std::setw(8) << vel(2) << "\n"
+
+                << "   Att [R P Y] : "
+                << std::setw(8) << rpy(0) << " "
+                << std::setw(8) << rpy(1) << " "
+                << std::setw(8) << rpy(2) << "\n\n"
+
+                << " COMMANDS\n"
+                << "   PosCmd [N E D] : "
+                << std::setw(8) << posCmd(0) << " "
+                << std::setw(8) << posCmd(1) << " "
+                << std::setw(8) << posCmd(2) << "\n"
+
+                << "   AttCmd [R P Y] : "
+                << std::setw(8) << attCmd(0) << " "
+                << std::setw(8) << attCmd(1) << " "
+                << std::setw(8) << attCmd(2) << "\n"
+
+                << "   FzCmd          : "
+                << std::setw(8) << outer.out.Fz << "\n"
+
+                << "   PWMCmd         : "
+                << std::setw(8) << pwmCmd(0) << " "
+                << std::setw(8) << pwmCmd(1) << " "
+                << std::setw(8) << pwmCmd(2) << " "
+                << std::setw(8) << pwmCmd(3) << "\n"
+#ifdef PLATFORM_LINUX
+                << "   rcPWM          : "
+                << std::setw(8) << rcPWM(0) << " "
+                << std::setw(8) << rcPWM(1) << " "
+                << std::setw(8) << rcPWM(2) << " "
+                << std::setw(8) << rcPWM(3) << " "
+                << std::setw(8) << rcPWM(4) << " "
+                << std::setw(8) << rcPWM(5) << "\n\n"
+#endif
+
+                << " SENSORS\n"
+                << "   IMU Gyro  [x y z] : "
+                << std::setw(8) << gyro(0) << " "
+                << std::setw(8) << gyro(1) << " "
+                << std::setw(8) << gyro(2) << "\n"
+
+                << "   IMU Accel [x y z] : "
+                << std::setw(8) << accel(0) << " "
+                << std::setw(8) << accel(1) << " "
+                << std::setw(8) << accel(2) << "\n"
+
+                << "   Opti Pos  [N E D] : "
+                << std::setw(8) << optPos(0) << " "
+                << std::setw(8) << optPos(1) << " "
+                << std::setw(8) << optPos(2) << "\n"
+
+                << "   Opti Psi          : "
+                << std::setw(8) << optPsi << "\n\n"
+
+                << " ACTUATION\n"
+                << "   WrenchCmd [Fz Mx My Mz] : "
+                << std::setw(8) << wrenchCmd(0) << " "
+                << std::setw(8) << wrenchCmd(1) << " "
+                << std::setw(8) << wrenchCmd(2) << " "
+                << std::setw(8) << wrenchCmd(3) << "\n"
+
+                << "   ThrustCmd [t1 t2 t3 t4] : "
+                << std::setw(8) << thrustCmd(0) << " "
+                << std::setw(8) << thrustCmd(1) << " "
+                << std::setw(8) << thrustCmd(2) << " "
+                << std::setw(8) << thrustCmd(3) << "\n"
+
+                << "   ThrustAct [t1 t2 t3 t4] : "
+                << std::setw(8) << thrustAct(0) << " "
+                << std::setw(8) << thrustAct(1) << " "
+                << std::setw(8) << thrustAct(2) << " "
+                << std::setw(8) << thrustAct(3) << "\n"
+
+                << "   WrenchAct [Fz Mx My Mz] : "
+                << std::setw(8) << wrenchAct(0) << " "
+                << std::setw(8) << wrenchAct(1) << " "
+                << std::setw(8) << wrenchAct(2) << " "
+                << std::setw(8) << wrenchAct(3) << "\n"
+
+                << "==============================================================\n"
+                << std::flush;
+
+            lastPrint = t;
+        }
+    }
+}
