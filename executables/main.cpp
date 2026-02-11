@@ -145,6 +145,7 @@ int main() {
         double rcPsi = 0.0;
 
         Vec<6> rcPWM = rcin.read_ppm_vector();
+<<<<<<< Updated upstream
 
         if (rcPWM(4) > 1500) {
             bool armed = true;
@@ -165,6 +166,20 @@ int main() {
 	        manPsi = rcPsi; 
 	        manVel = rcVel; // 1m/s max speed in each direction 
         }
+=======
+        Vec<3> rcVel = Vec<3>::Zero();
+	double rcPsi = 0.0;
+	Vec<4> normPWM = normPWM(rcPWM.segment<4>(0));
+
+        rcVel(0) = normPWM(1);
+	rcVel(1) = normPWM(0);
+	rcVel(2) = normPWM(2);
+
+	rcPsi = 5 * PI / 180 * normPWM(3); 
+
+	manPsi = rcPsi;
+	manVel = rcVel;
+>>>>>>> Stashed changes
 #endif
         // ---------------- Outer Loop ----------------
 

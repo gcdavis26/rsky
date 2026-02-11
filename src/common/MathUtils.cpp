@@ -96,6 +96,7 @@ Mat<3, 3> T_euler(double phi, double th) {
     return T;
 }
 
+<<<<<<< Updated upstream
 Vec<4> normPWM(const Vec<4>& rawPWM) {
    
     Vec<4> normOut = Vec<4>::Zero();
@@ -109,6 +110,18 @@ Vec<4> normPWM(const Vec<4>& rawPWM) {
     const double k = 1.0 / (deadzone * 2.0);
 
     normOut(2) = k / m * (softplus(m * (rawPWM(2) - deadmax)) - softplus(m * (deadmin - rawPWM(2))));
+=======
+Vec<4> normPWM(const Vec<4> rawPWM) {
+   
+    Vec<4> normOut = Vec<4>::Zero();
+
+    normOut =  (2.0*(rawPWM.array() - 1000) / (2000-1000) - 1.0).matrix();
+   
+    const double k = 1.0 / 400;
+    const double m = 0.5;
+
+    normOut(2) = k/m*(softplus(m*(rawPWM(2)-1600))-softplus(m*(1400-rawPWM(2))));
+>>>>>>> Stashed changes
 
     for (int i = 0; i < 4; i++) {
 	normOut(i) = clamp(normOut(i),-1,1);
