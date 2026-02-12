@@ -19,7 +19,7 @@ target_link_libraries(drone PRIVATE gnclib drone_interface)
 
 
 add_executable(throttle ${myExec}/throttle_pass.cpp)
-target_link_libraries(throttle PRIVATE thermal-camera Navio2)
+target_link_libraries(throttle PRIVATE MLX90640_API Navio2)
 
 add_executable(FTS ${myExec}/fts_test.cpp)
 target_link_libraries(FTS PRIVATE drone_interface)
