@@ -154,6 +154,7 @@ int main() {
 		}
 	}
 
+	auto t_ref = std::chrono::system_clock::now(); //main loop clock
 	for (int k =1; k < 120*freq+1; k++)
 	{
 		t += deltat; //propagate truth
@@ -201,6 +202,9 @@ int main() {
 		//std::cout << "Measurement: " << measurement << std::endl << "Actual: " << truth_measured << std::endl;
 		//std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
+	auto seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - t_ref);
+	std::cout << seconds.count() << std::endl << (120*freq+1)/seconds.count(); //main loop clock
+
 	outfile.close();
 	return 0;
 }

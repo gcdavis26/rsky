@@ -21,6 +21,7 @@ int main()
 		std::cout << ppm(2) << "|" << ppm(5) << std::endl;
 		if (static_cast<int>(ppm(5)) == 2000)
 		{
+			motordriver.~MotorDriver();
 			break;
 		}
 	}
