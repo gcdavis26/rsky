@@ -64,7 +64,6 @@ void EKF::update(const Vector3d& m)
 {
 	//incorporate a measurement model measurement into state estimate
 	Vector3d res;
-
 	res.noalias()  = m - H * x; //calculating residual
 	Eigen::Matrix<double,15,3> PHt;
 	PHt.noalias() = P * H.transpose();

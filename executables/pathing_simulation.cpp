@@ -154,7 +154,6 @@ int main() {
 			outfile << "\n";
 		}
 	}
-	
 	auto t_ref = std::chrono::system_clock::now(); //main loop clock
 	for (int k =1; k < 120*freq+1; k++)
 	{

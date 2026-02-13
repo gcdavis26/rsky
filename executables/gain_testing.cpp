@@ -170,10 +170,7 @@ int main() {
 
 		//get commanded quantities
 		Eigen::Matrix<double, 6, 1> rc_data = rc_controller.read_ppm_vector();
-		////*****NEED SOMETHING TO TURN PWM INTO VCMD*******
-		//Maybe two ramps connected by a 0 in the middle area
 		Vector4d v_cmds = guidance.manualCommands(rc_data);
-		
 		controls = controller.manualControl(v_cmds); //get forces
 		motor_cmds = mixer.inverse() * controls; //get motor commands
 		motor_cmds = (motor_cmds.array().min(1)).max(0); //force motor throttle between 0 and 1

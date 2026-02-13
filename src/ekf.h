@@ -21,7 +21,7 @@ private:
 	const Matrix15d I15d = Matrix15d::Identity();
 public:
 	//Constructor. Need gravity vector in NED, 
-	EKF::EKF(const Vector3d& r, const Vector12d& sigmaw, const Vector3d& sigmav);
+	EKF(const Vector3d& r, const Vector12d& sigmaw, const Vector3d& sigmav);
 	void initialize(const Vector3d& measurement, const Vector3d& gyro0, const Vector3d& accel0, const Vector3d& bias_accel, const Vector3d& bias_gyro);//set up initial states. Initial measurement, per se
 	void imureading(const Vector3d& omega, const Vector3d& new_imu_accels, double dt);
 	void estimate(double dt);
