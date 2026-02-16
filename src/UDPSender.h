@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include <netinet/in.h>
-#include "telemetry_packet.hpp"
+#include "telemetry_packet.h"
 
 class UDPSender
 {
