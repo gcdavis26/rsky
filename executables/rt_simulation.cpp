@@ -40,8 +40,6 @@ int main() {
 	Vector3d inertias;
 	inertias << .00756, .00757, .01393;
 	g << 0, 0, 9.81;
-	double freq = 100.0;
-	double m_freq = 100.0;
 	double tc = .028;
 	double Kt = 4.0;
 	double Kq = 2.35;
