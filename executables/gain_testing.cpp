@@ -143,7 +143,6 @@ int main() {
 			imu_data = imu.update();
 			imu_omega = imu_data.block(0, 0, 3, 1);
 			imu_accels = imu_data.block(3, 0, 3, 1);
-			current_time = std::chrono::system_clock::now();
 			ekf.imureading(imu_omega, imu_accels, dt.count());
 			process_t = current_time;
 		}

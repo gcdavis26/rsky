@@ -15,6 +15,7 @@ target_compile_options(gnclib PRIVATE
 )
 
 set(interface_sources
+${CMAKE_CURRENT_SOURCE_DIR}/UDPSender.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/network.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/MotorDriver.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/RCInput.cpp

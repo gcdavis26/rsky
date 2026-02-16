@@ -15,7 +15,7 @@ EKF::EKF(const Vector3d& r, const Vector12d& sigmaw, const Vector3d& sigmav)
 	x.setZero(); //phi, theta, psi, n, e, d, vn,ve,vd, b_ax,b_ay,b_az, b_p,b_q,b_r
 	Q = sigmaw.array().square().matrix().asDiagonal();
 	R = sigmav.array().square().matrix().asDiagonal();
-	P = Matrix15d::Zero();
+	P.setZero();
 	radius = r;
 	G.setZero();
 	K.setZero();
@@ -54,22 +54,25 @@ void EKF::estimate(double dt)
 	AP.noalias() = A * P;
 	pdot.noalias() = AP + AP.transpose() + G * Q * G.transpose();
 	P = P + pdot * dt; //euler integration
-	P = (P + P.transpose()) / 2.0; //enforcing symmetry 
 	//std::cout <<"Velocity derivative: " << std::endl << get_xdot(x, g, com_body_accels, omega_measured).block(6, 0, 3, 1) << std::endl << "Body accels: " << std::endl << com_body_accels << std::endl;
 }
 
 void EKF::update(const Vector3d& m)
 {
+
 	//incorporate a measurement model measurement into state estimate
 	Vector3d res;
 	res.noalias()  = m - x.block(3,0,3,1); //calculating residual
-	K.noalias() = P.block(0,3,15,3) * (P.block(3,3,3,3) + R).ldlt().solve(Matrix3d::Identity());;
-	Matrix15d KH;
-	KH.noalias() = K * H;
+	Matrix3d S;
+	S = P.block(3, 3, 3, 3).selfadjointView<Eigen::Lower>();
+	S += R;
+	K.noalias() = P.block(0,3,15,3) * (S).ldlt().solve(Matrix3d::Identity());;
+	//Matrix15d KH;
+	//KH.noalias() = K * H;
 	x = x + K * res; //incorporating residual via kalman gain
 	//P = (I15d - KH) * P * (I15d - KH).transpose() + K * R * K.transpose(); //Joseph stable form
-	P = P - K * P.block(3,0,3,15);
-	P = (P + P.transpose()) / 2.0;
+	P = P - K * P.block(3,0,3,15); //not using selfadjoint because this is not necessarily a symmetrical update. Symmetrize after
+	P = P.selfadjointView<Eigen::Lower>();//symmetry
 	x(0) = wrapPi(x(0)); //ensuring angles are staying within -pi to pi
 	x(1) = wrapPi(x(1));
 	x(2) = wrapPi(x(2));

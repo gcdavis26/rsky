@@ -10,6 +10,9 @@
 #include <fstream>
 #include <algorithm>
 
+#include "telemetrypacket.h"
+#include "UDPSender.h"
+
 #include <chrono>
 #include <thread>
 
@@ -39,7 +42,6 @@ int main() {
 	g << 0, 0, 9.81;
 	double freq = 100.0;
 	double m_freq = 100.0;
-	double deltat = 1.0 / freq;
 	double tc = .028;
 	double Kt = 4.0;
 	double Kq = 2.35;
@@ -124,30 +126,52 @@ int main() {
 	specific_thrust = specific_thrust / m;
 	Vector12d xdot = get_dynamics(x_true, g, m, inertias, forces(0), forces.block(1, 0, 3, 1));
 
-	std::cout << "Simulation has begun" << '\n';
-	std::cout << "Initial controller state estimate: " << x << "\n";
-	std::cout << "Initial true state: " << x_true << "\n";
-	std::cout << "Initial measurement: " << measurement << "\n";
-	std::cout << "Initial IMU (omega, accels):" << imu_omega << "\n" << imu_accels << "\n";
-	std::cout << "Initial motor commands: " << motor_cmds << "\n";
+	///////////////////
+	// //Frequencies
+	///////////////////
+	double process_freq = 200.0;
+	double m_freq = 50.0;
+	//control loop should be 400 hz, but we don't need to limit it 
 
 	auto t_ref = std::chrono::system_clock::now(); //main loop clock
-	for (int k =1; k < 120*freq+1; k++)
-	{
-		t += deltat; //propagate truth
-		x_true += xdot * deltat;
+	auto measurement_t = std::chrono::system_clock::now(); //measurement clock
+	auto process_t = std::chrono::system_clock::now(); //process clock
+	int cycles = 0;
+	double sim_time = 30;
+	UDPSender sender("127.0.0.1", 5000);
+	TelemetryPacket pkt;
+	uint32_t packetCounter = 0;
 
+	while(t < sim_time)
+	{
+		auto current_time = std::chrono::system_clock::now();
+		auto dt = std::chrono::duration_cast<std::chrono::microseconds>(current_time - process_t);
+		double dt_secs = dt.count()/1e6;
+		t += dt_secs; //propagate truth
+		x_true += xdot * dt_secs;
+		if (dt_secs >= 1 / process_freq)
+		{
+			
+			ekf.estimate(dt_secs); //predict state at current time step
+			w = noise12d().cwiseProduct(sigmaw);
+			imu_omega = sim_gyro_rates(x_true, w.block(0, 0, 3, 1));
+			imu_accels = sim_imu_accels(x_true, specific_thrust, xdot.block(3, 0, 3, 1), r, w.block(3, 0, 3, 1));
+			ekf.imureading(imu_omega, imu_accels, dt_secs);
+			process_t = current_time;
+		}
 		//take new measurements
-		w = noise12d().cwiseProduct(sigmaw);
-		imu_omega = sim_gyro_rates(x_true, w.block(0, 0, 3, 1));
-		imu_accels = sim_imu_accels(x_true, specific_thrust, xdot.block(3,0,3,1), r, w.block(3, 0, 3, 1));
-		//estimate
-		ekf.estimate(deltat); 
-		ekf.imureading(imu_omega, imu_accels,deltat);
-		v = noise3d().cwiseProduct(sigmav);
-		truth_measured << x_true(6), x_true(7), x_true(8);
-		measurement = sim_measurement(truth_measured, v);
-		ekf.update(measurement);
+		current_time = std::chrono::system_clock::now();
+		dt = std::chrono::duration_cast<std::chrono::microseconds>(current_time - measurement_t);
+		dt_secs = dt.count() / 1e6;
+		
+		if (dt_secs >= 1 / m_freq) 
+		{
+			v = noise3d().cwiseProduct(sigmav);
+			truth_measured << x_true(6), x_true(7), x_true(8);
+			measurement = sim_measurement(truth_measured, v);
+			ekf.update(measurement);
+		}
+
 		x = ekf.getControlState();
 		controller.update(x); //update internal control state
 		//controller.update(x_true); //for testing
@@ -161,13 +185,27 @@ int main() {
 		specific_thrust << 0, 0, -forces(0);
 		specific_thrust = specific_thrust / m;
 		xdot = get_dynamics(x_true, g, m, inertias, forces(0), forces.block(1, 0, 3, 1)); //true state derivative
+		cycles += 1;
 
-		//std::cout << "Specific thrust: " << specific_thrust << "\n" << "IMU: " << imu_accels << "\n" << "NEXT: " << "\n";
-		//std::cout << "Measurement: " << measurement << "\n" << "Actual: " << truth_measured << "\n";
-		//std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		current_time = std::chrono::system_clock::now();
+		dt = std::chrono::duration_cast<std::chrono::microseconds>(current_time - measurement_t);
+		dt_secs = dt.count() / 1e6;
+		if (dt_secs >= 0.1)
+		{
+			pkt.time = std::chrono::duration<double>(
+				std::chrono::steady_clock::now().time_since_epoch()
+			).count();
+
+			std::memcpy(pkt.state, x.data(), STATE_SIZE * sizeof(double));
+			pkt.flags = 1;       // e.g., filter healthy
+			pkt.counter = packetCounter++;
+
+			sender.send(pkt);
+		}
+
 	}
-	auto seconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - t_ref);
-	std::cout << seconds.count()/1000.0 << "\n" << (120*freq+1)/seconds.count()*1000.0; //main loop clock
+	auto total_t = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - t_ref);
+	std::cout << (cycles / (total_t.count() / 1e6));
 
 	return 0;
 }
