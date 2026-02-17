@@ -286,9 +286,13 @@ int main() {
             const Vec<3> posCmd = MM.out.posCmd;
             const Vec<3> attCmd = outer.out.attCmd;
 
+            const Vec<3> gyro = imu.imu.gyro;
+            const Vec<3> accel = imu.imu.accel;
+
+#ifdef PLATFORM_LINUX
             const Vec<3> gyro = imuReal.imu.gyro;
             const Vec<3> accel = imuReal.imu.accel;
-
+#endif
             const Vec<3> optPos = opti.opti.pos;
             const double optPsi = opti.opti.psi;
 
@@ -394,8 +398,9 @@ int main() {
 
             lastPrint = t;
         }
-
-	//usleep(1);
+#ifdef PLATFORM_LINUX
+	usleep(1);
+#endif
     //std::this_thread::sleep_for(std::chrono::microseconds(1));
 
     }
