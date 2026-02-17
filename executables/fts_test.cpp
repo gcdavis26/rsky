@@ -16,14 +16,17 @@ int main()
 	MotorDriver motordriver;
 	RCInputHandler controller;
 
-	motordriver.initialise()
+	motordriver.initialize();
 
 	while (true)
 	{
 		Eigen::Matrix<double, 6,1> ppm = controller.read_ppm_vector();
 		std::cout << ppm(2) << "|" << ppm(5) << std::endl;
 
-		motordriver.command(ppm(2));
+		Eigen::Matrix<double, 4, 1> motoppm = Eigen::Matrix<double, 4, 1>::Zero();
+		motoppm << ppm(2), ppm(2), ppm(2), ppm(2);
+
+		motordriver.command(motoppm);
 
 		if (static_cast<int>(ppm(5)) == 2000)
 		{
