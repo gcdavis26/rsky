@@ -49,7 +49,7 @@ int main() {
 
     MotorDriver motdrv;
 
-    //IMUHandler imuReal;
+    IMUHandler imuReal;
 #endif
 
     double lastPrint = 0.0;
