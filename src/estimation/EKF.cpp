@@ -59,24 +59,26 @@ void EKF::predict(const ImuSim::ImuMeas& imu, double dt) {
         omega_dot_prev = omega_dot;
     }
 
-    // RK2 state integration
+    // state integration
     const Vec<NX> k1 = f_nonlin(x_est, imu, omega_dot);
     Vec<NX> x_pred = x_est + dt * k1;
 
     // wrap rpy
     x_pred.template segment<3>(PHI) = wrapAngles(x_pred.template segment<3>(PHI));
-
-    // Covariance propagation (continuous Riccati) with RK2
+    
+    // Covariance propagation 
     const Mat<NX, NX> F = computeF_numeric(x_est, imu, omega_dot);
     const Mat<NX, 12> G = computeG(x_est);
 
     const Mat<NX, NX> Pk = P;
 
-    const Mat<NX, NX> Pdot1 = F * Pk + Pk * F.transpose() + G * Qc * G.transpose();
+    const Mat<NX, NX> FP = F * Pk;
+    
+    const Mat<NX, NX> Pdot1 = FP + FP.transpose() + G * Qc * G.transpose() * dt;
     const Mat<NX, NX> P_pred = Pk + dt * Pdot1;
-
-    x_est = x_pred;
     P = P_pred;
+    
+    x_est = x_pred;
 }
 
 void EKF::correct(const OptiSim::OptiMeas& opti) {
@@ -233,7 +235,7 @@ double EKF::h_psi(const Vec<NX>& x) const {
 Mat<3, EKF::NX> EKF::computeHpos(const Vec<NX>& x) const {
     Mat<3, NX> H = Mat<3, NX>::Zero();
 
-    for (int j = 0; j < NX; j++) {
+    for (int j = 0; j < 9; j++) {
         Vec<NX> dx = Vec<NX>::Zero();
         dx(j) = eps_H;
 

@@ -4,6 +4,7 @@
 #ifdef _WIN32
     #include <WinSock2.h>
     #include <Windows.h>
+    #include <thread>
 #endif
 
 #include "common/TimeKeeper.h"
@@ -22,11 +23,13 @@
 #ifdef PLATFORM_LINUX
     #include "drivers/MotorDriver.h"
     #include "drivers/RCIn.h"
+    #include "drivers/IMUHandler.h"
+    #include <unistd.h>
 #endif
 
 int main() {
 
-    std::cout << std::fixed << std::setprecision(3);
+    std::cout << std::fixed << std::setprecision(4);
 
     TimeKeeper clock;
     Dynamics dynamics;
@@ -39,10 +42,14 @@ int main() {
     QuadMixer mixer;
     MotorModel motormodel;
     UdpSender udp("127.0.0.1", 8080);
+
 #ifdef PLATFORM_LINUX
     RCIn rcin;
     rcin.initialize();
+
+    MotorDriver motdrv;
 #endif
+
     double lastPrint = 0.0;
     const double printDt = 0.1; 
 
@@ -56,6 +63,7 @@ int main() {
     bool autopilot = false;
     bool printOn = true;
     bool armed = true;
+    bool motorInit = false;
 
     while (true) {
 
@@ -67,11 +75,14 @@ int main() {
         Hz += 1 / dt;
 
         if (clock.taskClock.imu >= clock.rates.imu) {
-            imu.step(dynamics.getTrueState(), dt);
+            imu.step(dynamics.getTrueState(), clock.taskClock.imu);
+            clock.taskClock.imu = 0.0;
         }
         if (clock.taskClock.opti >= clock.rates.opti) {
             opti.step(dynamics.getTrueState());
+            clock.taskClock.opti = 0.0;
         }
+
         // ---------------- EKF ----------------
         if (!ekf.init) {
             ekf.initializeFromOpti(opti.opti);
@@ -90,41 +101,42 @@ int main() {
         const Vec<15> navState = ekf.getx();
 
         // ---------------- Mode Manager ----------------
-        MM.in.state = navState;
-        MM.in.dt = dt;
-        MM.update();
+        if (clock.taskClock.MM >= clock.rates.MM) {
+            MM.in.state = navState;
+            MM.in.dt = dt;
+            MM.update();
+            clock.taskClock.MM = 0.0;
+        }
 
         // Manual Command Types
         Vec<3> manVel = Vec<3>::Zero();
         double manPsi = 0.0;
-        // ---------------- Manual Keyboard Controls (Windows Only) -----------
 
+        // ---------------- Manual Keyboard Controls (Windows Only) -----------
 #ifdef _WIN32
 
         Vec<3> keyVel = Vec<3>::Zero();
         double keyPsi = 0.0;
 
-
-
         if (GetAsyncKeyState('W') & 0x8000) {
-            keyVel(0) = 1.0;
+            keyVel(0) = 2.5;
         }
         else if (GetAsyncKeyState('S') & 0x8000) {
-            keyVel(0) = -1.0;
+            keyVel(0) = -2.5;
         }
 
         if (GetAsyncKeyState('A') & 0x8000) {
-            keyVel(1) = -1.0;
+            keyVel(1) = -2.5;
         }
         else if (GetAsyncKeyState('D') & 0x8000) {
-            keyVel(1) = 1.0;
+            keyVel(1) = 2.5;
         }
 
         if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
-            keyVel(2) = -1.0;
+            keyVel(2) = -2.5;
         }
         else if (GetAsyncKeyState(VK_SHIFT) & 0x8000) {
-            keyVel(2) = 1.0;
+            keyVel(2) = 2.5;
         }
 
         if (GetAsyncKeyState('Q') & 0x8000) {
@@ -145,41 +157,35 @@ int main() {
         double rcPsi = 0.0;
 
         Vec<6> rcPWM = rcin.read_ppm_vector();
-<<<<<<< Updated upstream
 
-        if (rcPWM(4) > 1500) {
-            bool armed = true;
+        if (rcPWM(4) > 1500.0) {
+            armed = true;
         }
-        else
-            bool armed = false;
+        else {
+            armed = false;
         }
+	
+	if (rcPWM(5) > 1750) {
+	}
+	else if (rcPWM(5) > 1250) {
+	    autopilot = true;
+	}
+	else {
+	    autopilot = false;
+	} 
 
-	    Vec<4> normPWM = normPWM(rcPWM.segment<4>(0));
+	    Vec<4> normalizedPWM = normPWM(rcPWM.segment<4>(0));
 
-        rcVel(0) = normPWM(1);
-	    rcVel(1) = normPWM(0);
-	    rcVel(2) = normPWM(2);
+       	rcVel(0) =  normalizedPWM(1);
+	    rcVel(1) =  normalizedPWM(0);
+	    rcVel(2) = -normalizedPWM(2);
 
-	    rcPsi = 5 * PI / 180 * normPWM(3); 
+	    rcPsi = 5 * PI / 180 * normalizedPWM(3); 
 
         if (armed) {
 	        manPsi = rcPsi; 
 	        manVel = rcVel; // 1m/s max speed in each direction 
         }
-=======
-        Vec<3> rcVel = Vec<3>::Zero();
-	double rcPsi = 0.0;
-	Vec<4> normPWM = normPWM(rcPWM.segment<4>(0));
-
-        rcVel(0) = normPWM(1);
-	rcVel(1) = normPWM(0);
-	rcVel(2) = normPWM(2);
-
-	rcPsi = 5 * PI / 180 * normPWM(3); 
-
-	manPsi = rcPsi;
-	manVel = rcVel;
->>>>>>> Stashed changes
 #endif
         // ---------------- Outer Loop ----------------
 
@@ -200,7 +206,6 @@ int main() {
                 outer.update();
                 outer.out.attCmd(2) = navState(2) + manPsi;
             }
-
             clock.taskClock.conOuter = 0.0;
         }
         // ---------------- Inner Loop ----------------
@@ -219,11 +224,33 @@ int main() {
 
             thrustCmd = mixer.mix2Thrust(wrenchCmd);
 
+	        if(!armed) {
+		        thrustCmd = Vec<4>::Zero();
+	        }
+
             pwmCmd = mixer.thr2PWM(thrustCmd);
 
             clock.taskClock.conInner = 0.0;
         }
 
+	// ----------------Real Commands -------------
+#ifdef PLATFORM_LINUX
+	if (!motorInit && armed) {
+	    motdrv.initialize();
+	    motorInit = true;
+	} 
+	elseif (motorInit && armed) {
+        pwmOut = Vec<4>::Zero();
+
+        pwmOut = thrustCmd / 
+
+
+	}
+	else {
+        motdrv.wind_down();
+	    motorInit = false;
+	}
+#endif
         // ---------------- Telemetry -----------------
         if (clock.taskClock.tele >= clock.rates.tele) {
             udp.sendFromSim(
@@ -363,5 +390,9 @@ int main() {
 
             lastPrint = t;
         }
+
+	//usleep(1);
+    //std::this_thread::sleep_for(std::chrono::microseconds(1));
+
     }
 }

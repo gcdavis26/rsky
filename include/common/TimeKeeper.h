@@ -10,13 +10,14 @@ public:
 	void stepClocks(double dt);
 
 	struct scheduler {
-		static constexpr double navPred = 1.0/200;
-		static constexpr double navCorr = 1.0/50;
-		static constexpr double conInner = 1.0/400;
-		static constexpr double conOuter = 1.0/250;
+		static constexpr double navPred = 1.0 / 100;
+		static constexpr double navCorr = 1.0 / 0.01;
+		static constexpr double conInner = 1.0 / 400;
+		static constexpr double conOuter = 1.0 / 50;
 		static constexpr double tele = 1.0 / 10;
 		static constexpr double imu = 1.0 / 100;
-		static constexpr double opti = 1.0 / 50;
+		static constexpr double opti = 1.0 / 25;
+		static constexpr double MM = 1.0 / 50;
 	};
 
 	struct accumulator {
@@ -27,6 +28,7 @@ public:
 		double tele = 0.0;
 		double imu = 0.0;
 		double opti = 0.0;
+		double MM = 0.0;
 	};
 
 	scheduler rates;
