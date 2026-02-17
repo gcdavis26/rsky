@@ -244,7 +244,7 @@ int main() {
 	    motdrv.initialize();
 	    motorInit = true;
 	} 
-	elseif (motorInit && armed) {
+	else if (motorInit && armed) {
         pwmOut = Vec<4>::Zero();
 
         pwmOut = thrustCmd / 
