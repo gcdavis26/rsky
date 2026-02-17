@@ -181,7 +181,7 @@ int main() {
 		}
 		else
 		{
-			motordriver.command(throttle2pwm(motor_cmds));
+			motordriver.command(motor_cmds);
 		}
 
 

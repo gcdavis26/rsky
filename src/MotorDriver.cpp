@@ -11,6 +11,7 @@
 
 MotorDriver::MotorDriver() {
     // Direct instantiation for Navio2
+    initialize();
 }
 
 MotorDriver::~MotorDriver() {
@@ -60,7 +61,14 @@ void MotorDriver::calibrate() {
 void MotorDriver::command(const Eigen::Vector4d& pwm_values) {
     for (int i = 0; i < NUM_MOTORS; ++i) {
         // Clamp the double input and cast to float for the hardware driver
-        double commanded = std::clamp(pwm_values(i), (double)PWM_MIN, (double)PWM_MAX);
+        pwm_val = pwm_values(i);
+
+        if (pwm_val >= 0.0 && pwm_val <= 1.0) {
+            pwm_val = 1000 + (pwm_values(i) * 1000);
+        }
+
+        pwm_val = 1000 + (pwm_values(i) * 1000);
+        double commanded = std::clamp(pwm_val, (double)PWM_MIN, (double)PWM_MAX);
 
         pwm_driver.set_duty_cycle(motor_pins[i], static_cast<float>(commanded));
     }
