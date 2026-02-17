@@ -57,6 +57,7 @@ if(UNIX AND NOT APPLE)
     target_sources(FireMission PRIVATE
         src/drivers/MotorDriver.cpp
         src/drivers/RCIn.cpp
+		src/drivers/IMUHandler.cpp
     )
 
     # Link Navio2 (it PUBLIC-links Common)
