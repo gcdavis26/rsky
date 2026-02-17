@@ -6,7 +6,7 @@ IMUHandler::IMUHandler() {
     lsm.initialize();
 }
 
-IMUHandler::imuData IMUHandler::update() {
+void IMUHandler::update() {
 
     lsm.update();
 

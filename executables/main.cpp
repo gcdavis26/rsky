@@ -48,6 +48,8 @@ int main() {
     rcin.initialize();
 
     MotorDriver motdrv;
+
+    IMUHandler imuReal;
 #endif
 
     double lastPrint = 0.0;
@@ -76,6 +78,9 @@ int main() {
 
         if (clock.taskClock.imu >= clock.rates.imu) {
             imu.step(dynamics.getTrueState(), clock.taskClock.imu);
+#ifdef PLATFORM_LINUX
+            imuReal.update();
+#endif
             clock.taskClock.imu = 0.0;
         }
         if (clock.taskClock.opti >= clock.rates.opti) {
@@ -282,8 +287,8 @@ int main() {
             const Vec<3> posCmd = MM.out.posCmd;
             const Vec<3> attCmd = outer.out.attCmd;
 
-            const Vec<3> gyro = imu.imu.gyro;
-            const Vec<3> accel = imu.imu.accel;
+            const Vec<3> gyro = imuReal.imu.gyro;
+            const Vec<3> accel = imuReal.imu.accel;
 
             const Vec<3> optPos = opti.opti.pos;
             const double optPsi = opti.opti.psi;
