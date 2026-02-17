@@ -79,7 +79,7 @@ int main() {
         if (clock.taskClock.imu >= clock.rates.imu) {
             imu.step(dynamics.getTrueState(), clock.taskClock.imu);
 #ifdef PLATFORM_LINUX
-            imuReal.update();
+            //imuReal.update();
 #endif
             clock.taskClock.imu = 0.0;
         }
