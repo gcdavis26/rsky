@@ -64,7 +64,7 @@ int main() {
 
     bool autopilot = false;
     bool printOn = true;
-    bool armed = true;
+    bool armed = false;
     bool motorInit = false;
 
     while (true) {
