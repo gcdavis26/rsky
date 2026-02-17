@@ -247,9 +247,6 @@ int main() {
 	else if (motorInit && armed) {
         pwmOut = Vec<4>::Zero();
 
-        pwmOut = thrustCmd / 
-
-
 	}
 	else {
         motdrv.wind_down();
