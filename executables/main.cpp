@@ -245,7 +245,7 @@ int main() {
 	    motorInit = true;
 	} 
 	else if (motorInit && armed) {
-        pwmOut = Vec<4>::Zero();
+        Vec<4> pwmOut = Vec<4>::Zero();
 
 	}
 	else {
