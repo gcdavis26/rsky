@@ -79,7 +79,7 @@ int main() {
         if (clock.taskClock.imu >= clock.rates.imu) {
             imu.step(dynamics.getTrueState(), clock.taskClock.imu);
 #ifdef PLATFORM_LINUX
-            //imuReal.update();
+            imuReal.update();
 #endif
             clock.taskClock.imu = 0.0;
         }
@@ -398,7 +398,7 @@ int main() {
             lastPrint = t;
         }
 #ifdef PLATFORM_LINUX
-	usleep(1);
+	//usleep(1);
 #endif
     //std::this_thread::sleep_for(std::chrono::microseconds(1));
 
