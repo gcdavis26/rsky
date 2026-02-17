@@ -111,7 +111,6 @@ int main() {
 	//controller.update(x_true); //for testing
 
 	Guidance guidance(x,n_bounds, e_bounds, 4, cruise, yaw_rate, takeoff_height,1,.5);
-	double t = 0;
 
 	//These are derivatives and controls etc at initial state
 	Vector10d commands = guidance.getTarget(x);
@@ -130,10 +129,12 @@ int main() {
 	double process_freq = 200.0;
 	double m_freq = 50.0;
 	//control loop should be 400 hz, but we don't need to limit it 
-
-	auto t_ref = std::chrono::system_clock::now(); //main loop clock
-	auto measurement_t = std::chrono::system_clock::now(); //measurement clock
+	double t = 0;
+	auto t_ref = std::chrono::system_clock::now(); //total time reference
+	auto t_loop = std::chrono::system_clock::now(); //main loop clock
 	auto process_t = std::chrono::system_clock::now(); //process clock
+	auto measurement_t = std::chrono::system_clock::now(); //measurement clock
+	auto telemetry_t = std::chrono::system_clock::now(); //telemetry clock
 	int cycles = 0;
 	double sim_time = 30;
 	UDPSender sender("127.0.0.1", 5000);
@@ -143,10 +144,17 @@ int main() {
 	while(t < sim_time)
 	{
 		auto current_time = std::chrono::system_clock::now();
-		auto dt = std::chrono::duration_cast<std::chrono::microseconds>(current_time - process_t);
-		double dt_secs = dt.count()/1e6;
+		auto dt = std::chrono::duration_cast<std::chrono::microseconds>(current_time - t_loop);
+		double dt_secs = dt.count() / 1e6;
 		t += dt_secs; //propagate truth
 		x_true += xdot * dt_secs;
+		t_loop = current_time;
+
+		//process model
+		current_time = std::chrono::system_clock::now();
+		dt = std::chrono::duration_cast<std::chrono::microseconds>(current_time - process_t);
+		dt_secs = dt.count() / 1e6;
+
 		if (dt_secs >= 1 / process_freq)
 		{
 			
@@ -157,7 +165,9 @@ int main() {
 			ekf.imureading(imu_omega, imu_accels, dt_secs);
 			process_t = current_time;
 		}
-		//take new measurements
+
+
+		//measurement model
 		current_time = std::chrono::system_clock::now();
 		dt = std::chrono::duration_cast<std::chrono::microseconds>(current_time - measurement_t);
 		dt_secs = dt.count() / 1e6;
@@ -168,8 +178,11 @@ int main() {
 			truth_measured << x_true(6), x_true(7), x_true(8);
 			measurement = sim_measurement(truth_measured, v);
 			ekf.update(measurement);
+			measurement_t = current_time;
 		}
 
+
+		//controls and motors
 		x = ekf.getControlState();
 		controller.update(x); //update internal control state
 		//controller.update(x_true); //for testing
@@ -186,7 +199,7 @@ int main() {
 		cycles += 1;
 
 		current_time = std::chrono::system_clock::now();
-		dt = std::chrono::duration_cast<std::chrono::microseconds>(current_time - measurement_t);
+		dt = std::chrono::duration_cast<std::chrono::microseconds>(current_time - telemetry_t);
 		dt_secs = dt.count() / 1e6;
 		if (dt_secs >= 0.1)
 		{
@@ -199,6 +212,7 @@ int main() {
 			pkt.counter = packetCounter++;
 
 			sender.send(pkt);
+			telemetry_t = current_time;
 		}
 
 	}
