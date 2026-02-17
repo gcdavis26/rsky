@@ -215,6 +215,11 @@ int main() {
 			telemetry_t = current_time;
 		}
 
+		dt = std::chrono::duration_cast<std::chrono::microseconds>(current_time - t_loop);
+		if (dt.count() / 1e6 < .0025)
+			std::this_thread::sleep_for((std::chrono::duration<double>(.0025 - dt.count() / 1e6)));
+		else
+			std::cout << "im slow\n";
 	}
 	auto total_t = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - t_ref);
 	std::cout << (cycles / (total_t.count() / 1e6));
