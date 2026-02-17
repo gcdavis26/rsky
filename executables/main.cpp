@@ -247,7 +247,6 @@ int main() {
 	} 
 	else if (motorInit && armed) {
         Vec<4> pwmOut = Vec<4>::Zero();
-
 	}
 	else {
         motdrv.wind_down();
@@ -285,10 +284,10 @@ int main() {
 
             const Vec<3> posCmd = MM.out.posCmd;
             const Vec<3> attCmd = outer.out.attCmd;
-
+#ifdef _WIN32
             const Vec<3> gyro = imu.imu.gyro;
             const Vec<3> accel = imu.imu.accel;
-
+#endif
 #ifdef PLATFORM_LINUX
             const Vec<3> gyro = imuReal.imu.gyro;
             const Vec<3> accel = imuReal.imu.accel;
