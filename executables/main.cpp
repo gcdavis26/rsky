@@ -23,7 +23,7 @@
 #ifdef PLATFORM_LINUX
     #include "drivers/MotorDriver.h"
     #include "drivers/RCIn.h"
-    #include "drivers/IMUHandler.h"
+    #include "sensors/IMUHandler.h"
     #include <unistd.h>
 #endif
 
