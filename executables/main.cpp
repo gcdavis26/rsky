@@ -240,6 +240,7 @@ int main() {
 
 	// ----------------Real Commands -------------
 #ifdef PLATFORM_LINUX
+        /*
 	if (!motorInit && armed) {
 	    motdrv.initialize();
 	    motorInit = true;
@@ -252,6 +253,7 @@ int main() {
         motdrv.wind_down();
 	    motorInit = false;
 	}
+        */
 #endif
         // ---------------- Telemetry -----------------
         if (clock.taskClock.tele >= clock.rates.tele) {
