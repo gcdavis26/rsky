@@ -48,7 +48,7 @@ void LSM9DS1::ReadRegs(const char *dev, uint8_t ReadAddr, uint8_t *ReadBuf, unsi
     for (uint i = 0; i < Bytes; i++)
         ReadBuf[i] = rx[i + 1];
 
-    usleep(50);
+    usleep(1);
 }
 
 /*-----------------------------------------------------------------------------------------------
