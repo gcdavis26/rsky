@@ -58,6 +58,7 @@ int main() {
     Vec<4> thrustCmd = Vec<4>::Zero();
     Vec<4> wrenchCmd = Vec<4>::Zero();
     Vec<4> pwmCmd = Vec<4>::Zero();
+    Vec<6> rcPWM = Vec<6> ::Zero();
 
     int step = 0;
     double Hz = 0.0;
@@ -171,7 +172,7 @@ int main() {
             Vec<3> rcVel = Vec<3>::Zero();
             double rcPsi = 0.0;
 
-            Vec<6> rcPWM = rcin.read_ppm_vector();
+            rcPWM = rcin.read_ppm_vector();
 
             if (rcPWM(4) > 1500.0) {
                 armed = true;
