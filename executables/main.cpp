@@ -43,7 +43,7 @@ int main() {
     InnerLoop inner;
     QuadMixer mixer;
     MotorModel motormodel;
-    UdpSender udp("127.0.0.1", 8080);
+    UdpSender udp("10.34.144.112", 8080);
     
 #ifdef PLATFORM_LINUX
     RCIn rcin;
