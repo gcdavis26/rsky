@@ -30,4 +30,5 @@ void TimeKeeper::stepClocks(double dt) {
 	taskClock.imu += dt;
 	taskClock.opti += dt;
 	taskClock.MM += dt;
+	taskClock.AHRS += dt;
 }

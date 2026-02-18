@@ -42,7 +42,8 @@ add_executable(FireMission
     src/simulator/MotorModel.cpp 
     src/sensors/ImuSim.cpp 
     src/sensors/OptiSim.cpp
-    src/telemetry/udp_sender.cpp)
+    src/telemetry/udp_sender.cpp 
+    src/estimation/AHRS.cpp)
 
 # ==============================
 # Navio2 (Linux only)

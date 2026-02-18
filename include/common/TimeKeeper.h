@@ -18,6 +18,7 @@ public:
 		static constexpr double imu = 1.0 / 100;
 		static constexpr double opti = 1.0 / 25;
 		static constexpr double MM = 1.0 / 50;
+		static constexpr double AHRS = 1.0 / 100;
 	};
 
 	struct accumulator {
@@ -29,6 +30,7 @@ public:
 		double imu = 0.0;
 		double opti = 0.0;
 		double MM = 0.0;
+		double AHRS = 0.0;
 	};
 
 	scheduler rates;

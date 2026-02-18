@@ -19,6 +19,7 @@
 #include "simulator/Dynamics.h"
 #include "simulator/MotorModel.h"
 #include "telemetry/udp_sender.h"
+#include "estimation/AHRS.h"
 
 #ifdef PLATFORM_LINUX
     #include "drivers/MotorDriver.h"
@@ -36,12 +37,13 @@ int main() {
     ImuSim imu;
     OptiSim opti;
     EKF ekf;
+    AHRS ahrs;
     ModeManager MM;
     OuterLoop outer;
     InnerLoop inner;
     QuadMixer mixer;
     MotorModel motormodel;
-    UdpSender udp("104.39.1.20", 8080);
+    UdpSender udp("127.0.0.1", 8080);
 
 #ifdef PLATFORM_LINUX
     RCIn rcin;
@@ -67,7 +69,7 @@ int main() {
 
     bool autopilot = false;
     bool printOn = false;
-    bool armed = false;
+    bool armed = true;
     bool motorInit = false;
 
     while (true) {
@@ -93,6 +95,7 @@ int main() {
 #endif
             clock.taskClock.imu = 0.0;
         }
+
         if (clock.taskClock.opti >= clock.rates.opti) {
             opti.step(dynamics.getTrueState());
             clock.taskClock.opti = 0.0;
@@ -114,6 +117,14 @@ int main() {
             clock.taskClock.navCorr = 0.0;
         }
         const Vec<15> navState = ekf.getx();
+
+        // ---------------- AHRS ------------------------
+
+        if (clock.taskClock.AHRS >= clock.rates.AHRS) {
+
+        }
+
+
 
         // ---------------- Mode Manager ----------------
         if (clock.taskClock.MM >= clock.rates.MM) {

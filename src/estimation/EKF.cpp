@@ -67,7 +67,7 @@ void EKF::predict(const ImuSim::ImuMeas& imu, double dt) {
     x_pred.template segment<3>(PHI) = wrapAngles(x_pred.template segment<3>(PHI));
     
     // Covariance propagation 
-    const Mat<NX, NX> F = computeF_numeric(x_est, imu, omega_dot, k1);
+    const Mat<NX, NX> F = computeF(x_est, imu, omega_dot, k1);
     const Mat<NX, 12> G = computeG(x_est);
 
     const Mat<NX, NX> Pk = P;
@@ -169,15 +169,155 @@ Vec<EKF::NX> EKF::f_nonlin(const Vec<NX>& x,
     return f;
 }
 
-// ------------------- F numeric (central diff) -------------------
-Mat<EKF::NX, EKF::NX> EKF::computeF_numeric(const Vec<NX>& x,
+// ------------------- F numeric  -------------------
+Mat<EKF::NX, EKF::NX> EKF::computeF(const Vec<NX>& x,
     const ImuSim::ImuMeas& imu,
     const Vec<3>& omega_dot,
     const Vec<NX>& k1) const
 {
+    Mat<NX, NX> A; A.setZero();
+
+    // --- unpack ---
+    const double phi = x(PHI);
+    const double th = x(THETA);
+    const double psi = x(PSI);
+
+    const double cph = std::cos(phi), sph = std::sin(phi);
+    const double cth = std::cos(th), sth = std::sin(th);
+    const double cps = std::cos(psi), sps = std::sin(psi);
+
+    const double tth = std::tan(th);
+    const double sec = 1.0 / cth;
+    const double sec2 = sec * sec;
+
+    const Vec<3> ba = x.template segment<3>(BAX); // [bax bay baz]
+    const Vec<3> bw = x.template segment<3>(BP);  // [bp bq br]
+
+    const Vec<3> omega_m = imu.gyro;
+    const Vec<3> acc_m = imu.accel;
+
+    const Vec<3> omega = omega_m - bw;
+    const Vec<3> r = r_IMU;
+
+    // a_corr = (acc_m - ba) - omega_dot x r - omega x (omega x r)
+    const Vec<3> a_corr =
+        (acc_m - ba)
+        - omega_dot.cross(r)
+        - omega.cross(omega.cross(r));
+
+    // --- T(?,?) ---
+    Mat<3, 3> T;
+    T << 1.0, sph* tth, cph* tth,
+        0.0, cph, -sph,
+        0.0, sph* sec, cph* sec;
+
+    // dT/d?
+    Mat<3, 3> dT_dphi;
+    dT_dphi << 0.0, cph* tth, -sph * tth,
+        0.0, -sph, -cph,
+        0.0, cph* sec, -sph * sec;
+
+    // dT/d?
+    Mat<3, 3> dT_dth;
+    dT_dth << 0.0, sph* sec2, cph* sec2,
+        0.0, 0.0, 0.0,
+        0.0, sph* sec* tth, cph* sec* tth;
+
+    // eul_dot = T * omega
+    // A_eta,eta columns:
+    A.template block<3, 1>(PHI, PHI) = dT_dphi * omega; // ?eul_dot/?phi
+    A.template block<3, 1>(PHI, THETA) = dT_dth * omega; // ?eul_dot/?theta
+    // ?eul_dot/?psi = 0
+
+    // A_eta,bw = -T  (bw = [bp bq br])
+    A.template block<3, 3>(PHI, BP) = -T;
+
+    // --- position: p_dot = v ---
+    A(PN, VN) = 1.0;
+    A(PE, VE) = 1.0;
+    A(PD, VD) = 1.0;
+
+    // --- R(?,?,?) = Rz*Ry*Rx (your RotB2N) ---
+    Mat<3, 3> R;
+    R << cps * cth,
+        cps* sth* sph - sps * cph,
+        cps* sth* cph + sps * sph,
+
+        sps* cth,
+        sps* sth* sph + cps * cph,
+        sps* sth* cph - cps * sph,
+
+        -sth,
+        cth* sph,
+        cth* cph;
+
+    // dR/d?
+    Mat<3, 3> dR_dphi;
+    dR_dphi << 0.0,
+        cps* sth* cph + sps * sph,
+        -cps * sth * sph + sps * cph,
+
+        0.0,
+        sps* sth* cph - cps * sph,
+        -sps * sth * sph - cps * cph,
+
+        0.0,
+        cth* cph,
+        -cth * sph;
+
+    // dR/d?
+    Mat<3, 3> dR_dth;
+    dR_dth << -cps * sth,
+        cps* cth* sph,
+        cps* cth* cph,
+
+        -sps * sth,
+        sps* cth* sph,
+        sps* cth* cph,
+
+        -cth,
+        -sth * sph,
+        -sth * cph;
+
+    // dR/d?
+    Mat<3, 3> dR_dpsi;
+    dR_dpsi << -sps * cth,
+        -sps * sth * sph - cps * cph,
+        -sps * sth * cph + cps * sph,
+
+        cps* cth,
+        cps* sth* sph - sps * cph,
+        cps* sth* cph + sps * sph,
+
+        0.0, 0.0, 0.0;
+
+    // v_dot = R * a_corr + g_n
+    // A_v,eta columns:
+    A.template block<3, 1>(VN, PHI) = dR_dphi * a_corr;
+    A.template block<3, 1>(VN, THETA) = dR_dth * a_corr;
+    A.template block<3, 1>(VN, PSI) = dR_dpsi * a_corr;
+
+    // A_v,ba = R * ?a_corr/?ba = R * (-I) = -R
+    A.template block<3, 3>(VN, BAX) = -R;
+
+    // A_v,bw = R * ?a_corr/?bw
+    // where ?a_corr/?bw = ? r^T + (?^T r) I - 2 r ?^T
+    Mat<3, 3> daCorr_dbw;
+    daCorr_dbw = omega * r.transpose()
+        + (omega.dot(r)) * Mat<3, 3>::Identity()
+        - 2.0 * (r * omega.transpose());
+
+    A.template block<3, 3>(VN, BP) = R * daCorr_dbw;
+
+    // biases have zero dynamics in f_nonlin(), so their rows stay zero
+    return A;
+
+
+
+    /*
     Mat<NX, NX> F = Mat<NX, NX>::Zero();
 
-    for (int j = 0; j < 9; j++) {
+    for (int j = 0; j < NX; j++) {
         Vec<NX> dx = Vec<NX>::Zero();
         dx(j) = eps_F;
 
@@ -187,6 +327,7 @@ Mat<EKF::NX, EKF::NX> EKF::computeF_numeric(const Vec<NX>& x,
     }
 
     return F;
+    */
 }
 
 // ------------------- G (matches MATLAB structure) -------------------

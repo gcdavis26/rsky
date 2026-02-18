@@ -3,6 +3,7 @@
 #include <Eigen/Dense>
 #include <random>
 #include <cmath>
+#include <algorithm>
 
 static constexpr double PI = 3.141592653589;
 static constexpr double g = 9.81;
