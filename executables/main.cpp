@@ -80,7 +80,7 @@ int main() {
         HzTimer += dt;
         HzCounter++;
 
-        if (HzTimer >= 0.01) {
+        if (HzTimer >= 1.0) {
             Hz = HzCounter / HzTimer;
             HzTimer = 0.0;
             HzCounter = 0;
@@ -106,6 +106,7 @@ int main() {
 
         if (clock.taskClock.navPred >= clock.rates.navPred) {
             ekf.predict(imu.imu, clock.taskClock.navPred);
+            std::cout << clock.taskClock.navPred;
             clock.taskClock.navPred = 0.0;
         }
 
