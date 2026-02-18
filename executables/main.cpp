@@ -61,6 +61,8 @@ int main() {
 
     int step = 0;
     double Hz = 0.0;
+    double HzTimer = 0.0;
+    int HzCounter = 0;
 
     bool autopilot = false;
     bool printOn = false;
@@ -74,7 +76,14 @@ int main() {
         clock.stepClocks(dt);
         step++;
 
-        Hz += 1 / dt;
+        HzTimer += dt;
+        HzCounter++;
+
+        if (HzTimer >= 1.0) {
+            Hz = HzCounter / HzTimer;
+            HzTimer = 0.0;
+            HzCounter = 0;
+        }
 
         if (clock.taskClock.imu >= clock.rates.imu) {
             imu.step(dynamics.getTrueState(), clock.taskClock.imu);
@@ -158,38 +167,40 @@ int main() {
 
         // ---------------- Manual RC Controls (Linux Only) -------------------
 #ifdef PLATFORM_LINUX
-        Vec<3> rcVel = Vec<3>::Zero();
-        double rcPsi = 0.0;
+        if (clock.taskClock.conInner >= clock.rates.conInner) {
+            Vec<3> rcVel = Vec<3>::Zero();
+            double rcPsi = 0.0;
 
-        Vec<6> rcPWM = rcin.read_ppm_vector();
+            Vec<6> rcPWM = rcin.read_ppm_vector();
 
-        if (rcPWM(4) > 1500.0) {
-            armed = true;
-        }
-        else {
-            armed = false;
-        }
-	
-	if (rcPWM(5) > 1750) {
-	}
-	else if (rcPWM(5) > 1250) {
-	    autopilot = true;
-	}
-	else {
-	    autopilot = false;
-	} 
+            if (rcPWM(4) > 1500.0) {
+                armed = true;
+            }
+            else {
+                armed = false;
+            }
 
-	    Vec<4> normalizedPWM = normPWM(rcPWM.segment<4>(0));
+            if (rcPWM(5) > 1750) {
+            }
+            else if (rcPWM(5) > 1250) {
+                autopilot = true;
+            }
+            else {
+                autopilot = false;
+            }
 
-       	rcVel(0) =  normalizedPWM(1);
-	    rcVel(1) =  normalizedPWM(0);
-	    rcVel(2) = -normalizedPWM(2);
+            Vec<4> normalizedPWM = normPWM(rcPWM.segment<4>(0));
 
-	    rcPsi = 5 * PI / 180 * normalizedPWM(3); 
+            rcVel(0) = normalizedPWM(1);
+            rcVel(1) = normalizedPWM(0);
+            rcVel(2) = -normalizedPWM(2);
 
-        if (armed) {
-	        manPsi = rcPsi; 
-	        manVel = rcVel; // 1m/s max speed in each direction 
+            rcPsi = 5 * PI / 180 * normalizedPWM(3);
+
+            if (armed) {
+                manPsi = rcPsi;
+                manVel = rcVel; // 1m/s max speed in each direction 
+            }
         }
 #endif
         // ---------------- Outer Loop ----------------
@@ -257,7 +268,7 @@ int main() {
         // ---------------- Telemetry -----------------
         if (clock.taskClock.tele >= clock.rates.tele) {
             udp.sendFromSim(
-                t, dt, Hz / step,
+                t, dt, Hz,
                 navState,
                 MM,
                 outer,
@@ -271,7 +282,7 @@ int main() {
         const Vec<4> wrenchAct = mixer.mix2Wrench(thrustAct);
 
         dynamics.step(dt, wrenchAct);
-/*
+
         // ---------------- Console Print ----------------
         if (t - lastPrint >= printDt && printOn) {
 
@@ -301,7 +312,7 @@ int main() {
             std::cout
                 << "====================== QUADCOPTER STATE ======================\n"
                 << "  Time [s]: " << std::setw(8) << t
-                << " Rate [Hz]: " << std::setw(8) << Hz / step
+                << " Rate [Hz]: " << std::setw(8) << Hz
                 << "      Mode: " << std::setw(8) << static_cast<int>(MM.out.mode) 
                 << "     Armed: " << std::setw(8) << armed << "\n"
                 << "--------------------------------------------------------------\n"
@@ -400,7 +411,7 @@ int main() {
 
             lastPrint = t;
         }
-        */
+        
 #ifdef PLATFORM_LINUX
 	//usleep(1);
 #endif
