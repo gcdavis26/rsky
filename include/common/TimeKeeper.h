@@ -10,7 +10,7 @@ public:
 	void stepClocks(double dt);
 
 	struct scheduler {
-		static constexpr double navPred = 1.0 / 100;
+		static constexpr double navPred = 1.0 / 50;
 		static constexpr double navCorr = 1.0 / 25;
 		static constexpr double conInner = 1.0 / 400;
 		static constexpr double conOuter = 1.0 / 50;
