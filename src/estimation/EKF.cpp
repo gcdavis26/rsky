@@ -177,7 +177,7 @@ Mat<EKF::NX, EKF::NX> EKF::computeF_numeric(const Vec<NX>& x,
 {
     Mat<NX, NX> F = Mat<NX, NX>::Zero();
 
-    for (int j = 0; j < NX; j++) {
+    for (int j = 0; j < 9; j++) {
         Vec<NX> dx = Vec<NX>::Zero();
         dx(j) = eps_F;
 
