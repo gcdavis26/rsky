@@ -106,7 +106,7 @@ int main() {
 
         if (clock.taskClock.navPred >= clock.rates.navPred) {
             ekf.predict(imu.imu, clock.taskClock.navPred);
-            //std::cout << clock.taskClock.navPred;
+            std::cout << clock.taskClock.navPred;
             clock.taskClock.navPred = 0.0;
         }
 

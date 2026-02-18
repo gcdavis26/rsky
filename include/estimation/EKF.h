@@ -65,7 +65,7 @@ private:
 
     // dynamics + Jacobians
     Vec<NX>     f_nonlin(const Vec<NX>& x, const ImuSim::ImuMeas& imu, const Vec<3>& omega_dot) const;
-    Mat<NX, NX>  computeF_numeric(const Vec<NX>& x, const ImuSim::ImuMeas& imu, const Vec<3>& omega_dot) const;
+    Mat<NX, NX>  computeF_numeric(const Vec<NX>& x, const ImuSim::ImuMeas& imu, const Vec<3>& omega_dot, const Vec<NX>& k1) const;
     Mat<NX, 12>  computeG(const Vec<NX>& x) const;
 
     // measurement model + Jacobian

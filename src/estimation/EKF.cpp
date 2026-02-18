@@ -67,7 +67,7 @@ void EKF::predict(const ImuSim::ImuMeas& imu, double dt) {
     x_pred.template segment<3>(PHI) = wrapAngles(x_pred.template segment<3>(PHI));
     
     // Covariance propagation 
-    const Mat<NX, NX> F = computeF_numeric(x_est, imu, omega_dot);
+    const Mat<NX, NX> F = computeF_numeric(x_est, imu, omega_dot, k1);
     const Mat<NX, 12> G = computeG(x_est);
 
     const Mat<NX, NX> Pk = P;
@@ -172,7 +172,8 @@ Vec<EKF::NX> EKF::f_nonlin(const Vec<NX>& x,
 // ------------------- F numeric (central diff) -------------------
 Mat<EKF::NX, EKF::NX> EKF::computeF_numeric(const Vec<NX>& x,
     const ImuSim::ImuMeas& imu,
-    const Vec<3>& omega_dot) const
+    const Vec<3>& omega_dot,
+    const Vec<NX>& k1) const
 {
     Mat<NX, NX> F = Mat<NX, NX>::Zero();
 
@@ -181,9 +182,8 @@ Mat<EKF::NX, EKF::NX> EKF::computeF_numeric(const Vec<NX>& x,
         dx(j) = eps_F;
 
         const Vec<NX> f1 = f_nonlin(x + dx, imu, omega_dot);
-        const Vec<NX> f0 = f_nonlin(x - dx, imu, omega_dot);
 
-        F.col(j) = (f1 - f0) / (2.0 * eps_F);
+        F.col(j) = (f1 - k1) / (eps_F);
     }
 
     return F;
