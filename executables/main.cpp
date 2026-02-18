@@ -66,7 +66,7 @@ int main() {
     int HzCounter = 0;
 
     bool autopilot = false;
-    bool printOn = true;
+    bool printOn = false;
     bool armed = false;
     bool motorInit = false;
 
