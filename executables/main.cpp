@@ -44,7 +44,7 @@ int main() {
     QuadMixer mixer;
     MotorModel motormodel;
     UdpSender udp("127.0.0.1", 8080);
-
+    
 #ifdef PLATFORM_LINUX
     RCIn rcin;
     rcin.initialize();
@@ -68,7 +68,7 @@ int main() {
     int HzCounter = 0;
 
     bool autopilot = false;
-    bool printOn = false;
+    bool printOn = true;
     bool armed = true;
     bool motorInit = false;
 
@@ -119,12 +119,15 @@ int main() {
         const Vec<15> navState = ekf.getx();
 
         // ---------------- AHRS ------------------------
-
-        if (clock.taskClock.AHRS >= clock.rates.AHRS) {
-
+        if (!ahrs.init) {
+            ahrs.initializeFromAccel(imu.imu.accel);
+            ahrs.init = true;
         }
-
-
+        if (clock.taskClock.AHRS >= clock.rates.AHRS) {
+            ahrs.update(imu.imu.accel, imu.imu.gyro, clock.taskClock.AHRS);
+            clock.taskClock.AHRS = 0.0;
+        }
+        Vec<3> AHRSAtt = ahrs.euler();
 
         // ---------------- Mode Manager ----------------
         if (clock.taskClock.MM >= clock.rates.MM) {
@@ -242,7 +245,8 @@ int main() {
             const Vec<3> momentsCmd =
                 inner.computeWrench(
                     outer.out.attCmd,
-                    navState.segment<3>(0),
+                    0.0,
+                    AHRSAtt,
                     imu.imu.gyro);
 
             wrenchCmd << outer.out.Fz,
@@ -340,10 +344,15 @@ int main() {
                 << std::setw(8) << vel(1) << " "
                 << std::setw(8) << vel(2) << "\n"
 
-                << "   Att [R P Y] : "
+                << "  EKF Att [R P Y] : "
                 << std::setw(8) << rpy(0) << " "
                 << std::setw(8) << rpy(1) << " "
                 << std::setw(8) << rpy(2) << "\n\n"
+
+                << "  AHRS Att [R P Y] : "
+                << std::setw(8) << AHRSAtt(0) << " "
+                << std::setw(8) << AHRSAtt(1) << " "
+                << std::setw(8) << AHRSAtt(2) << "\n\n"
 
                 << " COMMANDS\n"
                 << "   PosCmd [N E D] : "

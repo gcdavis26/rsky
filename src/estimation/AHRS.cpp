@@ -54,6 +54,6 @@ void AHRS::accelToAttitude(const Vec<3>& accel, double& roll, double& pitch) {
 	const double ay = accel(1);
 	const double az = accel(2);
 
-	roll = std::atan2(ay, az);
-	pitch = std::atan2(-ax, std::sqrt(ay * ay + az * az));
+	roll = std::atan2(-ay, -az);
+	pitch = std::atan2(ax, std::sqrt(ay * ay + az * az));
 }

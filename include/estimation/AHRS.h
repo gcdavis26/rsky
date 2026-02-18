@@ -20,6 +20,8 @@ public:
 
 	Vec<3> euler() const { return Vec<3>(phi, theta, psi); }
 
+	bool init = false;
+
 private:
 	Params params;
 
