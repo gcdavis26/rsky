@@ -4,13 +4,6 @@
 
 class AHRS {
 public:
-	struct Params {
-		double tau = 0.5;
-		double gate_g = 0.30;
-		double max_abs_pitch_rad = 80 * PI / 180;
-	};
-
-	AHRS(const Params& p = Params());
 
 	void initializeFromAccel(Vec<3> accel); //optional add yaw init later
 
@@ -23,7 +16,9 @@ public:
 	bool init = false;
 
 private:
-	Params params;
+	double tau = 0.5;
+	double gate_g = 0.30;
+	double max_abs_pitch_rad = 80 * PI / 180;
 
 	double phi = 0.0;
 	double theta = 0.0;

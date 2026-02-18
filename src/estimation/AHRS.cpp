@@ -1,7 +1,5 @@
 #include "estimation/AHRS.h"
 
-AHRS::AHRS(const Params& p) : params(p) {};
-
 void AHRS::initializeFromAccel(Vec<3> accel) {
 	double r = 0.0, p = 0.0;
 	accelToAttitude(accel, r, p);
@@ -10,7 +8,7 @@ void AHRS::initializeFromAccel(Vec<3> accel) {
 
 void AHRS::initialize(double roll, double pitch) {
 	phi = roll;
-	theta = clamp(pitch, -params.max_abs_pitch_rad, params.max_abs_pitch_rad);
+	theta = clamp(pitch, -max_abs_pitch_rad, max_abs_pitch_rad);
 }
 
 void AHRS::update(const Vec<3>& accel, const Vec<3>& gyro, double dt) {
@@ -29,12 +27,12 @@ void AHRS::update(const Vec<3>& accel, const Vec<3>& gyro, double dt) {
 	accelToAttitude(accel, phi_acc, theta_acc);
 
 	// filter gain
-	const double tau = std::max(1e-6, params.tau);
+	const double tau = std::max(1e-6, tau);
 	const double alpha = tau / (tau + dt);
 
 	// gate accel correction when |a| is not near g
 	const double amag = accel.norm();
-	const bool accel_ok = std::isfinite(amag) && std::abs(amag - g) <= (params.gate_g * g);
+	const bool accel_ok = std::isfinite(amag) && std::abs(amag - g) <= (gate_g * g);
 
 	if (accel_ok) {
 		phi = alpha * phi_g + (1 - alpha) * phi_acc;
