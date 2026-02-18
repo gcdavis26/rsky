@@ -80,7 +80,7 @@ int main() {
         HzTimer += dt;
         HzCounter++;
 
-        if (HzTimer >= 1.0) {
+        if (HzTimer >= 0.01) {
             Hz = HzCounter / HzTimer;
             HzTimer = 0.0;
             HzCounter = 0;
