@@ -243,12 +243,12 @@ int main() {
         // ---------------- Inner Loop ----------------
         if (clock.taskClock.conInner >= clock.rates.conInner) {
             Vec<3> attManual;
-            attManual << 10*PI/180*keyVel(1), -10*PI/180*keyVel(0), 0.0;
+            attManual << 10*PI/180*manVel(1), -10*PI/180*manVel(0), 0.0;
 
             const Vec<3> momentsCmd =
                 inner.computeWrench(
                     attManual,
-                   10*PI/180*keyPsi,
+                   10*PI/180*manPsi,
                     AHRSAtt,
                     imu.imu.gyro);
 
