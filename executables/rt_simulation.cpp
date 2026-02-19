@@ -126,6 +126,7 @@ int main() {
 	///////////////////
 	// //Frequencies
 	///////////////////
+	double control_freq = 400.0;
 	double process_freq = 200.0;
 	double m_freq = 50.0;
 	//control loop should be 400 hz, but we don't need to limit it 
@@ -134,6 +135,7 @@ int main() {
 	auto t_loop = std::chrono::system_clock::now(); //main loop clock
 	auto process_t = std::chrono::system_clock::now(); //process clock
 	auto measurement_t = std::chrono::system_clock::now(); //measurement clock
+	auto motor_t = std::chrono::system_clock::now();
 	auto telemetry_t = std::chrono::system_clock::now(); //telemetry clock
 	int cycles = 0;
 	double sim_time = 120;
@@ -183,18 +185,26 @@ int main() {
 
 
 		//controls and motors
-		x = ekf.getControlState();
-		controller.update(x); //update internal control state
-		//controller.update(x_true); //for testing
+		current_time = std::chrono::system_clock::now();
+		dt = std::chrono::duration_cast<std::chrono::microseconds>(current_time - motor_t);
+		dt_secs = dt.count() / 1e6;
+		if (dt_secs >= 1 / control_freq)
+		{
+			x = ekf.getControlState();
+			controller.update(x); //update internal control state
+			//controller.update(x_true); //for testing
 
-		//guidance and control
-		commands = guidance.getTarget(x); //get commanded quantities
-		controls = controller.achieveState(commands(0), commands.block(1, 0, 3, 1), commands.block(4, 0, 3, 1), commands.block(7, 0, 3, 1)); //get forces
-		motor_cmds = mixer.inverse() * controls; //get motor commands
-		motor_cmds = (motor_cmds.array().min(1)).max(0); //force motor throttle between 0 and 1
-		forces = mixer * motor_cmds; //get actual forces
-		specific_thrust << 0, 0, -forces(0);
-		specific_thrust = specific_thrust / m;
+			//guidance and control
+			commands = guidance.getTarget(x); //get commanded quantities
+			controls = controller.achieveState(commands(0), commands.block(1, 0, 3, 1), commands.block(4, 0, 3, 1), commands.block(7, 0, 3, 1)); //get forces
+			motor_cmds = mixer.inverse() * controls; //get motor commands
+			motor_cmds = (motor_cmds.array().min(1)).max(0); //force motor throttle between 0 and 1
+			forces = mixer * motor_cmds; //get actual forces
+			specific_thrust << 0, 0, -forces(0);
+			specific_thrust = specific_thrust / m;
+			motor_t = current_time;
+		}
+		
 		xdot = get_dynamics(x_true, g, m, inertias, forces(0), forces.block(1, 0, 3, 1)); //true state derivative
 		cycles += 1;
 

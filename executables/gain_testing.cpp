@@ -13,6 +13,11 @@
 #include "IMUHandler.h"
 #include "telemetrypacket.h"
 #include "UDPSender.h"
+#include "network.h"
+#include "MotorDriver.h"
+#include "RCInput.h"
+#include "telemetrypacket.h"
+#include "UDPSender.h"
 
 #include <chrono>
 #include <thread>
@@ -20,6 +25,7 @@
 
 int main() {
 
+	openPort();
 	//BASE SETUP OF ROOM
 	Vector3d pos0 = Vector3d::Zero();
 	double psi0 = 0;
@@ -35,8 +41,6 @@ int main() {
 	target_pos << 3, 6, 0;
 
 	//BASE SETUP OF PHYSICS
-	Vector12d x_true = Vector12d::Zero();
-	x_true.block(6, 0, 3, 1) = pos0;
 	Vector3d g;
 	double m = .75;
 	Vector3d inertias;
@@ -102,10 +106,10 @@ int main() {
 	//EKF creation, initialization
 	EKF ekf(r, sigmaw, sigmav); //ekf created
 
-	IMUHandler imuhandler;
-	Eigen::Matrix<double, 6, 1> imu_data = imuhandler.update();
-	Vector3d truth_measured = x_true.block(3, 0, 3, 1);
-	Vector3d measurement = sim_measurement(truth_measured, v);
+	IMUHandler imu;
+	Eigen::Matrix<double, 6, 1> imu_data = imu.update();
+	Eigen::Matrix<double, 5, 1> opti_data = readDatalink();
+	Vector3d measurement = opti_data.block(0, 0, 3, 1);
 	Vector3d imu_accels = imu_data.block(3, 0, 3, 1);
 	Vector3d imu_omega = imu_data.block(0, 0, 3, 1);
 	ekf.initialize(measurement, imu_omega, imu_accels, accel_bias, gyro_bias); //initializing with values. Can be done after a wait as well.
@@ -114,20 +118,13 @@ int main() {
 	//CONTROLLER SETUP
 	Controller controller(Kp_outer, Kd_outer, Kp_inner, Kd_inner, T_sat, acc_sat, max_angle, m);
 	controller.update(x);
+	Guidance guidance(x, n_bounds, e_bounds, 4, cruise, yaw_rate, takeoff_height, 1, .5); //initialize guidance system
 	//controller.update(x_true); //for testing
-
-	Guidance guidance(x, n_bounds, e_bounds, 4, cruise, yaw_rate, takeoff_height, 1, .5);
-
 	//These are derivatives and controls etc at initial state
-	Vector10d commands = guidance.getTarget(x);
-	Vector4d controls = controller.achieveState(commands(0), commands.block(1, 0, 3, 1), commands.block(4, 0, 3, 1), commands.block(7, 0, 3, 1));
-	Vector4d motor_cmds = mixer_inverse * controls;
-	motor_cmds = (motor_cmds.array().min(1)).max(0);
-	Vector4d forces = mixer * motor_cmds;
-	Vector3d specific_thrust;
-	specific_thrust << 0, 0, -forces(0);
-	specific_thrust = specific_thrust / m;
-	Vector12d xdot = get_dynamics(x_true, g, m, inertias, forces(0), forces.block(1, 0, 3, 1));
+	Vector4d controls;
+	Vector4d motor_cmds;
+	MotorDriver motordriver;
+	RCInputHandler rc_controller;
 
 	///////////////////
 	// //Frequencies
@@ -137,7 +134,6 @@ int main() {
 	//control loop should be 400 hz, but we don't need to limit it 
 	double t = 0;
 	auto t_ref = std::chrono::system_clock::now(); //total time reference
-	auto t_loop = std::chrono::system_clock::now(); //main loop clock
 	auto process_t = std::chrono::system_clock::now(); //process clock
 	auto measurement_t = std::chrono::system_clock::now(); //measurement clock
 	auto telemetry_t = std::chrono::system_clock::now(); //telemetry clock
@@ -147,31 +143,23 @@ int main() {
 	TelemetryPacket pkt;
 	uint32_t packetCounter = 0;
 
-	while (t < sim_time)
+	while (true)
 	{
-		auto current_time = std::chrono::system_clock::now();
-		auto dt = std::chrono::duration_cast<std::chrono::microseconds>(current_time - t_loop);
-		double dt_secs = dt.count() / 1e6;
-		t += dt_secs; //propagate truth
-		x_true += xdot * dt_secs;
-		t_loop = current_time;
-
 		//process model
-		current_time = std::chrono::system_clock::now();
-		dt = std::chrono::duration_cast<std::chrono::microseconds>(current_time - process_t);
-		dt_secs = dt.count() / 1e6;
+		auto current_time = std::chrono::system_clock::now();
+		auto dt = std::chrono::duration_cast<std::chrono::microseconds>(current_time - process_t);
+		double dt_secs = dt.count() / 1e6;
 
 		if (dt_secs >= 1 / process_freq)
 		{
 
-			ekf.estimate(dt_secs); //predict state at current time step
-			w = noise12d().cwiseProduct(sigmaw);
-			imu_omega = sim_gyro_rates(x_true, w.block(0, 0, 3, 1));
-			imu_accels = sim_imu_accels(x_true, specific_thrust, xdot.block(3, 0, 3, 1), r, w.block(3, 0, 3, 1));
-			ekf.imureading(imu_omega, imu_accels, dt_secs);
+			ekf.estimate(dt.count()); //predict state at current time step
+			imu_data = imu.update();
+			imu_omega = imu_data.block(0, 0, 3, 1);
+			imu_accels = imu_data.block(3, 0, 3, 1);
+			ekf.imureading(imu_omega, imu_accels, dt.count());
 			process_t = current_time;
 		}
-
 
 		//measurement model
 		current_time = std::chrono::system_clock::now();
@@ -180,10 +168,16 @@ int main() {
 
 		if (dt_secs >= 1 / m_freq)
 		{
-			v = noise3d().cwiseProduct(sigmav);
-			truth_measured << x_true(6), x_true(7), x_true(8);
-			measurement = sim_measurement(truth_measured, v);
-			ekf.update(measurement);
+			Eigen::Matrix<double, 5, 1> opti_data = readDatalink();
+			if (opti_data(4) == true) //if valid
+			{
+				measurement = opti_data.block(0, 0, 3, 1);
+				ekf.update(measurement); //update our state estimate
+			}
+			else
+			{
+				pkt.flags = 0;
+			}
 			measurement_t = current_time;
 		}
 
@@ -194,14 +188,12 @@ int main() {
 		//controller.update(x_true); //for testing
 
 		//guidance and control
-		commands = guidance.getTarget(x); //get commanded quantities
-		controls = controller.achieveState(commands(0), commands.block(1, 0, 3, 1), commands.block(4, 0, 3, 1), commands.block(7, 0, 3, 1)); //get forces
+		Eigen::Matrix<double, 6, 1> rc_data = rc_controller.read_ppm_vector();
+
+		Vector4d v_cmds = guidance.manualCommands(rc_data);
+		controls = controller.manualControl(v_cmds); //get forces
 		motor_cmds = mixer.inverse() * controls; //get motor commands
 		motor_cmds = (motor_cmds.array().min(1)).max(0); //force motor throttle between 0 and 1
-		forces = mixer * motor_cmds; //get actual forces
-		specific_thrust << 0, 0, -forces(0);
-		specific_thrust = specific_thrust / m;
-		xdot = get_dynamics(x_true, g, m, inertias, forces(0), forces.block(1, 0, 3, 1)); //true state derivative
 		cycles += 1;
 
 		current_time = std::chrono::system_clock::now();
@@ -214,12 +206,19 @@ int main() {
 			).count();
 
 			std::memcpy(pkt.state, ekf.getState().data(), STATE_SIZE * sizeof(double));
-			pkt.flags = 1;       // e.g., filter healthy
 			pkt.counter = packetCounter++;
 
 			sender.send(pkt);
-
+			pkt.flags = 1; //reset flag
 			telemetry_t = current_time;
+		}
+		if (static_cast<int>(rc_data(5)) == 2000)
+		{
+			motordriver.~MotorDriver();
+		}
+		else
+		{
+			motordriver.command(motor_cmds);
 		}
 
 	}
