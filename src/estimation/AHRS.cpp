@@ -15,12 +15,18 @@ void AHRS::update(const Vec<3>& accel, const Vec<3>& gyro, double dt) {
 	if (!(std::isfinite(dt) && dt > 0.0)) return;
 
 	// gyro propagation
-	Vec<3> eulerRates = eulerRates_ZYX(phi, theta, gyro);
+	Vec<3> eulerRates1 = eulerRates_ZYX(phi, theta, gyro);
 
 
-	const double phi_g = phi + eulerRates(0) * dt;
-	const double theta_g = theta + eulerRates(1) * dt;
-	const double psi_g = psi + eulerRates(2) * dt;
+	const double phi_g = phi + eulerRates1(0) * dt;
+	const double theta_g = theta + eulerRates1(1) * dt;
+
+	//Vec<3> eulerRates2 = eulerRates_ZYX(phi_g1, theta_g1, gyro);
+
+	//const double phi_g = phi + dt / 2 * (eulerRates1(0) + eulerRates2(0));
+	//const double theta_g = theta + dt / 2 * (eulerRates1(1) + eulerRates2(1));
+	const double psi_g = psi + dt * (eulerRates1(2)); // + eulerRates2(2));
+
 
 	// accel tilt measurement
 	double phi_acc = 0.0, theta_acc = 0.0;

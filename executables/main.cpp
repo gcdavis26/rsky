@@ -43,7 +43,7 @@ int main() {
     InnerLoop inner;
     QuadMixer mixer;
     MotorModel motormodel;
-    UdpSender udp("10.34.144.112", 8080);
+    UdpSender udp("127.0.0.1", 8080);
     
 #ifdef PLATFORM_LINUX
     RCIn rcin;
@@ -118,17 +118,6 @@ int main() {
         }
         const Vec<15> navState = ekf.getx();
 
-        // ---------------- AHRS ------------------------
-        if (!ahrs.init) {
-            ahrs.initializeFromAccel(imu.imu.accel);
-            ahrs.init = true;
-        }
-        if (clock.taskClock.AHRS >= clock.rates.AHRS) {
-            ahrs.update(imu.imu.accel, imu.imu.gyro, clock.taskClock.AHRS);
-            clock.taskClock.AHRS = 0.0;
-        }
-        Vec<3> AHRSAtt = ahrs.euler();
-
         // ---------------- Mode Manager ----------------
         if (clock.taskClock.MM >= clock.rates.MM) {
             MM.in.state = navState;
@@ -148,31 +137,31 @@ int main() {
         double keyPsi = 0.0;
 
         if (GetAsyncKeyState('W') & 0x8000) {
-            keyVel(0) = 2.5;
+            keyVel(0) = 1;
         }
         else if (GetAsyncKeyState('S') & 0x8000) {
-            keyVel(0) = -2.5;
+            keyVel(0) = -1;
         }
 
         if (GetAsyncKeyState('A') & 0x8000) {
-            keyVel(1) = -2.5;
+            keyVel(1) = -1;
         }
         else if (GetAsyncKeyState('D') & 0x8000) {
-            keyVel(1) = 2.5;
+            keyVel(1) = 1;
         }
 
         if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
-            keyVel(2) = -2.5;
+            keyVel(2) = -1;
         }
         else if (GetAsyncKeyState(VK_SHIFT) & 0x8000) {
-            keyVel(2) = 2.5;
+            keyVel(2) = 1;
         }
 
         if (GetAsyncKeyState('Q') & 0x8000) {
-            keyPsi = -5 * PI / 180;
+            keyPsi = -1;
         }
         else if (GetAsyncKeyState('E') & 0x8000) {
-            keyPsi = 5 * PI / 180;
+            keyPsi = 1;
         }
         if (armed) {
             manVel = keyVel;
@@ -235,17 +224,31 @@ int main() {
                 outer.in.mode = ModeManager::NavMode::Manual;
                 outer.in.velCmd = manVel;
                 outer.update();
-                outer.out.attCmd(2) = navState(2) + manPsi;
+                outer.out.attCmd(2) = navState(2);
             }
             clock.taskClock.conOuter = 0.0;
         }
+
+        // ---------------- AHRS ------------------------
+        if (!ahrs.init) {
+            ahrs.initializeFromAccel(imu.imu.accel);
+            ahrs.init = true;
+        }
+        if (clock.taskClock.AHRS >= clock.rates.AHRS) {
+            ahrs.update(imu.imu.accel, imu.imu.gyro, clock.taskClock.AHRS);
+            clock.taskClock.AHRS = 0.0;
+        }
+        Vec<3> AHRSAtt = ahrs.euler();
+
         // ---------------- Inner Loop ----------------
         if (clock.taskClock.conInner >= clock.rates.conInner) {
-            
+            Vec<3> attManual;
+            attManual << 10*PI/180*keyVel(1), -10*PI/180*keyVel(0), 0.0;
+
             const Vec<3> momentsCmd =
                 inner.computeWrench(
-                    outer.out.attCmd,
-                    0.0,
+                    attManual,
+                   10*PI/180*keyPsi,
                     AHRSAtt,
                     imu.imu.gyro);
 
@@ -259,9 +262,7 @@ int main() {
 	        if(!armed) {
 		        thrustCmd = Vec<4>::Zero();
 	        }
-
             pwmCmd = mixer.thr2PWM(thrustCmd);
-
             clock.taskClock.conInner = 0.0;
         }
 
