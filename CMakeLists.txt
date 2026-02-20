@@ -1,6 +1,16 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.25)
 project(rsky)
 set(CMAKE_CXX_STANDARD 17)
+
+# --- Add Link Time Optimization (LTO / IPO) ---
+include(CheckIPOSupported)
+check_ipo_supported(RESULT ipo_supported OUTPUT error)
+if(ipo_supported)
+    message(STATUS "IPO / LTO is supported. Enabling globally.")
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+else()
+    message(WARNING "IPO / LTO is not supported: ${error}")
+endif()
 
 set(myExec ${CMAKE_SOURCE_DIR}/executables) 
 set(extlibs ${CMAKE_SOURCE_DIR}/ext_libs)
