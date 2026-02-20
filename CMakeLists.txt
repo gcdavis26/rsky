@@ -25,6 +25,7 @@ target_compile_options(Simulation PRIVATE
 )
 target_include_directories(Simulation PRIVATE ${extlibs}/eigen)
 target_link_libraries(Simulation PRIVATE gnclib)
+target_precompile_headers(Simulation PRIVATE <Eigen/Dense>)
 
 add_executable(RT_Simulation ${myExec}/rt_simulation.cpp)
 target_compile_options(RT_Simulation PRIVATE
@@ -32,9 +33,11 @@ target_compile_options(RT_Simulation PRIVATE
 )
 target_include_directories(RT_Simulation PRIVATE ${extlibs}/eigen)
 target_link_libraries(RT_Simulation PRIVATE gnclib drone_interface)
+target_precompile_headers(RT_Simulation PRIVATE <Eigen/Dense>)
 
 
 add_executable(drone ${myExec}/gain_testing.cpp)
 target_include_directories(drone PRIVATE ${extlibs}/eigen)
 target_link_libraries(drone PRIVATE gnclib drone_interface)
+target_precompile_headers(RT_Simulation PRIVATE <Eigen/Dense>)
 

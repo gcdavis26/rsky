@@ -6,6 +6,29 @@ IMUHandler::IMUHandler() {
     lsm.initialize();
 }
 
+Eigen::Matrix<double, 6, 1> IMUHandler::initialize() {
+    Eigen::Matrix<double, 6, 1> sum = Eigen::Matrix<double, 6, 1>::Zero();
+    int count = 0;
+
+    // Set up the timer for 5 seconds
+    auto start_time = std::chrono::steady_clock::now();
+    auto duration = std::chrono::seconds(5);
+
+    // Loop until 5 seconds have passed
+    while (std::chrono::steady_clock::now() - start_time < duration) {
+
+        sum += update();
+        count++;
+        
+    }
+
+    if (count > 0) {
+        sum /= static_cast<double>(count);
+    }
+
+    return sum;
+}
+
 Eigen::Matrix<double, 6, 1> IMUHandler::update() {
 
     lsm.update();

@@ -96,17 +96,25 @@ int main() {
 	w = noise12d().cwiseProduct(sigmaw);
 	Vector3d v;
 	v = noise3d().cwiseProduct(sigmav);
+
+	IMUHandler imu;
+
+	Eigen::Matrix<double, 6, 1> biases = imu.initialize();
+
 	Vector3d accel_bias;
-	accel_bias << -0.21, 0.5, 9.81-9.7;
-	//accel_bias.setZero();
 	Vector3d gyro_bias;
-	gyro_bias << -0.29,-0.26 -0.33;
+	
+	accel_bias = biases.tail<3>();
+	//accel_bias << -0.21, 0.5, 9.81-9.7;
+	//accel_bias.setZero();
+	
+	gyro_bias = biases.head<3>();
+	//gyro_bias << -0.29,-0.26 -0.33;
 	//gyro_bias.setZero();
 
 	//EKF creation, initialization
 	EKF ekf(r, sigmaw, sigmav); //ekf created
 
-	IMUHandler imu;
 	Eigen::Matrix<double, 6, 1> imu_data = imu.update();
 	Eigen::Matrix<double, 5, 1> opti_data = readDatalink();
 	Vector3d measurement = opti_data.block(0, 0, 3, 1);

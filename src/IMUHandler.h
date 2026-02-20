@@ -9,6 +9,8 @@ public:
     // Constructor handles probing and initialization
     IMUHandler();
 
+    Eigen::Matrix<double, 6, 1> initialize();
+
     // Reads sensor and returns 6x1 Eigen Matrix [ax, ay, az, gx, gy, gz]
     Eigen::Matrix<double, 6, 1> update();
 
