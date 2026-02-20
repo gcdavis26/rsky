@@ -226,14 +226,14 @@ static int readSock(struct port_ref* s, void* buf, int nbytes) {
     return totalNew;
 }
 
-Vector5d readDatalink() {
+Vector8d readDatalink() {
     struct port_ref* s = &thisPort;
     int gotPacket = 0, newBytes;
     int done = 0, index = 0;
     unsigned char* bf;
 
     // Initialize return matrix with zeros or NaNs to indicate "no data"
-    Vector5d result = Vector5d::Zero();
+    Vector8d result = Vector8d::Zero();
 
     newBytes = readSock(s, s->buffer + s->bytesread, BUFFERSIZE - s->bytesread);
     s->bytesread += newBytes;
@@ -265,8 +265,11 @@ Vector5d readDatalink() {
                                 result(0) = (double)onboardMocapClient.pos_y; // North
                                 result(1) = (double)onboardMocapClient.pos_x; // East
                                 result(2) = (double)onboardMocapClient.pos_z * -1.0; // Up converted to down
-                                result(3) = (double)onboardMocapClient.frameNum;  // New frame number for each read
-                                result(4) = (double)onboardMocapClient.valid;  // 0 for non valid, 1 for valid
+                                result(3) = (double)onboardMocapClient.qx;
+                                result(4) = (double)onboardMocapClient.qy;
+                                result(5) = (double)onboardMocapClient.qz;
+                                result(6) = (double)onboardMocapClient.qw;
+                                result(7) = (double)onboardMocapClient.valid;  // 0 for non valid, 1 for valid
                             }
                             break;
                         }
