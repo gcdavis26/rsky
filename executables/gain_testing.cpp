@@ -95,18 +95,23 @@ int main() {
 
 	IMUHandler imu;
 
-	Eigen::Matrix<double, 6, 1> biases = imu.initialize();
+	Eigen::Matrix<double, 12, 1> biases = imu.initialize();
 
 	Vector3d accel_bias;
 	Vector3d gyro_bias;
+	Vector3d gyro_std_dev;
+	Vector3d accel_std_dev;
 	
-	accel_bias = biases.tail<3>();
+	accel_bias = biases.segment<3>(3);
 	//accel_bias << -0.21, 0.5, 9.81-9.7;
 	//accel_bias.setZero();
 	
 	gyro_bias = biases.head<3>();
 	//gyro_bias << -0.29,-0.26 -0.33;
 	//gyro_bias.setZero();
+
+	gyro_std_dev = biases.segment<3>(6);
+	accel_std_dev = biases.tail<3>();
 
 	//EKF creation, initialization
 	EKF ekf(r, sigmaw, sigmav); //ekf created

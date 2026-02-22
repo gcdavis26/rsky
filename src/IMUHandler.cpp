@@ -7,8 +7,9 @@ IMUHandler::IMUHandler() {
     lsm.initialize();
 }
 
-Eigen::Matrix<double, 6, 1> IMUHandler::initialize() {
+Eigen::Matrix<double, 12, 1> IMUHandler::initialize() {
     Eigen::Matrix<double, 6, 1> sum = Eigen::Matrix<double, 6, 1>::Zero();
+    Eigen::Matrix<double, 6, 1> sum_sq = Eigen::Matrix<double, 6, 1>::Zero();
     int count = 0;
 
     // Set up the timer for 5 seconds
@@ -17,17 +18,31 @@ Eigen::Matrix<double, 6, 1> IMUHandler::initialize() {
 
     // Loop until 5 seconds have passed
     while (std::chrono::steady_clock::now() - start_time < duration) {
+        Eigen::Matrix<double, 6, 1> data = update();
+        sum += data;
 
-        sum += update();
+        // Element-wise multiplication to accumulate the sum of squares
+        sum_sq += data.cwiseProduct(data);
+
         count++;
-        
     }
 
-    if (count > 0) {
-        sum /= static_cast<double>(count);
-    }
+    Eigen::Matrix<double, 6, 1> mean = Eigen::Matrix<double, 6, 1>::Zero();
+    Eigen::Matrix<double, 6, 1> std_dev = Eigen::Matrix<double, 6, 1>::Zero();
 
-    return sum;
+
+    mean = sum / static_cast<double>(count);
+
+    Eigen::Matrix<double, 6, 1> variance = (sum_sq - (sum.cwiseProduct(sum) / count)) / (count - 1);
+
+    std_dev = variance.cwiseSqrt();
+
+
+    // Initialize the 12x1 result matrix and stack the mean and std_dev into it
+    Eigen::Matrix<double, 12, 1> result;
+    result << mean, std_dev;
+
+    return result;
 }
 
 Eigen::Matrix<double, 6, 1> IMUHandler::update() {
