@@ -92,10 +92,6 @@ int main() {
 	sigmaw << .1, .1, .1, .01, .01, .01, 1e-2, 1e-2, 1e-2, 1e-4, 1e-4, 1e-4; //gyro,accelerometer, bias_accel, bias_gyro
 	Vector3d sigmav;
 	sigmav << .001, .001, .001; //n,e,d
-	Vector12d w;
-	w = noise12d().cwiseProduct(sigmaw);
-	Vector3d v;
-	v = noise3d().cwiseProduct(sigmav);
 
 	IMUHandler imu;
 

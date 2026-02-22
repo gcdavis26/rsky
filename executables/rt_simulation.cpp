@@ -44,7 +44,8 @@ int main() {
 	double Kt = 4.0;
 	double Kq = 2.35;
 	double d_arm = .15;
-	Vector3d r = Vector3d::Zero(); //can be changed to add an IMU offset
+	Vector3d r; //can be changed to add an IMU offset
+	r << 0, 0, -.3;
 
 
 	///////////////////
