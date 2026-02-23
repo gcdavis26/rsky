@@ -141,26 +141,22 @@ Vector3d sim_imu_accels(const Vector12d& x_true, const Vector3d& commanded_body_
 	// r = IMU - CG (body frame). 
 	// In EKF, we use -r to map IMU measurement back to CG.	
 	//returns IMU acceleration reading for a given body acceleration at CG. 
-
-	Vector3d g;
-	g << 0, 0, 9.81;
-	Vector3d omega_measured = x_true.block(3, 0, 3, 1);
-	Vector3d off_cg_accels = commanded_body_accel + alpha.cross(r) + omega_measured.cross(omega_measured.cross(r)); //moving imu stuff to COM
-	
-	double ground = 0.0;
-	double penetration = x_true(8) - ground; // negative if above ground
+	Matrix3d to_inertial = dcmI_B(x_true(0), x_true(1), x_true(2)); 
+	Matrix3d to_body = to_inertial.transpose(); 
+	Vector3d omega_measured = x_true.block(3, 0, 3, 1); 
+	Vector3d g; g << 0, 0, 9.81; 
+	Vector3d accel_cgI = to_inertial * commanded_body_accel + g;
+	double ground = 0.0; double penetration = x_true(8) - ground; 
 	if (penetration > 0) 
-	{  // below ground and moving down
-		
-		double k_ground = 1000; // spring-like constant
-		double b_ground = 50;   // damping
-		Vector3d off_cg_inertial;
-		off_cg_inertial.noalias() = dcmI_B(x_true(0), x_true(1), x_true(2)) * off_cg_accels;
-		off_cg_inertial(2) += -k_ground * penetration - b_ground * x_true(11);
-		off_cg_accels.noalias() = dcmI_B(x_true(0), x_true(1), x_true(2)).transpose() * off_cg_inertial; //gravity not subtracted because it is never added in the first place
-	}
-	Vector3d a_measured = off_cg_accels + imunoise;
-
+	{ 
+		double k_ground = 1000; 
+		double b_ground = 50; 
+		accel_cgI(2) += -k_ground * penetration - b_ground * x_true(11); 
+	} 
+	Vector3d body_transfer = alpha.cross(r) + omega_measured.cross(omega_measured.cross(r)); 
+	Vector3d off_cg_accels = to_body * accel_cgI + body_transfer; 
+	Vector3d a_measured = off_cg_accels - to_body * g + imunoise;
+	//moving imu stuff to COM Vector3d off_cg_accels = to_body * off_cg_I_accel; Vector3d a_measured = off_cg_accels - to_body * g + imunoise;
 	return a_measured;
 }
 Vector3d sim_gyro_rates(const Vector12d& x_true, const Vector3d& gyronoise)

@@ -71,7 +71,7 @@ void EKF::update(const Vector3d& m)
 	//KH.noalias() = K * H;
 	x = x + K * res; //incorporating residual via kalman gain
 	//P = (I15d - KH) * P * (I15d - KH).transpose() + K * R * K.transpose(); //Joseph stable form
-	P = P - K * P.block(3,0,3,15); //not using selfadjoint because this is not necessarily a symmetrical update. Symmetrize after
+	P.noalias() -= K * S * K.transpose();
 	P = P.selfadjointView<Eigen::Lower>();//symmetry
 	x(0) = wrapPi(x(0)); //ensuring angles are staying within -pi to pi
 	x(1) = wrapPi(x(1));
