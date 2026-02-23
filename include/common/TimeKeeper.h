@@ -14,7 +14,7 @@ public:
 		static constexpr double navCorr = 1.0 / 25;
 		static constexpr double conInner = 1.0 / 400;
 		static constexpr double conOuter = 1.0 / 50;
-		static constexpr double tele = 1.0 / 10;
+		static constexpr double tele = 1.0 / 25;
 		static constexpr double imu = 1.0 / 100;
 		static constexpr double opti = 1.0 / 25;
 		static constexpr double MM = 1.0 / 50;

@@ -25,6 +25,7 @@ public:
     void initializeFromOpti(const OptiSim::OptiMeas& opti);
     void predict(const ImuSim::ImuMeas& imu, double dt);
     void correct(const OptiSim::OptiMeas& opti);
+    double getHealth();
 
     Vec<NX> getx() const { return x_est; }
     Mat<NX, NX> getP() const { return P; }
@@ -33,6 +34,8 @@ private:
     // state + covariance
     Vec<NX>   x_est = Vec<NX>::Zero();
     Mat<NX, NX> P = Mat<NX, NX>::Zero();
+    Mat<4, 4> S = Mat<4, 4>::Zero();
+    Vec<4> res = Vec<4>::Zero();
 
     // geometry
     Vec<3> r_IMU = Vec<3>::Zero(); // (-1.3cm,-0.9cm,-5.8cm)
@@ -72,6 +75,10 @@ private:
     Vec<3>      h_pos(const Vec<NX>& x) const;
     double      h_psi(const Vec<NX>& x) const;
     Mat<3, NX>   computeHpos(const Vec<NX>& x) const;
+
+    // Health Monitoring
+    double nisAvg = 0.0;
+    bool nisInit = false;
 
     // helpers (from your MathUtils)
     // Mat<3,3> RotB2N(double phi, double th, double psi);

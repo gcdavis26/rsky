@@ -4,7 +4,7 @@ Dynamics::Dynamics()
 	: rng(std::random_device{}()),
 	norm(0.0, 1.0)
 {
-	sigma_turb << 0.05, 0.05, 0.05;
+	//sigma_turb << 0.05, 0.05, 0.05;
 }
 
 Vec<12> Dynamics::getTrueState() {

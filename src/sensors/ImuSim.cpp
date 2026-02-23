@@ -10,7 +10,7 @@ void ImuSim::step(const Vec<12>& truth, double dt) {
 	imu.gyro = truth.segment<3>(9) + gyro_bias;
 	Vec<3> noise;
 	noise << norm(rng), norm(rng), norm(rng);
-	imu.gyro += gyro_noise_std * noise;
+	imu.gyro += gyro_noise_std * noise / sqrt(dt);
 
 	Vec<3> a_ned = Vec<3>::Zero();
 	if (!has_prev) {
@@ -29,5 +29,5 @@ void ImuSim::step(const Vec<12>& truth, double dt) {
 	
 	imu.accel = f_b + accel_bias;
 	noise << norm(rng), norm(rng), norm(rng);
-	imu.accel += accel_noise_std * noise; 
+	imu.accel += accel_noise_std * noise / sqrt(dt); 
 }

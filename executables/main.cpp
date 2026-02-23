@@ -43,7 +43,7 @@ int main() {
     InnerLoop inner;
     QuadMixer mixer;
     MotorModel motormodel;
-    UdpSender udp("192.168.1.2", 8080);
+    UdpSender udp("127.0.0.1", 8080);
     
 #ifdef PLATFORM_LINUX
     RCIn rcin;
@@ -68,9 +68,11 @@ int main() {
     int HzCounter = 0;
 
     bool autopilot = true;
-    bool printOn = false;
+    bool printOn = true;
     bool armed = true;
     bool motorInit = false;
+
+    double NIS = 4.0;
 
     while (true) {
 
@@ -82,7 +84,7 @@ int main() {
         HzTimer += dt;
         HzCounter++;
 
-        if (HzTimer >= 1.0) {
+        if (HzTimer >= 0.1) {
             Hz = HzCounter / HzTimer;
             HzTimer = 0.0;
             HzCounter = 0;
@@ -114,6 +116,7 @@ int main() {
 
         if (clock.taskClock.navCorr >= clock.rates.navCorr) {
             ekf.correct(opti.opti);
+            NIS = ekf.getHealth();
             clock.taskClock.navCorr = 0.0;
         }
         const Vec<15> navState = ekf.getx();
@@ -132,40 +135,41 @@ int main() {
 
         // ---------------- Manual Keyboard Controls (Windows Only) -----------
 #ifdef _WIN32
+        if (clock.taskClock.conInner >= clock.rates.conInner) {
+            Vec<3> keyVel = Vec<3>::Zero();
+            double keyPsi = 0.0;
 
-        Vec<3> keyVel = Vec<3>::Zero();
-        double keyPsi = 0.0;
+            if (GetAsyncKeyState('W') & 0x8000) {
+                keyVel(0) = 1;
+            }
+            else if (GetAsyncKeyState('S') & 0x8000) {
+                keyVel(0) = -1;
+            }
 
-        if (GetAsyncKeyState('W') & 0x8000) {
-            keyVel(0) = 1;
-        }
-        else if (GetAsyncKeyState('S') & 0x8000) {
-            keyVel(0) = -1;
-        }
+            if (GetAsyncKeyState('A') & 0x8000) {
+                keyVel(1) = -1;
+            }
+            else if (GetAsyncKeyState('D') & 0x8000) {
+                keyVel(1) = 1;
+            }
 
-        if (GetAsyncKeyState('A') & 0x8000) {
-            keyVel(1) = -1;
-        }
-        else if (GetAsyncKeyState('D') & 0x8000) {
-            keyVel(1) = 1;
-        }
+            if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
+                keyVel(2) = -1;
+            }
+            else if (GetAsyncKeyState(VK_SHIFT) & 0x8000) {
+                keyVel(2) = 1;
+            }
 
-        if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
-            keyVel(2) = -1;
-        }
-        else if (GetAsyncKeyState(VK_SHIFT) & 0x8000) {
-            keyVel(2) = 1;
-        }
-
-        if (GetAsyncKeyState('Q') & 0x8000) {
-            keyPsi = -1;
-        }
-        else if (GetAsyncKeyState('E') & 0x8000) {
-            keyPsi = 1;
-        }
-        if (armed) {
-            manVel = keyVel;
-            manPsi = keyPsi;
+            if (GetAsyncKeyState('Q') & 0x8000) {
+                keyPsi = -1;
+            }
+            else if (GetAsyncKeyState('E') & 0x8000) {
+                keyPsi = 1;
+            }
+            if (armed) {
+                manVel = keyVel;
+                manPsi = keyPsi;
+            }
         }
 #endif
 
@@ -330,106 +334,108 @@ int main() {
                 << "====================== QUADCOPTER STATE ======================\n"
                 << "  Time [s]: " << std::setw(8) << t
                 << " Rate [Hz]: " << std::setw(8) << Hz
-                << "      Mode: " << std::setw(8) << static_cast<int>(MM.out.mode) 
-                << "     Armed: " << std::setw(8) << armed << "\n"
-                << "--------------------------------------------------------------\n"
+                << "      Mode: " << std::setw(8) << static_cast<int>(MM.out.mode)
+                    << "     Armed: " << std::setw(8) << armed << "\n"
+                    << "--------------------------------------------------------------\n"
 
-                << " NAV (EKF)\n"
-                << "   Pos [N E D] : "
-                << std::setw(8) << pos(0) << " "
-                << std::setw(8) << pos(1) << " "
-                << std::setw(8) << pos(2) << "\n"
+                    << " NAV (EKF)\n"
+                    << " EKF Health : "
+                    << std::setw(8) << NIS << "\n"
+                    << "   Pos [N E D] : "
+                    << std::setw(8) << pos(0) << " "
+                    << std::setw(8) << pos(1) << " "
+                    << std::setw(8) << pos(2) << "\n"
 
-                << "   Vel [N E D] : "
-                << std::setw(8) << vel(0) << " "
-                << std::setw(8) << vel(1) << " "
-                << std::setw(8) << vel(2) << "\n"
+                    << "   Vel [N E D] : "
+                    << std::setw(8) << vel(0) << " "
+                    << std::setw(8) << vel(1) << " "
+                    << std::setw(8) << vel(2) << "\n"
 
-                << "  EKF Att [R P Y] : "
-                << std::setw(8) << rpy(0) << " "
-                << std::setw(8) << rpy(1) << " "
-                << std::setw(8) << rpy(2) << "\n\n"
+                    << "  EKF Att [R P Y] : "
+                    << std::setw(8) << rpy(0) << " "
+                    << std::setw(8) << rpy(1) << " "
+                    << std::setw(8) << rpy(2) << "\n\n"
 
-                << "  AHRS Att [R P Y] : "
-                << std::setw(8) << AHRSAtt(0) << " "
-                << std::setw(8) << AHRSAtt(1) << " "
-                << std::setw(8) << AHRSAtt(2) << "\n\n"
+                    << "  AHRS Att [R P Y] : "
+                    << std::setw(8) << AHRSAtt(0) << " "
+                    << std::setw(8) << AHRSAtt(1) << " "
+                    << std::setw(8) << AHRSAtt(2) << "\n\n"
 
-                << " COMMANDS\n"
-                << "   PosCmd [N E D] : "
-                << std::setw(8) << posCmd(0) << " "
-                << std::setw(8) << posCmd(1) << " "
-                << std::setw(8) << posCmd(2) << "\n"
+                    << " COMMANDS\n"
+                    << "   PosCmd [N E D] : "
+                    << std::setw(8) << posCmd(0) << " "
+                    << std::setw(8) << posCmd(1) << " "
+                    << std::setw(8) << posCmd(2) << "\n"
 
-                << "   AttCmd [R P Y] : "
-                << std::setw(8) << attCmd(0) << " "
-                << std::setw(8) << attCmd(1) << " "
-                << std::setw(8) << attCmd(2) << "\n"
+                    << "   AttCmd [R P Y] : "
+                    << std::setw(8) << attCmd(0) << " "
+                    << std::setw(8) << attCmd(1) << " "
+                    << std::setw(8) << attCmd(2) << "\n"
 
-                << "   FzCmd          : "
-                << std::setw(8) << outer.out.Fz << "\n"
+                    << "   FzCmd          : "
+                    << std::setw(8) << outer.out.Fz << "\n"
 
-                << "   PWMCmd         : "
-                << std::setw(8) << pwmCmd(0) << " "
-                << std::setw(8) << pwmCmd(1) << " "
-                << std::setw(8) << pwmCmd(2) << " "
-                << std::setw(8) << pwmCmd(3) << "\n"
+                    << "   PWMCmd         : "
+                    << std::setw(8) << pwmCmd(0) << " "
+                    << std::setw(8) << pwmCmd(1) << " "
+                    << std::setw(8) << pwmCmd(2) << " "
+                    << std::setw(8) << pwmCmd(3) << "\n"
 #ifdef PLATFORM_LINUX
-                << "   rcPWM          : "
-                << std::setw(8) << rcPWM(0) << " "
-                << std::setw(8) << rcPWM(1) << " "
-                << std::setw(8) << rcPWM(2) << " "
-                << std::setw(8) << rcPWM(3) << " "
-                << std::setw(8) << rcPWM(4) << " "
-                << std::setw(8) << rcPWM(5) << "\n\n"
+                    << "   rcPWM          : "
+                    << std::setw(8) << rcPWM(0) << " "
+                    << std::setw(8) << rcPWM(1) << " "
+                    << std::setw(8) << rcPWM(2) << " "
+                    << std::setw(8) << rcPWM(3) << " "
+                    << std::setw(8) << rcPWM(4) << " "
+                    << std::setw(8) << rcPWM(5) << "\n\n"
 #endif
 
-                << " SENSORS\n"
-                << "   IMU Gyro  [x y z] : "
-                << std::setw(8) << gyro(0) << " "
-                << std::setw(8) << gyro(1) << " "
-                << std::setw(8) << gyro(2) << "\n"
+                    << " SENSORS\n"
+                    << "   IMU Gyro  [x y z] : "
+                    << std::setw(8) << gyro(0) << " "
+                    << std::setw(8) << gyro(1) << " "
+                    << std::setw(8) << gyro(2) << "\n"
 
-                << "   IMU Accel [x y z] : "
-                << std::setw(8) << accel(0) << " "
-                << std::setw(8) << accel(1) << " "
-                << std::setw(8) << accel(2) << "\n"
+                    << "   IMU Accel [x y z] : "
+                    << std::setw(8) << accel(0) << " "
+                    << std::setw(8) << accel(1) << " "
+                    << std::setw(8) << accel(2) << "\n"
 
-                << "   Opti Pos  [N E D] : "
-                << std::setw(8) << optPos(0) << " "
-                << std::setw(8) << optPos(1) << " "
-                << std::setw(8) << optPos(2) << "\n"
+                    << "   Opti Pos  [N E D] : "
+                    << std::setw(8) << optPos(0) << " "
+                    << std::setw(8) << optPos(1) << " "
+                    << std::setw(8) << optPos(2) << "\n"
 
-                << "   Opti Psi          : "
-                << std::setw(8) << optPsi << "\n\n"
+                    << "   Opti Psi          : "
+                    << std::setw(8) << optPsi << "\n\n"
 
-                << " ACTUATION\n"
-                << "   WrenchCmd [Fz Mx My Mz] : "
-                << std::setw(8) << wrenchCmd(0) << " "
-                << std::setw(8) << wrenchCmd(1) << " "
-                << std::setw(8) << wrenchCmd(2) << " "
-                << std::setw(8) << wrenchCmd(3) << "\n"
+                    << " ACTUATION\n"
+                    << "   WrenchCmd [Fz Mx My Mz] : "
+                    << std::setw(8) << wrenchCmd(0) << " "
+                    << std::setw(8) << wrenchCmd(1) << " "
+                    << std::setw(8) << wrenchCmd(2) << " "
+                    << std::setw(8) << wrenchCmd(3) << "\n"
 
-                << "   ThrustCmd [t1 t2 t3 t4] : "
-                << std::setw(8) << thrustCmd(0) << " "
-                << std::setw(8) << thrustCmd(1) << " "
-                << std::setw(8) << thrustCmd(2) << " "
-                << std::setw(8) << thrustCmd(3) << "\n"
+                    << "   ThrustCmd [t1 t2 t3 t4] : "
+                    << std::setw(8) << thrustCmd(0) << " "
+                    << std::setw(8) << thrustCmd(1) << " "
+                    << std::setw(8) << thrustCmd(2) << " "
+                    << std::setw(8) << thrustCmd(3) << "\n"
 
-                << "   ThrustAct [t1 t2 t3 t4] : "
-                << std::setw(8) << thrustAct(0) << " "
-                << std::setw(8) << thrustAct(1) << " "
-                << std::setw(8) << thrustAct(2) << " "
-                << std::setw(8) << thrustAct(3) << "\n"
+                    << "   ThrustAct [t1 t2 t3 t4] : "
+                    << std::setw(8) << thrustAct(0) << " "
+                    << std::setw(8) << thrustAct(1) << " "
+                    << std::setw(8) << thrustAct(2) << " "
+                    << std::setw(8) << thrustAct(3) << "\n"
 
-                << "   WrenchAct [Fz Mx My Mz] : "
-                << std::setw(8) << wrenchAct(0) << " "
-                << std::setw(8) << wrenchAct(1) << " "
-                << std::setw(8) << wrenchAct(2) << " "
-                << std::setw(8) << wrenchAct(3) << "\n"
+                    << "   WrenchAct [Fz Mx My Mz] : "
+                    << std::setw(8) << wrenchAct(0) << " "
+                    << std::setw(8) << wrenchAct(1) << " "
+                    << std::setw(8) << wrenchAct(2) << " "
+                    << std::setw(8) << wrenchAct(3) << "\n"
 
-                << "==============================================================\n"
-                << std::flush;
+                    << "==============================================================\n";
+                
 
             lastPrint = t;
         }
@@ -438,6 +444,6 @@ int main() {
 	//usleep(1);
 #endif
     //std::this_thread::sleep_for(std::chrono::microseconds(1));
-
+    //std::this_thread::yield();
     }
 }
