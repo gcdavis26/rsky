@@ -94,7 +94,8 @@ bool UdpSender::sendFromSim(
     const ModeManager& MM,
     const OuterLoop& outer,
     const ImuSim& imu,
-    const bool& armed)
+    const bool& armed,
+    const double NIS)
 {
     // ---- Extract what MATLAB expects ----
     const Vec<3> euler_est = navState.segment<3>(0);
@@ -122,6 +123,7 @@ bool UdpSender::sendFromSim(
     j["phase"] = static_cast<int>(MM.out.phase);
     j["mode"] = static_cast<int>(MM.out.mode);
     j["armed"] = armed;
+    j["EKF_Health"] = NIS;
 
     j["pos_cmd"] = vec3ToJson(pos_cmd);
     j["pos_est"] = vec3ToJson(pos_est);

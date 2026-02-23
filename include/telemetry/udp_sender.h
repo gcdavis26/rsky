@@ -47,7 +47,8 @@ public:
         const ModeManager& MM,
         const OuterLoop& outer,
         const ImuSim& imu,
-        const bool& armed);
+        const bool& armed,
+        const double NIS);
 
 private:
     bool sendJson_(const nlohmann::json& j);
