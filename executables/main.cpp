@@ -55,12 +55,16 @@ int main() {
 #endif
 
     double lastPrint = 0.0;
-    const double printDt = 0.1; 
+    const double printDt = 1.0; 
 
+    Vec<3> momentsCmd = Vec<3>::Zero();
     Vec<4> thrustCmd = Vec<4>::Zero();
     Vec<4> wrenchCmd = Vec<4>::Zero();
     Vec<4> pwmCmd = Vec<4>::Zero();
     Vec<6> rcPWM = Vec<6> ::Zero();
+
+    Vec<3> manVel = Vec<3>::Zero();
+    double manPsi = 0.0;
 
     Vec<4> thrustAct = Vec<4>::Zero();
     Vec<4> wrenchAct = Vec<4>::Zero();
@@ -70,8 +74,8 @@ int main() {
     double HzTimer = 0.0;
     int HzCounter = 0;
 
-    bool autopilot = true;
-    bool printOn = false;
+    bool autopilot = false;
+    bool printOn = true;
     bool armed = true;
     bool motorInit = false;
 
@@ -132,13 +136,10 @@ int main() {
             clock.taskClock.MM = 0.0;
         }
 
-        // Manual Command Types
-        Vec<3> manVel = Vec<3>::Zero();
-        double manPsi = 0.0;
-
         // ---------------- Manual Keyboard Controls (Windows Only) -----------
 #ifdef _WIN32
-        if (clock.taskClock.conInner >= clock.rates.conInner) {
+        if (clock.taskClock.keys >= clock.rates.keys) {
+
             Vec<3> keyVel = Vec<3>::Zero();
             double keyPsi = 0.0;
 
@@ -169,11 +170,14 @@ int main() {
             else if (GetAsyncKeyState('E') & 0x8000) {
                 keyPsi = 1;
             }
+            clock.taskClock.keys = 0.0;
+
             if (armed) {
                 manVel = keyVel;
                 manPsi = keyPsi;
             }
         }
+
 #endif
 
         // ---------------- Manual RC Controls (Linux Only) -------------------
@@ -252,12 +256,24 @@ int main() {
             Vec<3> attManual;
             attManual << 10 * PI / 180 * manVel(1), -10 * PI / 180 * manVel(0), 0.0;
 
-            const Vec<3> momentsCmd =
-                inner.computeWrench(
-                    outer.out.attCmd,
-                    0.0,
-                    navState.segment<3>(0),
-                    imu.imu.gyro);
+            if (autopilot) {
+                momentsCmd =
+                    inner.computeWrench(
+                        outer.out.attCmd,
+                        0.0,
+                        navState.segment<3>(0),
+                        imu.imu.gyro);
+            }
+            else if (!autopilot) {
+                momentsCmd =
+                    inner.computeWrench(
+                        outer.out.attCmd,
+                        manPsi,
+                        navState.segment<3>(0),
+                        imu.imu.gyro);
+            }
+
+
 
             wrenchCmd << outer.out.Fz,
                 momentsCmd(0),
@@ -316,7 +332,6 @@ int main() {
         if (t - lastPrint >= printDt && printOn) {
 
             // Clear screen + cursor home (no helpers)
-            std::cout << "\033[2J\033[H";
 
             const Vec<3> pos = navState.segment<3>(3);
             const Vec<3> vel = navState.segment<3>(6);
@@ -374,6 +389,11 @@ int main() {
                     << std::setw(8) << posCmd(0) << " "
                     << std::setw(8) << posCmd(1) << " "
                     << std::setw(8) << posCmd(2) << "\n"
+
+                    << "   VelCmd [N E D] : "
+                    << std::setw(8) << outer.in.velCmd(0) << " "
+                    << std::setw(8) << outer.in.velCmd(1) << " "
+                    << std::setw(8) << outer.in.velCmd(2) << "\n"
 
                     << "   AttCmd [R P Y] : "
                     << std::setw(8) << attCmd(0) << " "
@@ -452,6 +472,5 @@ int main() {
 	//usleep(1);
 #endif
     //std::this_thread::sleep_for(std::chrono::microseconds(1));
-    std::this_thread::yield();
     }
 }

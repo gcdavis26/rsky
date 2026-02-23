@@ -32,4 +32,5 @@ void TimeKeeper::stepClocks(double dt) {
 	taskClock.MM += dt;
 	taskClock.AHRS += dt;
 	taskClock.sim += dt;
+	taskClock.keys += dt;
 }

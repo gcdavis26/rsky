@@ -8,7 +8,6 @@ public:
 		Vec<6> state = Vec<6>::Zero();
 		Vec<3> posCmd = Vec<3>::Zero();
 		Vec<3> velCmd = Vec<3>::Zero();
-		Vec<3> velCm = Vec<3>::Zero();
 		double psi = 0.0;
 		ModeManager::NavMode mode;
 	};

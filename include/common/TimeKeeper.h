@@ -20,6 +20,8 @@ public:
 		static constexpr double MM = 1.0 / 50;
 		static constexpr double AHRS = 1.0 / 100;
 		static constexpr double sim = 1.0 / 10000;
+		static constexpr double keys = 1.0 / 400;
+													
 	};
 
 	struct accumulator {
@@ -33,6 +35,7 @@ public:
 		double MM = 0.0;
 		double AHRS = 0.0;
 		double sim = 0.0;
+		double keys = 0.0;
 	};
 
 	scheduler rates;
