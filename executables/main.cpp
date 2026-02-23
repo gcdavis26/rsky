@@ -74,8 +74,8 @@ int main() {
     double HzTimer = 0.0;
     int HzCounter = 0;
 
-    bool autopilot = false;
-    bool printOn = true;
+    bool autopilot = true;
+    bool printOn = false;
     bool armed = true;
     bool motorInit = false;
 
@@ -124,6 +124,7 @@ int main() {
         if (clock.taskClock.navCorr >= clock.rates.navCorr) {
             ekf.correct(opti.opti);
             NIS = ekf.getHealth();
+            std::cout << std::setw(8) << NIS << "\n";
             clock.taskClock.navCorr = 0.0;
         }
         const Vec<15> navState = ekf.getx();
@@ -471,6 +472,6 @@ int main() {
 #ifdef PLATFORM_LINUX
 	//usleep(1);
 #endif
-    //std::this_thread::sleep_for(std::chrono::microseconds(1));
+    //std::this_thread::yield();
     }
 }

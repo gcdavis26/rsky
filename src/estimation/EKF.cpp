@@ -95,7 +95,7 @@ void EKF::correct(const OptiSim::OptiMeas& opti) {
     h(3) = h_psi(x_est);
 
     // residual (wrap yaw residual)
-    Vec<4> res = z - h;
+    res = z - h;
     res(3) = wrapToPi(res(3));
 
     // H = [Hpos; Hpsi]
@@ -112,18 +112,7 @@ void EKF::correct(const OptiSim::OptiMeas& opti) {
     S = H * P * H.transpose() + R;
     const Mat<NX, 4> K = P * H.transpose() * S.inverse();
 
-    // state update
-    x_est = x_est + K * res;
-
-    // Joseph form covariance update
-    const Mat<NX, NX> A = (I - K * H);
-    P = A * P * A.transpose() + K * R * K.transpose();
-
-    // wrap rpy
-    x_est.template segment<3>(PHI) = wrapAngles(x_est.template segment<3>(PHI));
-}
-
-double EKF::getHealth() {
+    // health update
     double nis = res.transpose() * S.ldlt().solve(res);
     const double alpha = 0.05;
 
@@ -134,7 +123,16 @@ double EKF::getHealth() {
     else {
         nisAvg = (1.0 - alpha) * nisAvg + alpha * nis;
     }
-    return nisAvg;
+
+    // state update
+    x_est = x_est + K * res;
+
+    // Joseph form covariance update
+    const Mat<NX, NX> A = (I - K * H);
+    P = A * P * A.transpose() + K * R * K.transpose();
+
+    // wrap rpy
+    x_est.template segment<3>(PHI) = wrapAngles(x_est.template segment<3>(PHI));
 }
 
 // ------------------- dynamics f(x) -------------------

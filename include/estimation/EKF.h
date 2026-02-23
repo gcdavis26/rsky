@@ -25,10 +25,11 @@ public:
     void initializeFromOpti(const OptiSim::OptiMeas& opti);
     void predict(const ImuSim::ImuMeas& imu, double dt);
     void correct(const OptiSim::OptiMeas& opti);
-    double getHealth();
 
     Vec<NX> getx() const { return x_est; }
     Mat<NX, NX> getP() const { return P; }
+    double getHealth() const { return nisAvg; }
+
 
 private:
     // state + covariance
@@ -48,8 +49,8 @@ private:
     double sig_bw_walk = 0.0;
 
     // measurement noise
-    double sig_pos = 0.001;
-    double sig_psi = 0.001;
+    double sig_pos = 0.001*1.25;
+    double sig_psi = 0.001*1.25;
 
     // numerics
     double eps_F = 1e-6;
