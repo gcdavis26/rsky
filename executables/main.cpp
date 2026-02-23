@@ -62,13 +62,16 @@ int main() {
     Vec<4> pwmCmd = Vec<4>::Zero();
     Vec<6> rcPWM = Vec<6> ::Zero();
 
+    Vec<4> thrustAct = Vec<4>::Zero();
+    Vec<4> wrenchAct = Vec<4>::Zero();
+
     int step = 0;
     double Hz = 0.0;
     double HzTimer = 0.0;
     int HzCounter = 0;
 
     bool autopilot = true;
-    bool printOn = true;
+    bool printOn = false;
     bool armed = true;
     bool motorInit = false;
 
@@ -247,7 +250,7 @@ int main() {
         // ---------------- Inner Loop ----------------
         if (clock.taskClock.conInner >= clock.rates.conInner) {
             Vec<3> attManual;
-            attManual << 10*PI/180*manVel(1), -10*PI/180*manVel(0), 0.0;
+            attManual << 10 * PI / 180 * manVel(1), -10 * PI / 180 * manVel(0), 0.0;
 
             const Vec<3> momentsCmd =
                 inner.computeWrench(
@@ -263,27 +266,27 @@ int main() {
 
             thrustCmd = mixer.mix2Thrust(wrenchCmd);
 
-	        if(!armed) {
-		        thrustCmd = Vec<4>::Zero();
-	        }
+            if (!armed) {
+                thrustCmd = Vec<4>::Zero();
+            }
             pwmCmd = mixer.thr2PWM(thrustCmd);
             clock.taskClock.conInner = 0.0;
         }
 
-	// ----------------Real Commands -------------
+        // ----------------Real Commands -------------
 #ifdef PLATFORM_LINUX
         /*
-	if (!motorInit && armed) {
-	    motdrv.initialize();
-	    motorInit = true;
-	} 
-	else if (motorInit && armed) {
+    if (!motorInit && armed) {
+        motdrv.initialize();
+        motorInit = true;
+    }
+    else if (motorInit && armed) {
         Vec<4> pwmOut = Vec<4>::Zero();
-	}
-	else {
+    }
+    else {
         motdrv.wind_down();
-	    motorInit = false;
-	}
+        motorInit = false;
+    }
         */
 #endif
         // ---------------- Telemetry -----------------
@@ -293,16 +296,21 @@ int main() {
                 navState,
                 MM,
                 outer,
-                imu, 
+                imu,
                 armed
             );
             clock.taskClock.tele = 0.0;
         }
         // ---------------- Simulation ----------------
-        const Vec<4> thrustAct = motormodel.step(dt, thrustCmd);
-        const Vec<4> wrenchAct = mixer.mix2Wrench(thrustAct);
+        if (clock.taskClock.sim >= clock.rates.sim) {
+            thrustAct = motormodel.step(clock.taskClock.sim, thrustCmd);
+            wrenchAct = mixer.mix2Wrench(thrustAct);
 
-        dynamics.step(dt, wrenchAct);
+            dynamics.step(clock.taskClock.sim, wrenchAct);
+
+            clock.taskClock.sim = 0.0;
+
+        }
 
         // ---------------- Console Print ----------------
         if (t - lastPrint >= printDt && printOn) {
@@ -444,6 +452,6 @@ int main() {
 	//usleep(1);
 #endif
     //std::this_thread::sleep_for(std::chrono::microseconds(1));
-    //std::this_thread::yield();
+    std::this_thread::yield();
     }
 }
