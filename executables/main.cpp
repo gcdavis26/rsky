@@ -43,7 +43,7 @@ int main() {
     InnerLoop inner;
     QuadMixer mixer;
     MotorModel motormodel;
-    UdpSender udp("127.0.0.1", 8080);
+    UdpSender udp("192.168.1.2", 8080);
     
 #ifdef PLATFORM_LINUX
     RCIn rcin;
@@ -67,8 +67,8 @@ int main() {
     double HzTimer = 0.0;
     int HzCounter = 0;
 
-    bool autopilot = false;
-    bool printOn = true;
+    bool autopilot = true;
+    bool printOn = false;
     bool armed = true;
     bool motorInit = false;
 
@@ -247,9 +247,9 @@ int main() {
 
             const Vec<3> momentsCmd =
                 inner.computeWrench(
-                    attManual,
-                   10*PI/180*manPsi,
-                    AHRSAtt,
+                    outer.out.attCmd,
+                    0.0,
+                    navState.segment<3>(0),
                     imu.imu.gyro);
 
             wrenchCmd << outer.out.Fz,
