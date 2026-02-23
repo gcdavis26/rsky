@@ -17,8 +17,8 @@ public:
 private:
 	bool has_prev = false;
 	Vec<3> v_prev = Vec<3>::Zero();
-	double gyro_noise_std = 0.0025;
-	double accel_noise_std = 0.015;
+	double gyro_noise_std = 0.00017678;
+	double accel_noise_std = 0.0010607;
 
 	Vec<3> gyro_bias = Vec<3>::Zero();
 	Vec<3> accel_bias = Vec<3>::Zero();

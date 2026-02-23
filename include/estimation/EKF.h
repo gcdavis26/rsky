@@ -42,8 +42,8 @@ private:
     Vec<3> r_OPTI = Vec<3>::Zero();
 
     // process noise (continuous-time)
-    double sig_g = 0.01;
-    double sig_acc = 0.01;
+    double sig_g = 0.00017678;
+    double sig_acc = 0.0010607;
     double sig_ba_walk = 0.0;
     double sig_bw_walk = 0.0;
 
