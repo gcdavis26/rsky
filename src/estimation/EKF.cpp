@@ -390,6 +390,7 @@ double EKF::h_psi(const Vec<NX>& x) const {
 Mat<3, EKF::NX> EKF::computeHpos(const Vec<NX>& x) const {
     Mat<3, NX> H = Mat<3, NX>::Zero();
 
+    /*
     for (int j = 0; j < 9; j++) {
         Vec<NX> dx = Vec<NX>::Zero();
         dx(j) = eps_H;
@@ -399,6 +400,11 @@ Mat<3, EKF::NX> EKF::computeHpos(const Vec<NX>& x) const {
 
         H.col(j) = (h1 - h0) / (2.0 * eps_H);
     }
+    */
+
+    H(0, 3) = 1;
+    H(1, 4) = 1;
+    H(2, 5) = 1;
 
     return H;
 }

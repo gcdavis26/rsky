@@ -150,6 +150,7 @@ int main() {
         if (clock.taskClock.MM >= clock.rates.MM) {
             MM.in.state = navState;
             MM.in.dt = dt;
+            MM.in.detected = false;
             MM.update();
             clock.taskClock.MM = 0.0;
         }
@@ -325,24 +326,26 @@ int main() {
             }
             pwmCmd = mixer.thr2PWM(thrustCmd);
             clock.taskClock.conInner = 0.0;
+
+                        // ----------------Real Commands -------------
+            #ifdef PLATFORM_LINUX
+                    /*
+                if (!motorInit && armed) {
+                    motdrv.initialize();
+                    motorInit = true;
+                }
+                else if (motorInit && armed) {
+                    motdriv.command(pwmCmd);
+                }
+                else {
+                    motdrv.wind_down();
+                    motorInit = false;
+                }
+                    */
+            #endif
+
         }
 
-        // ----------------Real Commands -------------
-#ifdef PLATFORM_LINUX
-        /*
-    if (!motorInit && armed) {
-        motdrv.initialize();
-        motorInit = true;
-    }
-    else if (motorInit && armed) {
-        Vec<4> pwmOut = Vec<4>::Zero();
-    }
-    else {
-        motdrv.wind_down();
-        motorInit = false;
-    }
-        */
-#endif
         // ---------------- Telemetry -----------------
         if (clock.taskClock.tele >= clock.rates.tele) {
             udp.sendFromSim(

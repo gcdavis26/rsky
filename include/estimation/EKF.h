@@ -49,8 +49,8 @@ private:
     double sig_bw_walk = 1e-9;
 
     // measurement noise
-    double sig_pos = 0.001*1.25;
-    double sig_psi = 0.001*1.25;
+    double sig_pos = 0.001*1.2;
+    double sig_psi = 0.001*1.2;
 
     // numerics
     double eps_F = 1e-6;
