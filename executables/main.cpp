@@ -80,6 +80,7 @@ int main() {
     bool motorInit = false;
 
     double NIS = 4.0;
+    bool ekfHealthy = false;
 
     while (true) {
 
@@ -254,7 +255,8 @@ int main() {
         // ---------------- Inner Loop ----------------
         if (clock.taskClock.conInner >= clock.rates.conInner) {
             Vec<3> attManual;
-            attManual << 10 * PI / 180 * manVel(1), -10 * PI / 180 * manVel(0), 0.0;
+            attManual << 10 * PI / 180 * manVel(1), -10 * PI / 180 * manVel(0), navState(2);
+            manPsi = manPsi * 10 * PI / 180;
 
             if (autopilot) {
                 momentsCmd =
@@ -264,12 +266,21 @@ int main() {
                         navState.segment<3>(0),
                         imu.imu.gyro);
             }
-            else if (!autopilot) {
+            else if (!autopilot && ekfHealthy) {
                 momentsCmd =
                     inner.computeWrench(
                         outer.out.attCmd,
                         manPsi,
                         navState.segment<3>(0),
+                        imu.imu.gyro);
+            }
+            else if (!autopilot && !ekfHealthy) {
+                attManual(2) = AHRSAtt(2);
+                momentsCmd =
+                    inner.computeWrench(
+                        attManual,
+                        manPsi,
+                        AHRSAtt,
                         imu.imu.gyro);
             }
 
