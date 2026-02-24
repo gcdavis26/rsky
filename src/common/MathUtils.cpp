@@ -101,7 +101,7 @@ Vec<4> normPWM(const Vec<4>& rawPWM) {
     Vec<4> normOut = Vec<4>::Zero();
    
     const double m = 0.5;
-    const double deadzone = 200;
+    const double deadzone = 100;
     const double deadmax = deadzone + 1500;
     const double deadmin = 1500 - deadzone; 
     const double k = 1.0 / (deadzone * 2.0);

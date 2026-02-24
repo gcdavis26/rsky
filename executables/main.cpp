@@ -36,7 +36,6 @@ int main() {
     Dynamics dynamics;
     ImuSim imu;
     OptiSim opti;
-    EKF ekf;
     AHRS ahrs;
     ModeManager MM;
     OuterLoop outer;
@@ -53,6 +52,8 @@ int main() {
 
     IMUHandler imuReal;
 #endif
+    //init ekf after imu so that you can put the biasees and noise into the constructor.
+    EKF ekf;
 
     double lastPrint = 0.0;
     const double printDt = 1.0; 
@@ -229,7 +230,7 @@ int main() {
             rcVel(1) = normalizedPWM(0);
             rcVel(2) = -normalizedPWM(2);
 
-            rcPsi = 10 * PI / 180 * normalizedPWM(3);
+            rcPsi = normalizedPWM(3);
 
             clock.taskClock.keys = 0.0;
 
@@ -302,6 +303,7 @@ int main() {
                         manPsi,
                         AHRSAtt,
                         imu.imu.gyro);
+                outer.out.Fz = mass * g * (1 - manVel(2));
             }
             else {
                 momentsCmd =
@@ -310,6 +312,7 @@ int main() {
                         0.0,
                         AHRSAtt,
                         imu.imu.gyro);
+                outer.out.Fz = mass * g;
             }
 
 
@@ -324,18 +327,22 @@ int main() {
             if (!armed) {
                 thrustCmd = Vec<4>::Zero();
             }
-            pwmCmd = mixer.thr2PWM(thrustCmd);
+            pwmCmd = mixer.thr2PWM(thrustCmd); //this will go directly to the four motors
+
             clock.taskClock.conInner = 0.0;
 
                         // ----------------Real Commands -------------
             #ifdef PLATFORM_LINUX
                     /*
-                if (!motorInit && armed) {
+                if (!motorInit && armed) { // add in that it only initializes if the commanded pwms are minimum
                     motdrv.initialize();
                     motorInit = true;
                 }
                 else if (motorInit && armed) {
-                    motdriv.command(pwmCmd);
+                    Vec<4> throttleTest = Vec<4>::Zero();
+
+                    throttleTest << rcPWM(2),rcPWM(2),rcPWM(2),rcPWM(2);
+                    motdrv.command(throttleTest); //takes in four for motors 1 2 3 4
                 }
                 else {
                     motdrv.wind_down();
