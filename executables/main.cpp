@@ -81,6 +81,8 @@ int main() {
 
     double NIS = 4.0;
     bool ekfHealthy = true;
+    double ekfbadTimer = 0.0;
+    double ekfgoodTimer = 0.0;
 
     while (true) {
 
@@ -125,6 +127,21 @@ int main() {
         if (clock.taskClock.navCorr >= clock.rates.navCorr) {
             ekf.correct(opti.opti);
             NIS = ekf.getHealth();
+            if (NIS > 13.28) {
+                ekfbadTimer += clock.taskClock.navCorr;
+                ekfgoodTimer = 0.0;
+            }
+            else {
+                ekfbadTimer = 0.0;
+                ekfgoodTimer += clock.taskClock.navCorr;
+            }
+            if (ekfbadTimer > 5.0) {
+                ekfHealthy = false;
+            }
+            else if (ekfgoodTimer > 5.0) {
+                ekfHealthy = true;
+            }
+
             clock.taskClock.navCorr = 0.0;
         }
         const Vec<15> navState = ekf.getx();
@@ -258,7 +275,7 @@ int main() {
             attManual << 10 * PI / 180 * manVel(1), -10 * PI / 180 * manVel(0), navState(2);
             manPsi = manPsi * 10 * PI / 180;
 
-            if (autopilot) {
+            if (autopilot && ekfHealthy) {
                 momentsCmd =
                     inner.computeWrench(
                         outer.out.attCmd,
@@ -280,6 +297,14 @@ int main() {
                     inner.computeWrench(
                         attManual,
                         manPsi,
+                        AHRSAtt,
+                        imu.imu.gyro);
+            }
+            else {
+                momentsCmd =
+                    inner.computeWrench(
+                        Vec<3>::Zero(),
+                        0.0,
                         AHRSAtt,
                         imu.imu.gyro);
             }

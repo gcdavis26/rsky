@@ -9,7 +9,7 @@ using json = nlohmann::json;
 bool UdpSender::wsa_started_ = false;
 #endif
 
-static inline json vec3ToJson(const Vec<3>& v) {
+static inline json vec3ToJson(const Vecf<3>& v) {
     return json::array({ v(0), v(1), v(2) });
 }
 
@@ -98,32 +98,37 @@ bool UdpSender::sendFromSim(
     const double NIS)
 {
     // ---- Extract what MATLAB expects ----
-    const Vec<3> euler_est = navState.segment<3>(0);
-    const Vec<3> pos_est = navState.segment<3>(3);
-    const Vec<3> vel_est = navState.segment<3>(6);
+    const Vecf<3> euler_est = navState.segment<3>(0).cast<float>();
+    const Vecf<3> pos_est = navState.segment<3>(3).cast<float>();
+    const Vecf<3> vel_est = navState.segment<3>(6).cast<float>();
 
     // ModeManager outputs
-    const Vec<3> pos_cmd = MM.out.posCmd;
+    const Vecf<3> pos_cmd = MM.out.posCmd.cast<float>();
 
     // OuterLoop outputs (commanded attitude)
-    const Vec<3> euler_cmd = outer.out.attCmd;
+    const Vecf<3> euler_cmd = outer.out.attCmd.cast<float>();
 
     // IMU outputs
-    const Vec<3> omega_est = imu.imu.gyro;
-    const Vec<3> accel = imu.imu.accel;
+    const Vecf<3> omega_est = imu.imu.gyro.cast<float>();
+    const Vecf<3> accel = imu.imu.accel.cast<float>();
+
+    const float tf = static_cast<float>(t);
+    const float dtf = static_cast<float>(dt);
+    const float Hzf = static_cast<float>(Hz);
+    const float NISf = static_cast<float>(NIS);
 
     json j;
     j["seq"] = seq_++;
-    j["t"] = t;
-    j["dt"] = dt;
-    j["Hz"] = Hz;
+    j["t"] = tf;
+    j["dt"] = dtf;
+    j["Hz"] = Hzf;
 
     // If you do NOT have phase in ModeManager, set 0 or add it later.
     // If you DO have it, replace with static_cast<int>(MM.out.phase)
     j["phase"] = static_cast<int>(MM.out.phase);
     j["mode"] = static_cast<int>(MM.out.mode);
     j["armed"] = armed;
-    j["EKF_Health"] = NIS;
+    j["EKF_Health"] = NISf;
 
     j["pos_cmd"] = vec3ToJson(pos_cmd);
     j["pos_est"] = vec3ToJson(pos_est);
