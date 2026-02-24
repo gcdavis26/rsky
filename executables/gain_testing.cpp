@@ -50,7 +50,8 @@ int main() {
 	double Kt = 4.0;
 	double Kq = 2.35;
 	double d_arm = .15;
-	Vector3d r = Vector3d::Zero(); //can be changed to add an IMU offset
+	Vector3d r; //can be changed to add an IMU offset
+	r << -.013, -0.009, -0.058;
 
 
 	///////////////////
@@ -90,8 +91,8 @@ int main() {
 	//SETUP OF STOCHASTIC STUFF FOR EKF
 	Vector12d sigmaw;
 	sigmaw << .1, .1, .1, .01, .01, .01, 1e-2, 1e-2, 1e-2, 1e-4, 1e-4, 1e-4; //gyro,accelerometer, bias_accel, bias_gyro
-	Vector3d sigmav;
-	sigmav << .001, .001, .001; //n,e,d
+	Vector4d sigmav;
+	sigmav << 01,.001, .001, .001; //n,e,d
 
 	IMUHandler imu;
 
@@ -117,8 +118,8 @@ int main() {
 	EKF ekf(r, sigmaw, sigmav); //ekf created
 
 	Eigen::Matrix<double, 6, 1> imu_data = imu.update();
-	Eigen::Matrix<double, 8, 1> opti_data = readDatalink();
-	Vector3d measurement = opti_data.block(0, 0, 3, 1);
+	Eigen::Matrix<double, 8, 1> opti_data = readDatalink(); //yaw, n, e, d
+	Vector4d measurement = opti_data.block(0, 0, 4, 1);
 	Vector3d imu_accels = imu_data.block(3, 0, 3, 1);
 	Vector3d imu_omega = imu_data.block(0, 0, 3, 1);
 	ekf.initialize(measurement, imu_omega, imu_accels, accel_bias, gyro_bias); //initializing with values. Can be done after a wait as well.
@@ -130,24 +131,29 @@ int main() {
 	Guidance guidance(x, n_bounds, e_bounds, 4, cruise, yaw_rate, takeoff_height, 1, .5); //initialize guidance system
 	//controller.update(x_true); //for testing
 	//These are derivatives and controls etc at initial state
+
 	Vector4d controls;
 	Vector4d motor_cmds;
 	MotorDriver motordriver;
 	RCInputHandler rc_controller;
+
+	Eigen::Matrix<double, 6, 1> rc_data = rc_controller.read_ppm_vector();
+	Vector4d v_cmds = guidance.manualCommands(rc_data);
 
 	///////////////////
 	// //Frequencies
 	///////////////////
 	double process_freq = 200.0;
 	double m_freq = 50.0;
+	double control_freq;
 	//control loop should be 400 hz, but we don't need to limit it 
 	double t = 0;
 	auto t_ref = std::chrono::system_clock::now(); //total time reference
-	auto process_t = std::chrono::system_clock::now(); //process clock
-	auto measurement_t = std::chrono::system_clock::now(); //measurement clock
-	auto telemetry_t = std::chrono::system_clock::now(); //telemetry clock
+	auto process_t = std::chrono::steady_clock::now(); //process clock
+	auto measurement_t = std::chrono::steady_clock::now(); //measurement clock
+	auto motor_t = std::chrono::steady_clock::now();
+	auto telemetry_t = std::chrono::steady_clock::now(); //telemetry clock
 	int cycles = 0;
-	double sim_time = 120;
 	UDPSender sender("127.0.0.1", 5000);
 	TelemetryPacket pkt;
 	uint32_t packetCounter = 0;
@@ -155,32 +161,28 @@ int main() {
 	while (true)
 	{
 		//process model
-		auto current_time = std::chrono::system_clock::now();
-		auto dt = std::chrono::duration_cast<std::chrono::microseconds>(current_time - process_t);
-		double dt_secs = dt.count() / 1e6;
-
+		auto current_time = std::chrono::steady_clock::now();
+		double dt_secs = std::chrono::duration<double>(current_time - process_t).count();
 		if (dt_secs >= 1 / process_freq)
 		{
 
-			ekf.estimate(dt.count()); //predict state at current time step
+			ekf.estimate(dt_secs); //predict state at current time step
 			imu_data = imu.update();
 			imu_omega = imu_data.block(0, 0, 3, 1);
 			imu_accels = imu_data.block(3, 0, 3, 1);
-			ekf.imureading(imu_omega, imu_accels, dt.count());
+			ekf.imureading(imu_omega, imu_accels, dt_secs);
 			process_t = current_time;
 		}
 
 		//measurement model
-		current_time = std::chrono::system_clock::now();
-		dt = std::chrono::duration_cast<std::chrono::microseconds>(current_time - measurement_t);
-		dt_secs = dt.count() / 1e6;
-
+		current_time = std::chrono::steady_clock::now();
+		dt_secs = std::chrono::duration<double>(current_time - measurement_t).count();
 		if (dt_secs >= 1 / m_freq)
 		{
 			Eigen::Matrix<double, 8, 1> opti_data = readDatalink();
 			if (opti_data(7) == 1.0) //if valid
 			{
-				measurement = opti_data.block(0, 0, 3, 1);
+				measurement = opti_data.block(0, 0, 4, 1);
 				ekf.update(measurement); //update our state estimate
 			}
 			else
@@ -190,24 +192,28 @@ int main() {
 			measurement_t = current_time;
 		}
 
+		current_time = std::chrono::steady_clock::now();
+		dt_secs = std::chrono::duration<double>(current_time - motor_t).count();
+		if (dt_secs >= 1 / control_freq)
+		{
+			//controls and motors
+			x = ekf.getControlState();
+			controller.update(x); //update internal control state
+			//controller.update(x_true); //for testing
 
-		//controls and motors
-		x = ekf.getControlState();
-		controller.update(x); //update internal control state
-		//controller.update(x_true); //for testing
+			//guidance and control
+			rc_data = rc_controller.read_ppm_vector();
 
-		//guidance and control
-		Eigen::Matrix<double, 6, 1> rc_data = rc_controller.read_ppm_vector();
+			v_cmds = guidance.manualCommands(rc_data);
+			controls = controller.manualControl(v_cmds); //get forces
+			motor_cmds = mixer.inverse() * controls; //get motor commands
+			motor_cmds = (motor_cmds.array().min(1)).max(0); //force motor throttle between 0 and 1
+			
+			motor_t = current_time;
+		}
 
-		Vector4d v_cmds = guidance.manualCommands(rc_data);
-		controls = controller.manualControl(v_cmds); //get forces
-		motor_cmds = mixer.inverse() * controls; //get motor commands
-		motor_cmds = (motor_cmds.array().min(1)).max(0); //force motor throttle between 0 and 1
-		cycles += 1;
-
-		current_time = std::chrono::system_clock::now();
-		dt = std::chrono::duration_cast<std::chrono::microseconds>(current_time - telemetry_t);
-		dt_secs = dt.count() / 1e6;
+		current_time = std::chrono::steady_clock::now();
+		dt_secs = std::chrono::duration<double>(current_time - telemetry_t).count();
 		if (dt_secs >= 0.1)
 		{
 			pkt.time = std::chrono::duration<double>(
@@ -231,8 +237,6 @@ int main() {
 		}
 
 	}
-	auto total_t = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - t_ref);
-	std::cout << (cycles / (total_t.count() / 1e6));
 
 	return 0;
 }
