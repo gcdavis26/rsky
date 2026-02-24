@@ -3,5 +3,5 @@
 
 int openPort(void);
 
-typedef Eigen::Matrix<double, 8, 1> Vector8d;
-Vector8d readDatalink(void);
+typedef Eigen::Matrix<double, 5, 1> Vector5d;
+Vector5d readDatalink(void);

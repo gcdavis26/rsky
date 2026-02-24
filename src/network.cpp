@@ -226,7 +226,7 @@ static int readSock(struct port_ref* s, void* buf, int nbytes) {
     return totalNew;
 }
 
-Vector8d readDatalink() {
+Vector5d readDatalink() {
     struct port_ref* s = &thisPort;
     int gotPacket = 0, newBytes;
     int done = 0, index = 0;
@@ -261,15 +261,18 @@ Vector8d readDatalink() {
                             if (datalinkHeader.messageSize == sizeof(struct onboardMocapClient_ref)) {
                                 memcpy(&onboardMocapClient, bf, datalinkHeader.messageSize);
 
+                                double qx = (double)onboardMocapClient.qx;
+                                double qy = (double)onboardMocapClient.qy;
+                                double qz = (double)onboardMocapClient.qz;
+                                double qw = (double)onboardMocapClient.qw;
+                                double yaw = atan2(2.0 * (qw * qz + qx * qy), 1.0 - 2.0 * (qy * qy + qz * qz));
+
                                 // Map struct values to Eigen Matrix
                                 result(0) = (double)onboardMocapClient.pos_y; // North
                                 result(1) = (double)onboardMocapClient.pos_x; // East
                                 result(2) = (double)onboardMocapClient.pos_z * -1.0; // Up converted to down
-                                result(3) = (double)onboardMocapClient.qx;
-                                result(4) = (double)onboardMocapClient.qy;
-                                result(5) = (double)onboardMocapClient.qz;
-                                result(6) = (double)onboardMocapClient.qw;
-                                result(7) = (double)onboardMocapClient.valid;  // 0 for non valid, 1 for valid
+                                result(3) = yaw;
+                                result(4) = (double)onboardMocapClient.valid;  // 0 for non valid, 1 for valid
                             }
                             break;
                         }
