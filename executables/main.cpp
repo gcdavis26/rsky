@@ -43,7 +43,7 @@ int main() {
     InnerLoop inner;
     QuadMixer mixer;
     MotorModel motormodel;
-    UdpSender udp("127.0.0.1", 8080);
+    UdpSender udp("127.0.0.1", 8080); //KINETIC 192.168.1.2
     
 #ifdef PLATFORM_LINUX
     RCIn rcin;
@@ -74,13 +74,13 @@ int main() {
     double HzTimer = 0.0;
     int HzCounter = 0;
 
-    bool autopilot = true;
+    bool autopilot = false;
     bool printOn = false;
-    bool armed = true;
+    bool armed = false;
     bool motorInit = false;
 
     double NIS = 4.0;
-    bool ekfHealthy = true;
+    bool ekfHealthy = false;
     double ekfbadTimer = 0.0;
     double ekfgoodTimer = 0.0;
 

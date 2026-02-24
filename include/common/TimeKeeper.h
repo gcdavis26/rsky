@@ -19,7 +19,7 @@ public:
 		static constexpr double opti = 1.0 / 25;
 		static constexpr double MM = 1.0 / 50;
 		static constexpr double AHRS = 1.0 / 100;
-		static constexpr double sim = 1.0 / 10000;
+		static constexpr double sim = 1.0 / 1000;
 		static constexpr double keys = 1.0 / 400;
 													
 	};
