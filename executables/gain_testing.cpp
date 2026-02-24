@@ -118,7 +118,7 @@ int main() {
 	EKF ekf(r, sigmaw, sigmav); //ekf created
 
 	Eigen::Matrix<double, 6, 1> imu_data = imu.update();
-	Eigen::Matrix<double, 8, 1> opti_data = readDatalink(); //yaw, n, e, d
+	Eigen::Matrix<double, 5, 1> opti_data = readDatalink(); //yaw, n, e, d
 	Vector4d measurement = opti_data.block(0, 0, 4, 1);
 	Vector3d imu_accels = imu_data.block(3, 0, 3, 1);
 	Vector3d imu_omega = imu_data.block(0, 0, 3, 1);

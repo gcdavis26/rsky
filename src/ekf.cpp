@@ -63,6 +63,7 @@ void EKF::update(const Vector4d& m)
 	//incorporate a measurement model measurement into state estimate
 	Vector4d res;
 	res.noalias()  = m - x.block(2,0,4,1); //calculating residual
+	res(0) = wrapPi(res(0));
 	Matrix4d S;
 	S = P.block(2, 2, 4, 4).selfadjointView<Eigen::Lower>();
 	S += R;

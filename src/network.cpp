@@ -233,7 +233,7 @@ Vector5d readDatalink() {
     unsigned char* bf;
 
     // Initialize return matrix with zeros or NaNs to indicate "no data"
-    Vector8d result = Vector8d::Zero();
+    Vector5d result = Vector5d::Zero();
 
     newBytes = readSock(s, s->buffer + s->bytesread, BUFFERSIZE - s->bytesread);
     s->bytesread += newBytes;
