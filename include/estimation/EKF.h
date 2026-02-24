@@ -45,8 +45,8 @@ private:
     // process noise (continuous-time)
     double sig_g = 0.00017678;
     double sig_acc = 0.0010607;
-    double sig_ba_walk = 0.0;
-    double sig_bw_walk = 0.0;
+    double sig_ba_walk = 1e-6;
+    double sig_bw_walk = 1e-9;
 
     // measurement noise
     double sig_pos = 0.001*1.25;

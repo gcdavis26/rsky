@@ -124,15 +124,17 @@ void EKF::correct(const OptiSim::OptiMeas& opti) {
         nisAvg = (1.0 - alpha) * nisAvg + alpha * nis;
     }
 
-    // state update
-    x_est = x_est + K * res;
+    if (nisAvg < 13.28) {
+        // state update
+        x_est = x_est + K * res;
 
-    // Joseph form covariance update
-    const Mat<NX, NX> A = (I - K * H);
-    P = A * P * A.transpose() + K * R * K.transpose();
+        // Joseph form covariance update
+        const Mat<NX, NX> A = (I - K * H);
+        P = A * P * A.transpose() + K * R * K.transpose();
 
-    // wrap rpy
-    x_est.template segment<3>(PHI) = wrapAngles(x_est.template segment<3>(PHI));
+        // wrap rpy
+        x_est.template segment<3>(PHI) = wrapAngles(x_est.template segment<3>(PHI));
+    }
 }
 
 // ------------------- dynamics f(x) -------------------
