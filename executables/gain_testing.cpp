@@ -179,8 +179,8 @@ int main() {
 		dt_secs = std::chrono::duration<double>(current_time - measurement_t).count();
 		if (dt_secs >= 1 / m_freq)
 		{
-			Eigen::Matrix<double, 8, 1> opti_data = readDatalink();
-			if (opti_data(7) == 1.0) //if valid
+			Eigen::Matrix<double, 5, 1> opti_data = readDatalink();
+			if (opti_data(4) == 1.0) //if valid
 			{
 				measurement = opti_data.block(0, 0, 4, 1);
 				ekf.update(measurement); //update our state estimate
