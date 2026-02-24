@@ -200,7 +200,7 @@ int main() {
 
         // ---------------- Manual RC Controls (Linux Only) -------------------
 #ifdef PLATFORM_LINUX
-        if (clock.taskClock.conInner >= clock.rates.conInner) {
+        if (clock.taskClock.keys >= clock.rates.keys) {
             Vec<3> rcVel = Vec<3>::Zero();
             double rcPsi = 0.0;
 
@@ -228,7 +228,9 @@ int main() {
             rcVel(1) = normalizedPWM(0);
             rcVel(2) = -normalizedPWM(2);
 
-            rcPsi = 5 * PI / 180 * normalizedPWM(3);
+            rcPsi = 10 * PI / 180 * normalizedPWM(3);
+
+            clock.taskClock.keys = 0.0;
 
             if (armed) {
                 manPsi = rcPsi;
