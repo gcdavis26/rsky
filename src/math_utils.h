@@ -24,9 +24,9 @@ Matrix15d jacobian(const Vector15d& x, const Vector3d& g, const Vector3d& a_body
 Eigen::Matrix<double, 15, 12> noise_coupling(const Vector15d& x);
 Vector3d sim_imu_accels(const Vector12d& x_true, const Vector3d& commanded_body_accel, const Vector3d& alpha, const Vector3d& r, const Vector3d& imunoise);
 Vector3d sim_gyro_rates(const Vector12d& x_true, const Vector3d& gyronoise);
-Vector3d sim_measurement(const Vector3d& x_true_measured, const Vector3d& m_noise);
+Vector4d sim_measurement(const Vector4d& x_true_measured, const Vector4d& m_noise);
 Vector12d noise12d();
-Vector3d noise3d();
+Vector4d noise4d();
 double wrapPi(double angle);
 double saturate(double command, double saturation, bool ismax = true);
 double clamp(double x, double lo, double hi);

@@ -19,13 +19,13 @@ add_subdirectory(${extlibs}/thermal-camera)
 add_subdirectory(${extlibs}/Navio2)
 add_subdirectory(${CMAKE_SOURCE_DIR}/src)
 
-add_executable(Simulation ${myExec}/simulation.cpp)
-target_compile_options(Simulation PRIVATE
-    $<$<CONFIG:Release>:-O3 -march=native -DNDEBUG>
-)
-target_include_directories(Simulation PRIVATE ${extlibs}/eigen)
-target_link_libraries(Simulation PRIVATE gnclib)
-target_precompile_headers(Simulation PRIVATE <Eigen/Dense>)
+#add_executable(Simulation ${myExec}/simulation.cpp)
+#target_compile_options(Simulation PRIVATE
+#    $<$<CONFIG:Release>:-O3 -march=native -DNDEBUG>
+#)
+#target_include_directories(Simulation PRIVATE ${extlibs}/eigen)
+#target_link_libraries(Simulation PRIVATE gnclib)
+#target_precompile_headers(Simulation PRIVATE <Eigen/Dense>)
 
 add_executable(RT_Simulation ${myExec}/rt_simulation.cpp)
 target_compile_options(RT_Simulation PRIVATE

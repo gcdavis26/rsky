@@ -3,7 +3,7 @@
 #include "math_utils.h"
 #include <iostream>
 
-EKF::EKF(const Vector3d& r, const Vector12d& sigmaw, const Vector3d& sigmav)
+EKF::EKF(const Vector3d& r, const Vector12d& sigmaw, const Vector4d& sigmav)
 {
 	//r = IMU - CG position = IMU pos (CG = 0,0,0).
 	//constructor, setting up important vectors, matrices
@@ -22,11 +22,11 @@ EKF::EKF(const Vector3d& r, const Vector12d& sigmaw, const Vector3d& sigmav)
 
 }
 
-void EKF::initialize(const Vector3d& measurement, const Vector3d& gyro0, const Vector3d& accel0, const Vector3d& bias_accel, const Vector3d& bias_gyro) //set up initial states. Initial measurement, per se
+void EKF::initialize(const Vector4d& measurement, const Vector3d& gyro0, const Vector3d& accel0, const Vector3d& bias_accel, const Vector3d& bias_gyro) //set up initial states. Initial measurement, per se
 {
 	omega_measured = gyro0;
 	body_accels = accel0;
-	x.block(3, 0, 3, 1) = measurement;
+	x.block(2, 0, 4, 1) = measurement;
 	x.block(9, 0, 3, 1) = bias_accel;
 	x.block(12, 0, 3, 1) = bias_gyro;
 }
@@ -57,16 +57,16 @@ void EKF::estimate(double dt)
 	//std::cout <<"Velocity derivative: " << std::endl << get_xdot(x, g, com_body_accels, omega_measured).block(6, 0, 3, 1) << std::endl << "Body accels: " << std::endl << com_body_accels << std::endl;
 }
 
-void EKF::update(const Vector3d& m)
+void EKF::update(const Vector4d& m)
 {
 
 	//incorporate a measurement model measurement into state estimate
-	Vector3d res;
-	res.noalias()  = m - x.block(3,0,3,1); //calculating residual
-	Matrix3d S;
-	S = P.block(3, 3, 3, 3).selfadjointView<Eigen::Lower>();
+	Vector4d res;
+	res.noalias()  = m - x.block(2,0,4,1); //calculating residual
+	Matrix4d S;
+	S = P.block(2, 2, 4, 4).selfadjointView<Eigen::Lower>();
 	S += R;
-	K.noalias() = P.block(0,3,15,3) * (S).ldlt().solve(Matrix3d::Identity());;
+	K.noalias() = P.block(0,2,15,4) * (S).ldlt().solve(Matrix4d::Identity());;
 	//Matrix15d KH;
 	//KH.noalias() = K * H;
 	x = x + K * res; //incorporating residual via kalman gain

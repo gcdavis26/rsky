@@ -164,7 +164,7 @@ Vector3d sim_gyro_rates(const Vector12d& x_true, const Vector3d& gyronoise)
 	return x_true.block(3, 0, 3, 1) + gyronoise;
 }
 
-Vector3d sim_measurement(const Vector3d& x_true_measured, const Vector3d& m_noise)
+Vector4d sim_measurement(const Vector4d& x_true_measured, const Vector4d& m_noise)
 {
 	return x_true_measured + m_noise;
 }
@@ -224,12 +224,12 @@ Vector12d noise12d()
 	return noise;
 }
 
-Vector3d noise3d()
+Vector4d noise4d()
 {
 	static std::mt19937 gen(std::random_device{}());
 	static std::normal_distribution<double> dist(0.0, 1.0);
-	Vector3d noise;
-	for (int i = 0; i < 3; i++)
+	Vector4d noise;
+	for (int i = 0; i < 4; i++)
 	{
 		noise(i) = dist(gen);
 	}

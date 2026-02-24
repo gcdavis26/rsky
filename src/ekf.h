@@ -10,21 +10,20 @@ private:
 	Matrix15d A;
 	Eigen::Matrix<double, 15, 12> G;
 	Matrix12d Q;
-	Matrix3d R;
+	Matrix4d R;
 	Vector3d g;
 	Vector3d radius;
 	Vector3d alpha;
 	Vector3d body_accels;
 	Vector3d omega_measured;
-	Eigen::Matrix<double, 3, 15> H;
-	Eigen::Matrix<double, 15, 3> K;
+	Eigen::Matrix<double, 15, 4> K;
 public:
 	//Constructor. Need gravity vector in NED, 
-	EKF(const Vector3d& r, const Vector12d& sigmaw, const Vector3d& sigmav);
-	void initialize(const Vector3d& measurement, const Vector3d& gyro0, const Vector3d& accel0, const Vector3d& bias_accel, const Vector3d& bias_gyro);//set up initial states. Initial measurement, per se
+	EKF(const Vector3d& r, const Vector12d& sigmaw, const Vector4d& sigmav);
+	void initialize(const Vector4d& measurement, const Vector3d& gyro0, const Vector3d& accel0, const Vector3d& bias_accel, const Vector3d& bias_gyro);//set up initial states. Initial measurement, per se
 	void imureading(const Vector3d& omega, const Vector3d& new_imu_accels, double dt);
 	void estimate(double dt);
-	void update(const Vector3d& m);
+	void update(const Vector4d& m);
 	Vector15d getState();
 	Vector12d getControlState();
 	Vector3d getOmega();

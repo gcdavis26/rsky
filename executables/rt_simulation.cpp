@@ -85,12 +85,12 @@ int main() {
 	//SETUP OF STOCHASTIC STUFF FOR EKF
 	Vector12d sigmaw;
 	sigmaw << .035, .035, .035, .21, .21, .21, 1e-2, 1e-2, 1e-2, 1e-4, 1e-4, 1e-4; //gyro,accelerometer, bias_accel, bias_gyro
-	Vector3d sigmav;
-	sigmav << .001, .001, .001; //n,e,d
+	Vector4d sigmav;
+	sigmav << .01, .001, .001, .001; //psi, n,e,d
 	Vector12d w;
 	w = noise12d().cwiseProduct(sigmaw);
-	Vector3d v;
-	v = noise3d().cwiseProduct(sigmav);
+	Vector4d v;
+	v = noise4d().cwiseProduct(sigmav);
 	Vector3d accel_bias;
 	accel_bias.setZero();
 	Vector3d gyro_bias;
@@ -107,8 +107,8 @@ int main() {
 	//EKF creation, initialization
 	EKF ekf(r, sigmaw, sigmav); //ekf created
 
-	Vector3d truth_measured = x_true.block(3, 0, 3, 1);
-	Vector3d measurement = sim_measurement(truth_measured, v);
+	Vector4d truth_measured = x_true.block(2, 0, 4, 1);
+	Vector4d measurement = sim_measurement(truth_measured, v);
 	Vector3d imu_accels = sim_imu_accels(x_true, Vector3d::Zero(), Vector3d::Zero(), Vector3d::Zero(), w.block(3, 0, 3, 1));
 	Vector3d imu_omega = sim_gyro_rates(x_true, w.block(0, 0, 3, 1));
 	ekf.initialize(measurement, imu_omega, imu_accels, accel_bias, gyro_bias); //initializing with values. Can be done after a wait as well.
@@ -147,7 +147,7 @@ int main() {
 	TelemetryPacket pkt;
 	uint32_t packetCounter = 0;
 
-	while (t < sim_time)
+	while (true)
 	{
 		auto current_time = std::chrono::steady_clock::now();
 		double dt_secs = std::chrono::duration<double>(current_time - t_loop).count(); 
@@ -178,8 +178,8 @@ int main() {
 
 		if (dt_secs >= 1 / m_freq)
 		{
-			v = noise3d().cwiseProduct(sigmav);
-			truth_measured << x_true(6), x_true(7), x_true(8);
+			v = noise4d().cwiseProduct(sigmav);
+			truth_measured <<x_true(2), x_true(6), x_true(7), x_true(8);
 			measurement = sim_measurement(truth_measured, v);
 			ekf.update(measurement);
 			measurement_t = current_time;
