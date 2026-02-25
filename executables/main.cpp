@@ -31,7 +31,7 @@
 int main() {
 
     std::cout << std::fixed << std::setprecision(4);
-
+    //init objects
     TimeKeeper clock;
     Dynamics dynamics;
     ImuSim imu;
@@ -55,6 +55,7 @@ int main() {
     //init ekf after imu so that you can put the biasees and noise into the constructor.
     EKF ekf;
 
+    //init vars
     double lastPrint = 0.0;
     const double printDt = 1.0; 
 
