@@ -18,7 +18,11 @@ Eigen::Matrix<double, 12, 1> IMUHandler::initialize() {
 
     // Loop until 5 seconds have passed
     while (std::chrono::steady_clock::now() - start_time < duration) {
-        Eigen::Matrix<double, 6, 1> data = update();
+
+        update();
+        Vec<6> data = Vec<6>::Zero();
+        data << imu.gyro, imu.accel;
+
         sum += data;
 
         // Element-wise multiplication to accumulate the sum of squares
