@@ -474,7 +474,7 @@ int main() {
 
                     << " SENSORS\n"
                     << "   IMU Stats : "
-                    << std::setw(8) << imuStat << "\n"
+                    << std::setw(8) << imuStat.transpose() << "\n"
                     << "   IMU Gyro  [x y z] : "
                     << std::setw(8) << gyro(0) << " "
                     << std::setw(8) << gyro(1) << " "
