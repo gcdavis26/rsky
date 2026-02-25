@@ -5,7 +5,7 @@
 class AHRS {
 public:
 
-	void initializeFromAccel(Vec<3>& accel, Vec<6>& bias); //optional add yaw init later
+	void initializeFromAccel(Vec<3>& accel, const Vec<6>& bias); //optional add yaw init later
 
 	void initialize(double roll, double pitch);
 

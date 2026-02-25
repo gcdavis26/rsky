@@ -1,6 +1,6 @@
 #include "estimation/AHRS.h"
 
-void AHRS::initializeFromAccel(Vec<3>& accel,Vec<6>& bias) {
+void AHRS::initializeFromAccel(Vec<3>& accel,const Vec<6>& bias) {
 	accel -= bias.segment<3>(3);
 	double r = 0.0, p = 0.0;
 	accelToAttitude(accel, r, p);
