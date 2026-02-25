@@ -52,6 +52,7 @@ int main() {
 
     IMUHandler imuReal;
     Vec<12> imuStats = imuReal.initialize(); //(mgx,mgy,mgz,max,may,maz,siggx,siggy,siggz,sigax,sigay,sigaz)
+    imuStats(5) = imuStats(5) + g;
 #endif
     //init ekf after imu so that you can put the biasees and noise into the constructor.
     EKF ekf;
