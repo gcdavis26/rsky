@@ -337,12 +337,11 @@ int main() {
 
                         // ----------------Real Commands -------------
             #ifdef PLATFORM_LINUX
-            if (clock.taskClock.writePWM >= clock.rates.writePWM) {
 
                 Vec<4> throttleTest = Vec<4>::Zero();
                 throttleTest << rcPWM(2), rcPWM(2), rcPWM(2), rcPWM(2);
 
-                if (!motorInit && armed && (throttleTest <= 1001.0*Vec<4>::Identity())) { // add in that it only initializes if the commanded pwms are minimum
+                if (!motorInit && armed && (throttleTest.array() <= 1001.0).all()) { // add in that it only initializes if the commanded pwms are minimum
                     motdrv.initialize();
                     motorInit = true;
                 }
@@ -356,8 +355,7 @@ int main() {
                 else if (!motorInit && !armed) {
                     //do nothing; 
                 }
-                clock.taskClock.writePWM = 0.0;
-            }
+
             #endif
 
         }
