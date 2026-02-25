@@ -51,6 +51,7 @@ int main() {
     MotorDriver motdrv;
 
     IMUHandler imuReal;
+    Vec<12> imuStats = imuReal.initialize();
 #endif
     //init ekf after imu so that you can put the biasees and noise into the constructor.
     EKF ekf;
@@ -394,11 +395,14 @@ int main() {
 #ifdef _WIN32
             const Vec<3> gyro = imu.imu.gyro;
             const Vec<3> accel = imu.imu.accel;
+            const Vec<12> imuStats = Vec<12>::Zero();
 #endif
 
 #ifdef PLATFORM_LINUX
             const Vec<3> gyro = imuReal.imu.gyro;
             const Vec<3> accel = imuReal.imu.accel;
+            const Vec<12> imuStats = imuStats;
+
 #endif
             const Vec<3> optPos = opti.opti.pos;
             const double optPsi = opti.opti.psi;
@@ -469,6 +473,8 @@ int main() {
 #endif
 
                     << " SENSORS\n"
+                    << "   IMU Stats : "
+                    << std::setw(8) << imuStats << "\n"
                     << "   IMU Gyro  [x y z] : "
                     << std::setw(8) << gyro(0) << " "
                     << std::setw(8) << gyro(1) << " "
