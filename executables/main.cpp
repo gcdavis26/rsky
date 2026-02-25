@@ -266,11 +266,11 @@ int main() {
 
         // ---------------- AHRS ------------------------
         if (!ahrs.init) {
-            ahrs.initializeFromAccel(imu.imu.accel);
+            ahrs.initializeFromAccel(imuReal.imu.accel,imuStats.segment<6>(0));
             ahrs.init = true;
         }
         if (clock.taskClock.AHRS >= clock.rates.AHRS) {
-            ahrs.update(imu.imu.accel, imu.imu.gyro, clock.taskClock.AHRS);
+            ahrs.update(imuReal.imu.accel, imuReal.imu.gyro,imuStats.segment<6>(0), clock.taskClock.AHRS);
             clock.taskClock.AHRS = 0.0;
         }
         Vec<3> AHRSAtt = ahrs.euler();

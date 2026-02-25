@@ -1,6 +1,7 @@
 #include "estimation/AHRS.h"
 
-void AHRS::initializeFromAccel(Vec<3> accel) {
+void AHRS::initializeFromAccel(Vec<3>& accel,Vec<6>& bias) {
+	accel -= bias.segment<3>(3);
 	double r = 0.0, p = 0.0;
 	accelToAttitude(accel, r, p);
 	initialize(r, p);
@@ -11,8 +12,12 @@ void AHRS::initialize(double roll, double pitch) {
 	theta = clamp(pitch, -max_abs_pitch_rad, max_abs_pitch_rad);
 }
 
-void AHRS::update(const Vec<3>& accel, const Vec<3>& gyro, double dt) {
+void AHRS::update(Vec<3>& accel,Vec<3>& gyro, const Vec<6>& bias, double dt) {
 	if (!(std::isfinite(dt) && dt > 0.0)) return;
+	
+	//apply bias
+	gyro -= bias.segment<3>(0);
+	accel -= bias.segment<3>(3);
 
 	// gyro propagation
 	Vec<3> eulerRates1 = eulerRates_ZYX(phi, theta, gyro);
@@ -53,6 +58,7 @@ void AHRS::update(const Vec<3>& accel, const Vec<3>& gyro, double dt) {
 
 }
 
+//already bias corrected before getting passed into this
 void AHRS::accelToAttitude(const Vec<3>& accel, double& roll, double& pitch) {
 	const double ax = accel(0);
 	const double ay = accel(1);

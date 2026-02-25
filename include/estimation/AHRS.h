@@ -5,11 +5,11 @@
 class AHRS {
 public:
 
-	void initializeFromAccel(Vec<3> accel); //optional add yaw init later
+	void initializeFromAccel(Vec<3>& accel, Vec<6>& bias); //optional add yaw init later
 
 	void initialize(double roll, double pitch);
 
-	void update(const Vec<3>& accel, const Vec<3>& gyro, double dt);
+	void update(Vec<3>& accel,Vec<3>& gyro, const Vec<6>& bias, double dt);
 
 	Vec<3> euler() const { return Vec<3>(phi, theta, psi); }
 
