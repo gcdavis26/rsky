@@ -336,7 +336,7 @@ int main() {
                         // ----------------Real Commands -------------
             #ifdef PLATFORM_LINUX
             if (clock.taskClock.writePWM >= clock.rates.writePWM) {
-                if (!motorInit && armed) { // add in that it only initializes if the commanded pwms are minimum
+                if (!motorInit && armed && (rcPWM == Vec<4>::Zero()) { // add in that it only initializes if the commanded pwms are minimum
                     motdrv.initialize();
                     motorInit = true;
                 }
