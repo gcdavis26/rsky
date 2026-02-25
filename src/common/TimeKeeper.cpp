@@ -33,4 +33,5 @@ void TimeKeeper::stepClocks(double dt) {
 	taskClock.AHRS += dt;
 	taskClock.sim += dt;
 	taskClock.keys += dt;
+	taskClock.writePWM += dt;
 }

@@ -21,6 +21,7 @@ public:
 		static constexpr double AHRS = 1.0 / 100;
 		static constexpr double sim = 1.0 / 1000;
 		static constexpr double keys = 1.0 / 400;
+		static constexpr double writePWM = 1.0 / 400;
 													
 	};
 
@@ -36,6 +37,7 @@ public:
 		double AHRS = 0.0;
 		double sim = 0.0;
 		double keys = 0.0;
+		double writePWM = 0.0;
 	};
 
 	scheduler rates;

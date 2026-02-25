@@ -21,6 +21,7 @@ bool MotorDriver::initialize() {
     for (int pin : motor_pins) {
         pwm_driver.initialize(pin);
         pwm_driver.set_frequency(pin, PWM_FREQ);
+        usleep(50000);
         pwm_driver.enable(pin);
     }
 
@@ -63,6 +64,7 @@ void MotorDriver::calibrate() {
 
 void MotorDriver::command(const Eigen::Vector4d& pwm_values) {
     for (int i = 0; i < NUM_MOTORS; ++i) {
+
         // Clamp the double input and cast to float for the hardware driver
         double commanded = std::clamp(pwm_values(i), (double)PWM_MIN, (double)PWM_MAX);
 
