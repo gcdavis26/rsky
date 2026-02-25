@@ -45,7 +45,7 @@ Eigen::Matrix<double, 12, 1> IMUHandler::initialize() {
     return result;
 }
 
-Eigen::Matrix<double, 6, 1> IMUHandler::update() {
+void IMUHandler::update() {
 
     lsm.update();
 
@@ -58,6 +58,7 @@ Eigen::Matrix<double, 6, 1> IMUHandler::update() {
     Eigen::Matrix<double, 6, 1> data;
     data << gy,gx, gz, ay, ax, -az;
 
-    // Returned as a 6D eigen matrix containing acc and gyro vals
-    return data;
+    imu.gyro << gy, gx, gz;
+    imu.accel << ay, ax, -az;
+    
 }

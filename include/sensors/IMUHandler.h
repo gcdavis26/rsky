@@ -21,7 +21,7 @@ public:
 
     imuOut imu;
 
-    Eigen::Matrix<double, 6, 1> update();
+    void update();
 
 private:
     LSM9DS1 lsm;
