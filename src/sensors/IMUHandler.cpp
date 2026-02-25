@@ -62,7 +62,7 @@ void IMUHandler::update() {
     Eigen::Matrix<double, 6, 1> data;
     data << gy,gx, gz, ay, ax, -az;
 
-    imu.gyro << gy, gx, gz;
+    imu.gyro << gy, gx, -gz;
     imu.accel << ay, ax, -az;
     
 }
