@@ -342,7 +342,7 @@ int main() {
                 Vec<4> throttleTest = Vec<4>::Zero();
                 throttleTest << rcPWM(2), rcPWM(2), rcPWM(2), rcPWM(2);
 
-                if (!motorInit && armed && (throttleTest == Vec<4>::Zero()) { // add in that it only initializes if the commanded pwms are minimum
+                if (!motorInit && armed && (throttleTest == Vec<4>::Zero())) { // add in that it only initializes if the commanded pwms are minimum
                     motdrv.initialize();
                     motorInit = true;
                 }
