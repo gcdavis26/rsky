@@ -346,9 +346,12 @@ int main() {
                     throttleTest << rcPWM(2),rcPWM(2),rcPWM(2),rcPWM(2);
                     motdrv.command(throttleTest); //takes in four for motors 1 2 3 4
                 }
-                else {
+                else if (motorInit && !armed) {
                     motdrv.wind_down();
                     motorInit = false;
+                }
+                else if (!motorInit && !armed) {
+                    //do nothing; 
                 }
                     
             #endif
