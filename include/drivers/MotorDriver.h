@@ -10,7 +10,7 @@
 #define NUM_MOTORS 4
 #define PWM_FREQ 400
 #define PWM_MIN 1000.0
-#define PWM_MAX 2000.0
+#define PWM_MAX 1400.0 // 2000 normally, 1400 for safety.
 #define PWM_SAFE 1000.0
 
 class MotorDriver {

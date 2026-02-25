@@ -51,7 +51,7 @@ int main() {
     MotorDriver motdrv;
 
     IMUHandler imuReal;
-    Vec<12> imuStats = imuReal.initialize();
+    Vec<12> imuStats = imuReal.initialize(); //(mgx,mgy,mgz,max,may,maz,siggx,siggy,siggz,sigax,sigay,sigaz)
 #endif
     //init ekf after imu so that you can put the biasees and noise into the constructor.
     EKF ekf;
@@ -335,7 +335,7 @@ int main() {
 
                         // ----------------Real Commands -------------
             #ifdef PLATFORM_LINUX
-                    /*
+                    
                 if (!motorInit && armed) { // add in that it only initializes if the commanded pwms are minimum
                     motdrv.initialize();
                     motorInit = true;
@@ -350,7 +350,7 @@ int main() {
                     motdrv.wind_down();
                     motorInit = false;
                 }
-                    */
+                    
             #endif
 
         }
