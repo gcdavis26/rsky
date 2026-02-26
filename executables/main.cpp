@@ -347,7 +347,7 @@ int main() {
                     motorInit = true;
                 }
                 else if (motorInit && armed) {
-                    motdrv.command(throttleTest); //takes in four for motors 1 2 3 4
+                    motdrv.command(throttleTest); //takes in four for motors 1 2 3 4 pwmCmd
                 }
                 else if (motorInit && !armed) {
                     motdrv.wind_down();
