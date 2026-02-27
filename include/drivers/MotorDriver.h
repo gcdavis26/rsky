@@ -11,7 +11,7 @@
 #define PWM_FREQ 400
 #define PWM_MIN 1000.0
 #define PWM_MAX 2000.0 // 2000 normally, 1400 for safety.
-#define PWM_SAFE 1000.0
+#define PWM_SAFE 1150.0
 
 class MotorDriver {
 public:
