@@ -79,8 +79,8 @@ int main() {
     int HzCounter = 0;
 
     bool autopilot = false;
-    bool printOn = false;
-    bool armed = true;
+    bool printOn = true;
+    bool armed = false;
     bool motorInit = false;
 
     double NIS = 4.0;
@@ -294,8 +294,8 @@ int main() {
             attManual << 10 * PI / 180 * manVel(1), -10 * PI / 180 * manVel(0), navState(2);
             manPsi = manPsi * 10 * PI / 180;
 
-            autopilot = false;
-            ekfHealthy = false;
+            //autopilot = false;
+            //ekfHealthy = false;
 
             if (autopilot && ekfHealthy) {
                 momentsCmd =
