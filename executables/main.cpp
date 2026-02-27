@@ -365,10 +365,6 @@ int main() {
                 }
                 else if (motorInit && armed) {
 
-                    for (int i = 0; i < 4; i++) {
-                        thrustTest(i) = clamp(thrustTest(i), 1150.0, 2000.0);
-                    }
-
                     motdrv.command(thrustTest); //takes in four for motors 1 2 3 4 pwmCmd
                 }
                 else if (motorInit && !armed) {
