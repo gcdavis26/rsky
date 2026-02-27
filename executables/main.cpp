@@ -359,7 +359,7 @@ int main() {
             Vec<4> thrustTest = Vec<4>::Zero();
             thrustTest << rcPWM(2), rcPWM(2), rcPWM(2), rcPWM(2);
 
-                if (!motorInit && armed && (thrustTest <= 1001.0).all()) { 
+                if (!motorInit && armed && (thrustTest.array() <= 1001.0).all()) { 
                     motdrv.initialize();
                     motorInit = true;
                 }
