@@ -365,7 +365,7 @@ int main() {
                 }
                 else if (motorInit && armed) {
 
-                    for (i = 0; i < 4; i++) {
+                    for (int i = 0; i < 4; i++) {
                         thrustTest(i) = clamp(thrustTest(i),1150.0,2000.0)
                     }
 
