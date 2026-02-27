@@ -31,14 +31,6 @@ bool MotorDriver::initialize() {
 
     //calibrate();  shouldn't need this because it might cause the motors to command 2000 PWM if already calibrated. Need to test again. 
 
-    // Arming sequence: ensure ESCs see low signal to initialize
-    usleep(5000000);
-    
-    for (int pin : motor_pins) {
-        pwm_driver.set_duty_cycle(pin, (float)PWM_SAFE);
-    }
-    
-
     usleep(50000);
     return true;
 }
@@ -69,7 +61,7 @@ void MotorDriver::command(const Eigen::Vector4d& pwm_values) {
     for (int i = 0; i < NUM_MOTORS; ++i) {
 
         // Clamp the double input and cast to float for the hardware driver
-        double commanded = std::clamp(pwm_values(i), (double)PWM_SAFE, (double)PWM_MAX);
+        double commanded = std::clamp(pwm_values(i), (double)PWM_MIN, (double)PWM_MAX);
 
         pwm_driver.set_duty_cycle(motor_pins[i], static_cast<float>(commanded));
     }
