@@ -79,8 +79,8 @@ int main() {
     int HzCounter = 0;
 
     bool autopilot = false;
-    bool printOn = true;
-    bool armed = false;
+    bool printOn = false;
+    bool armed = true;
     bool motorInit = false;
 
     double NIS = 4.0;
@@ -266,6 +266,7 @@ int main() {
         }
 
         // ---------------- AHRS ------------------------
+#ifdef PLATFORM_LINUX
         if (!ahrs.init) {
             ahrs.initializeFromAccel(imuReal.imu.accel,imuStats.segment<6>(0));
             ahrs.init = true;
@@ -274,6 +275,17 @@ int main() {
             ahrs.update(imuReal.imu.accel, imuReal.imu.gyro,imuStats.segment<6>(0), clock.taskClock.AHRS);
             clock.taskClock.AHRS = 0.0;
         }
+#endif
+#ifdef _WIN32
+        if (!ahrs.init) {
+            ahrs.initializeFromAccel(imu.imu.accel, Vec<6>::Zero());
+            ahrs.init = true;
+        }
+        if (clock.taskClock.AHRS >= clock.rates.AHRS) {
+            ahrs.update(imu.imu.accel, imu.imu.gyro, Vec<6>::Zero(), clock.taskClock.AHRS);
+            clock.taskClock.AHRS = 0.0;
+        }
+#endif
         Vec<3> AHRSAtt = ahrs.euler();
 
         // ---------------- Inner Loop ----------------
@@ -281,6 +293,9 @@ int main() {
             Vec<3> attManual;
             attManual << 10 * PI / 180 * manVel(1), -10 * PI / 180 * manVel(0), navState(2);
             manPsi = manPsi * 10 * PI / 180;
+
+            autopilot = false;
+            ekfHealthy = false;
 
             if (autopilot && ekfHealthy) {
                 momentsCmd =
@@ -306,7 +321,13 @@ int main() {
                         manPsi,
                         AHRSAtt,
                         imu.imu.gyro);
-                outer.out.Fz = mass * g * (1 - manVel(2));
+
+                double den = cos(AHRSAtt(0)) * cos(AHRSAtt(1));
+                den = clamp(den, 0.2, 1.0);
+
+                double Fz_base = mass * g * (1 - manVel(2));
+                outer.out.Fz = clamp(Fz_base / den, 0, 2*mass*g);
+                //on test flight need to figure out how to map Fz to PWM;
             }
             else {
                 momentsCmd =
@@ -318,8 +339,6 @@ int main() {
                 outer.out.Fz = mass * g;
             }
 
-
-
             wrenchCmd << outer.out.Fz,
                 momentsCmd(0),
                 momentsCmd(1),
@@ -330,31 +349,29 @@ int main() {
             if (!armed) {
                 thrustCmd = Vec<4>::Zero();
             }
+
             pwmCmd = mixer.thr2PWM(thrustCmd); //this will go directly to the four motors
 
             clock.taskClock.conInner = 0.0;
 
-
-
                         // ----------------Real Commands -------------
             #ifdef PLATFORM_LINUX
+            Vec<4> thrustTest = Vec<4>::Zero();
+            thrustTest << rcPWM(2),rcPWM(2),rcPWM(2),rcPWM(2)
 
-                Vec<4> throttleTest = Vec<4>::Zero();
-                throttleTest << rcPWM(2), rcPWM(2), rcPWM(2), rcPWM(2);
-
-                if (!motorInit && armed && (throttleTest.array() <= 1001.0).all()) { // add in that it only initializes if the commanded pwms are minimum
+                if (!motorInit && armed && (thrustTest <= 1001.0).all()) { 
                     motdrv.initialize();
                     motorInit = true;
                 }
                 else if (motorInit && armed) {
-                    motdrv.command(throttleTest); //takes in four for motors 1 2 3 4 pwmCmd
+                    motdrv.command(thrustTest); //takes in four for motors 1 2 3 4 pwmCmd
                 }
                 else if (motorInit && !armed) {
                     motdrv.wind_down();
                     motorInit = false;
                 }
                 else if (!motorInit && !armed) {
-                    //do nothing; 
+                    //do nothing; <-- wow douchebagself really put a semicolon on a comment...
                 }
 
             #endif
@@ -382,7 +399,6 @@ int main() {
             dynamics.step(clock.taskClock.sim, wrenchAct);
 
             clock.taskClock.sim = 0.0;
-
         }
 
         // ---------------- Console Print ----------------
