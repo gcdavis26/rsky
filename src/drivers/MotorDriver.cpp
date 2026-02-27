@@ -32,7 +32,7 @@ bool MotorDriver::initialize() {
     //calibrate();  shouldn't need this because it might cause the motors to command 2000 PWM if already calibrated. Need to test again. 
 
     // Arming sequence: ensure ESCs see low signal to initialize
-    usleep(50000);
+    usleep(5000000);
     
     for (int pin : motor_pins) {
         pwm_driver.set_duty_cycle(pin, (float)PWM_SAFE);
