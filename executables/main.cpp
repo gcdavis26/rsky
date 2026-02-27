@@ -357,7 +357,7 @@ int main() {
                         // ----------------Real Commands -------------
             #ifdef PLATFORM_LINUX
             Vec<4> thrustTest = Vec<4>::Zero();
-            thrustTest << rcPWM(2),rcPWM(2),rcPWM(2),rcPWM(2)
+            thrustTest << rcPWM(2), rcPWM(2), rcPWM(2), rcPWM(2);
 
                 if (!motorInit && armed && (thrustTest <= 1001.0).all()) { 
                     motdrv.initialize();
