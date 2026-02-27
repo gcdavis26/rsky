@@ -38,7 +38,7 @@ bool MotorDriver::initialize() {
     }
     */
 
-    usleep(500000);
+    usleep(5000000);
     return true;
 }
 
