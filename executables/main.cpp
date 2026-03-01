@@ -278,11 +278,11 @@ int main() {
 #endif
 #ifdef _WIN32
         if (!ahrs.init) {
-            ahrs.initializeFromAccel(imuReal.imu.accel, Vec<6>::Zero());
+            ahrs.initializeFromAccel(imuReal.imu.accel, imuStats.segment<6>(0));
             ahrs.init = true;
         }
         if (clock.taskClock.AHRS >= clock.rates.AHRS) {
-            ahrs.update(imu.imuReal.accel, imuReal.imu.gyro, Vec<6>::Zero(), clock.taskClock.AHRS);
+            ahrs.update(imu.imuReal.accel, imuReal.imu.gyro, imuStats.segment<6>(0), clock.taskClock.AHRS);
             clock.taskClock.AHRS = 0.0;
         }
 #endif
