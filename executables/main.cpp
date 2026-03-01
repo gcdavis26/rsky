@@ -80,7 +80,7 @@ int main() {
 
     bool autopilot = false;
     bool printOn = true;
-    bool armed = false;
+    bool armed = true;
     bool motorInit = false;
 
     double NIS = 4.0;
@@ -278,11 +278,11 @@ int main() {
 #endif
 #ifdef _WIN32
         if (!ahrs.init) {
-            ahrs.initializeFromAccel(imu.imu.accel, Vec<6>::Zero());
+            ahrs.initializeFromAccel(imuReal.imu.accel, Vec<6>::Zero());
             ahrs.init = true;
         }
         if (clock.taskClock.AHRS >= clock.rates.AHRS) {
-            ahrs.update(imu.imu.accel, imu.imu.gyro, Vec<6>::Zero(), clock.taskClock.AHRS);
+            ahrs.update(imu.imuReal.accel, imuReal.imu.gyro, Vec<6>::Zero(), clock.taskClock.AHRS);
             clock.taskClock.AHRS = 0.0;
         }
 #endif
@@ -294,8 +294,8 @@ int main() {
             attManual << 10 * PI / 180 * manVel(1), -10 * PI / 180 * manVel(0), navState(2);
             manPsi = manPsi * 10 * PI / 180;
 
-            //autopilot = false;
-            //ekfHealthy = false;
+            autopilot = false;
+            ekfHealthy = false;
 
             if (autopilot && ekfHealthy) {
                 momentsCmd =
@@ -320,14 +320,13 @@ int main() {
                         attManual,
                         manPsi,
                         AHRSAtt,
-                        imu.imu.gyro);
+                        imuReal.imu.gyro);
 
                 double den = cos(AHRSAtt(0)) * cos(AHRSAtt(1));
                 den = clamp(den, 0.2, 1.0);
 
                 double Fz_base = mass * g * (1 - manVel(2));
                 outer.out.Fz = clamp(Fz_base / den, 0, 2*mass*g);
-                //on test flight need to figure out how to map Fz to PWM;
             }
             else {
                 momentsCmd =
@@ -356,16 +355,16 @@ int main() {
 
                         // ----------------Real Commands -------------
             #ifdef PLATFORM_LINUX
-            Vec<4> thrustTest = Vec<4>::Zero();
-            thrustTest << rcPWM(2), rcPWM(2), rcPWM(2), rcPWM(2);
+            //Vec<4> thrustTest = Vec<4>::Zero();
+            //thrustTest << rcPWM(2), rcPWM(2), rcPWM(2), rcPWM(2);
 
-                if (!motorInit && armed && (thrustTest.array() <= 1001.0).all()) { 
+                if (!motorInit && armed && (pwmCmd.array() <= 1001.0).all()) { 
                     motdrv.initialize();
                     motorInit = true;
                 }
                 else if (motorInit && armed) {
 
-                    motdrv.command(thrustTest); //takes in four for motors 1 2 3 4 pwmCmd
+                    motdrv.command(pwmCmd); //takes in four for motors 1 2 3 4 pwmCmd
                 }
                 else if (motorInit && !armed) {
                     motdrv.wind_down();

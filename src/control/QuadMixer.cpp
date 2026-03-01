@@ -47,20 +47,14 @@ Vec<4> QuadMixer::clampThrusts(const Vec<4>& T) {
 }
 
 Vec<4> QuadMixer::thr2PWM(const Vec<4>& thrust_cmd) {
-	Vec<4> thrust_norm = Vec<4>::Zero();
-	for (int i = 0; i < 4; i++) {
-		thrust_norm(i) = clamp((thrust_cmd(i) - thrust_min) / (thrust_max - thrust_min), 0, 1);
-	}
-
-	Vec<4> u =(-(1.0 - e)+ ((1.0 - e) * (1.0 - e)+ 4.0 * e * thrust_norm.array()).sqrt()) / (2.0 * e);
-
-	Vec<4> PWM =
-		(PWM_MIN + (PWM_MAX - PWM_MIN) * u.array()).matrix();
+	Vec<4> PWM = Vec<4>::Zero();
+	
 
 	for (int i = 0; i < 4; i++) {
+
+		PWM(i) = (0.0468 + sqrt(2.226 * 0.00001 + 8.88 * 0.00001 * thrust_cmd(i))) / (4.44 * 0.00001);
+
 		PWM(i) = clamp(PWM(i), 1000.0, 2000.0);
 	}
-
 	return PWM;
-
 }

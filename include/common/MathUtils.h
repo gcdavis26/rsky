@@ -8,7 +8,7 @@
 static constexpr double PI = 3.141592653589;
 static constexpr double g = 9.81;
 
-static constexpr double mass = 1.0;
+static constexpr double mass = .810;
 
 template<int R, int C>
 using Mat = Eigen::Matrix<double, R, C>;
