@@ -20,6 +20,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/network.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/MotorDriver.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/RCInput.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/IMUHandler.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/BatteryHandler.cpp
 )
 add_library(drone_interface STATIC ${interface_sources})
 target_include_directories(drone_interface PUBLIC
