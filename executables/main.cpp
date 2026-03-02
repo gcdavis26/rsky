@@ -42,7 +42,7 @@ int main() {
     InnerLoop inner;
     QuadMixer mixer;
     MotorModel motormodel;
-    UdpSender udp("127.0.0.1", 8080); //KINETIC 192.168.1.2
+    UdpSender udp("192.168.1.2", 8080); //KINETIC 192.168.1.2
     
 #ifdef PLATFORM_LINUX
     RCIn rcin;
@@ -297,8 +297,8 @@ int main() {
             attManual << 10 * PI / 180 * manVel(1), -10 * PI / 180 * manVel(0), navState(2);
             manPsi = manPsi * 10 * PI / 180;
 
-            //autopilot = false;
-            //ekfHealthy = false;
+            autopilot = false;
+            ekfHealthy = false;
 
             if (autopilot && ekfHealthy) {
                 momentsCmd =
@@ -323,7 +323,7 @@ int main() {
                         attManual,
                         manPsi,
                         AHRSAtt,
-                        imu.imu.gyro);
+                        imuReal.imu.gyro);
 
                 double den = cos(AHRSAtt(0)) * cos(AHRSAtt(1));
                 den = clamp(den, 0.2, 1.0);
