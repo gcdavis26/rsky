@@ -56,5 +56,6 @@ Vec<4> QuadMixer::thr2PWM(const Vec<4>& thrust_cmd) {
 
 		PWM(i) = clamp(PWM(i), 1000.0, 2000.0);
 	}
+
 	return PWM;
 }

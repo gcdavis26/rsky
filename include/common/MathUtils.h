@@ -19,6 +19,9 @@ using Vec = Eigen::Matrix<double, N, 1>;
 template<int N>
 using Vecf = Eigen::Matrix<float, N, 1>;
 
+template<int N>
+using Veci = Eigen::Matrix<int, N, 1>;
+
 double clamp(double x, double lo, double hi);
 
 double wrapToPi(double angle_rad);

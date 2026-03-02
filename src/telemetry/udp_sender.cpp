@@ -13,6 +13,10 @@ static inline json vec3ToJson(const Vecf<3>& v) {
     return json::array({ v(0), v(1), v(2) });
 }
 
+static inline json vec4ToJson(const Veci<4>& v) {
+    return json::array({ v(0), v(1), v(2), v(3)});
+}
+
 void UdpSender::platformStartup_() {
 #ifdef _WIN32
     if (!wsa_started_) {
@@ -95,7 +99,8 @@ bool UdpSender::sendFromSim(
     const OuterLoop& outer,
     const ImuSim& imu,
     const bool& armed,
-    const double NIS)
+    const double NIS,
+    const Vec<4>& PWMcmd)
 {
     // ---- Extract what MATLAB expects ----
     const Vecf<3> euler_est = navState.segment<3>(0).cast<float>();
@@ -107,6 +112,7 @@ bool UdpSender::sendFromSim(
 
     // OuterLoop outputs (commanded attitude)
     const Vecf<3> euler_cmd = outer.out.attCmd.cast<float>();
+    const Veci<4> PWMCmd = PWMcmd.cast<int>();
 
     // IMU outputs
     const Vecf<3> omega_est = imu.imu.gyro.cast<float>();
@@ -132,6 +138,7 @@ bool UdpSender::sendFromSim(
 
     j["pos_cmd"] = vec3ToJson(pos_cmd);
     j["pos_est"] = vec3ToJson(pos_est);
+    j["pwm_cmd"] = vec4ToJson(PWMCmd);
     j["vel_est"] = vec3ToJson(vel_est);
     j["euler_est"] = vec3ToJson(euler_est);
     

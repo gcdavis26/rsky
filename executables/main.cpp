@@ -78,10 +78,11 @@ int main() {
     double HzTimer = 0.0;
     int HzCounter = 0;
 
-    bool autopilot = false;
-    bool printOn = true;
+    bool autopilot = true;
+    bool printOn = false;
     bool armed = true;
     bool motorInit = false;
+    double armTime = 0.0;
 
     double NIS = 4.0;
     bool ekfHealthy = false;
@@ -213,9 +214,11 @@ int main() {
 
             if (rcPWM(4) > 1500.0) {
                 armed = true;
+                armTime += clock.taskClock.keys;
             }
             else {
                 armed = false;
+                armTime = 0.0;
             }
 
             if (rcPWM(5) > 1750) {
@@ -278,11 +281,11 @@ int main() {
 #endif
 #ifdef _WIN32
         if (!ahrs.init) {
-            ahrs.initializeFromAccel(imuReal.imu.accel, imuStats.segment<6>(0));
+            ahrs.initializeFromAccel(imu.imu.accel, Vec<6>::Zero());
             ahrs.init = true;
         }
         if (clock.taskClock.AHRS >= clock.rates.AHRS) {
-            ahrs.update(imu.imuReal.accel, imuReal.imu.gyro, imuStats.segment<6>(0), clock.taskClock.AHRS);
+            ahrs.update(imu.imu.accel, imu.imu.gyro, Vec<6>::Zero(), clock.taskClock.AHRS);
             clock.taskClock.AHRS = 0.0;
         }
 #endif
@@ -294,8 +297,8 @@ int main() {
             attManual << 10 * PI / 180 * manVel(1), -10 * PI / 180 * manVel(0), navState(2);
             manPsi = manPsi * 10 * PI / 180;
 
-            autopilot = false;
-            ekfHealthy = false;
+            //autopilot = false;
+            //ekfHealthy = false;
 
             if (autopilot && ekfHealthy) {
                 momentsCmd =
@@ -320,7 +323,7 @@ int main() {
                         attManual,
                         manPsi,
                         AHRSAtt,
-                        imuReal.imu.gyro);
+                        imu.imu.gyro);
 
                 double den = cos(AHRSAtt(0)) * cos(AHRSAtt(1));
                 den = clamp(den, 0.2, 1.0);
@@ -345,7 +348,7 @@ int main() {
 
             thrustCmd = mixer.mix2Thrust(wrenchCmd);
 
-            if (!armed) {
+            if (!armed && (armTime < 5.0)) {
                 thrustCmd = Vec<4>::Zero();
             }
 
@@ -358,11 +361,11 @@ int main() {
             //Vec<4> thrustTest = Vec<4>::Zero();
             //thrustTest << rcPWM(2), rcPWM(2), rcPWM(2), rcPWM(2);
 
-                if (!motorInit && armed && (pwmCmd.array() <= 1001.0).all()) { 
+                if (!motorInit && armed && (pwmCmd.array() <= 1001).all()) { 
                     motdrv.initialize();
                     motorInit = true;
                 }
-                else if (motorInit && armed) {
+                else if (motorInit && armed && armTime >= 5.0) {
 
                     motdrv.command(pwmCmd); //takes in four for motors 1 2 3 4 pwmCmd
                 }
@@ -387,7 +390,8 @@ int main() {
                 outer,
                 imu,
                 armed,
-                NIS
+                NIS,
+                pwmCmd
             );
             clock.taskClock.tele = 0.0;
         }

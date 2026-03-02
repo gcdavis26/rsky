@@ -48,7 +48,8 @@ public:
         const OuterLoop& outer,
         const ImuSim& imu,
         const bool& armed,
-        const double NIS);
+        const double NIS,
+        const Vec<4>& PWMcmd);
 
 private:
     bool sendJson_(const nlohmann::json& j);
