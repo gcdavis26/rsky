@@ -53,6 +53,7 @@ int main() {
     Vec<12> imuStats = imuReal.initialize(); //(mgx,mgy,mgz,max,may,maz,siggx,siggy,siggz,sigax,sigay,sigaz)
     imuStats(5) = imuStats(5) + g;
     AHRS ahrs(imuStats.segment<6>(0));
+    EKF ekf; // add bias constructor
 #endif
 #ifdef _WIN32
     //init nav after imu so that you can put the biasees and noise into the constructor.
