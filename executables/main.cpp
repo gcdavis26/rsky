@@ -82,8 +82,8 @@ int main() {
     int HzCounter = 0;
 
     bool autopilot = false;
-    bool printOn = false;
-    bool armed = true;
+    bool printOn = true;
+    bool armed = false;
     bool motorInit = false;
     double armTime = 0.0;
 
@@ -296,10 +296,9 @@ int main() {
         }
 #endif
         Vec<3> AHRSAtt = ahrs.euler();
-
+        Vec<3> attManual;
         // ---------------- Inner Loop ----------------
         if (clock.taskClock.conInner >= clock.rates.conInner) {
-            Vec<3> attManual;
             attManual << 10 * PI / 180 * manVel(1), -10 * PI / 180 * manVel(0), navState(2);
             manPsi = manPsi * 10 * PI / 180;
 
@@ -424,7 +423,7 @@ int main() {
 
             const Vec<3> posCmd = MM.out.posCmd;
   
-            const Vec<3> attCmd = outer.out.attCmd;
+            const Vec<3> attCmd = attManual;
 
 #ifdef _WIN32
             const Vec<3> gyro = imu.imu.gyro;
