@@ -8,7 +8,7 @@ public:
 	Vec<3> computeWrench(const Vec<3>& att_cmd,double yaw_rate_cmd, const Vec<3>& att, const Vec<3>& omega);
 
 private:
-	static const inline Vec<3> kp{ 0.05,0.05,0.05};
+	static const inline Vec<3> kp{ 0.25,0.25,0.25};
 
 	static const inline Vec<3> kd{ 0.05,0.05,0.05};
 
