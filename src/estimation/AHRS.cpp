@@ -111,7 +111,6 @@ void AHRS::update(const Vec<3>& accel,const Vec<3>& gyro, double dt) {
 
 	Mat<4,4> Phi = Mat<4,4>::Identity() + F * dt;
 
-	// Process noise Q (simple diagonal)
 	Mat<4,4> Q = Mat<4,4>::Zero();
 	Q(0, 0) = q_angle * dt;
 	Q(1, 1) = q_angle * dt;

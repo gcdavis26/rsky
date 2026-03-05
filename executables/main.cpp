@@ -83,7 +83,7 @@ int main() {
 
     bool autopilot = false;
     bool printOn = false;
-    bool armed = false;
+    bool armed = true;
     bool motorInit = false;
     double armTime = 0.0;
 
@@ -197,12 +197,14 @@ int main() {
             else if (GetAsyncKeyState('E') & 0x8000) {
                 keyPsi = 1;
             }
-            clock.taskClock.keys = 0.0;
 
             if (armed) {
                 manVel = keyVel;
                 manPsi = keyPsi;
+                armTime += clock.taskClock.keys;
             }
+
+            clock.taskClock.keys = 0.0;
         }
 
 #endif
@@ -310,7 +312,8 @@ int main() {
                         outer.out.attCmd,
                         0.0,
                         navState.segment<3>(0),
-                        imu.imu.gyro);
+                        imu.imu.gyro,
+                        clock.taskClock.conInner);
             }
             else if (!autopilot && ekfHealthy) {
                 momentsCmd =
@@ -318,7 +321,8 @@ int main() {
                         outer.out.attCmd,
                         manPsi,
                         navState.segment<3>(0),
-                        imu.imu.gyro);
+                        imu.imu.gyro,
+                        clock.taskClock.conInner);
             }
             else if (!autopilot && !ekfHealthy) {
                 attManual(2) = AHRSAtt(2);
@@ -327,7 +331,7 @@ int main() {
                         attManual,
                         manPsi,
                         AHRSAtt,
-                        imu.imu.gyro);
+                        imu.imu.gyro,clock.taskClock.conInner);
 
                 double den = cos(AHRSAtt(0)) * cos(AHRSAtt(1));
                 den = clamp(den, 0.2, 1.0);
@@ -341,7 +345,8 @@ int main() {
                         Vec<3>::Zero(),
                         0.0,
                         AHRSAtt,
-                        imu.imu.gyro);
+                        imu.imu.gyro,
+                        clock.taskClock.conInner);
                 outer.out.Fz = mass * g;
             }
 
