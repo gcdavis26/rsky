@@ -36,13 +36,12 @@ int main() {
     Dynamics dynamics;
     ImuSim imu;
     OptiSim opti;
-    AHRS ahrs;
     ModeManager MM;
     OuterLoop outer;
     InnerLoop inner;
     QuadMixer mixer;
     MotorModel motormodel;
-    UdpSender udp("192.168.1.2", 8080); //KINETIC 192.168.1.2
+    UdpSender udp("127.0.0.1", 8080); //KINETIC 192.168.1.2
     
 #ifdef PLATFORM_LINUX
     RCIn rcin;
@@ -53,10 +52,14 @@ int main() {
     IMUHandler imuReal;
     Vec<12> imuStats = imuReal.initialize(); //(mgx,mgy,mgz,max,may,maz,siggx,siggy,siggz,sigax,sigay,sigaz)
     imuStats(5) = imuStats(5) + g;
+    AHRS ahrs(imuStats.segment<6>(0));
+    EKF ekf; // add bias constructor
 #endif
-    //init ekf after imu so that you can put the biasees and noise into the constructor.
+#ifdef _WIN32
+    //init nav after imu so that you can put the biasees and noise into the constructor.
     EKF ekf;
-
+    AHRS ahrs;
+#endif
     //init vars
     double lastPrint = 0.0;
     const double printDt = 1.0; 
@@ -78,9 +81,9 @@ int main() {
     double HzTimer = 0.0;
     int HzCounter = 0;
 
-    bool autopilot = true;
-    bool printOn = false;
-    bool armed = true;
+    bool autopilot = false;
+    bool printOn = true;
+    bool armed = false;
     bool motorInit = false;
     double armTime = 0.0;
 
@@ -194,12 +197,14 @@ int main() {
             else if (GetAsyncKeyState('E') & 0x8000) {
                 keyPsi = 1;
             }
-            clock.taskClock.keys = 0.0;
 
             if (armed) {
                 manVel = keyVel;
                 manPsi = keyPsi;
+                armTime += clock.taskClock.keys;
             }
+
+            clock.taskClock.keys = 0.0;
         }
 
 #endif
@@ -222,6 +227,7 @@ int main() {
             }
 
             if (rcPWM(5) > 1750) {
+                //drop stuff
             }
             else if (rcPWM(5) > 1250) {
                 autopilot = true;
@@ -271,29 +277,28 @@ int main() {
         // ---------------- AHRS ------------------------
 #ifdef PLATFORM_LINUX
         if (!ahrs.init) {
-            ahrs.initializeFromAccel(imuReal.imu.accel,imuStats.segment<6>(0));
+            ahrs.initializeFromAccel(imuReal.imu.accel);
             ahrs.init = true;
         }
         if (clock.taskClock.AHRS >= clock.rates.AHRS) {
-            ahrs.update(imuReal.imu.accel, imuReal.imu.gyro,imuStats.segment<6>(0), clock.taskClock.AHRS);
+            ahrs.update(imuReal.imu.accel, imuReal.imu.gyro, clock.taskClock.AHRS);
             clock.taskClock.AHRS = 0.0;
         }
 #endif
 #ifdef _WIN32
         if (!ahrs.init) {
-            ahrs.initializeFromAccel(imu.imu.accel, Vec<6>::Zero());
+            ahrs.initializeFromAccel(imu.imu.accel);
             ahrs.init = true;
         }
         if (clock.taskClock.AHRS >= clock.rates.AHRS) {
-            ahrs.update(imu.imu.accel, imu.imu.gyro, Vec<6>::Zero(), clock.taskClock.AHRS);
+            ahrs.update(imu.imu.accel, imu.imu.gyro,clock.taskClock.AHRS);
             clock.taskClock.AHRS = 0.0;
         }
 #endif
         Vec<3> AHRSAtt = ahrs.euler();
-
+        Vec<3> attManual;
         // ---------------- Inner Loop ----------------
         if (clock.taskClock.conInner >= clock.rates.conInner) {
-            Vec<3> attManual;
             attManual << 10 * PI / 180 * manVel(1), -10 * PI / 180 * manVel(0), navState(2);
             manPsi = manPsi * 10 * PI / 180;
 
@@ -306,7 +311,8 @@ int main() {
                         outer.out.attCmd,
                         0.0,
                         navState.segment<3>(0),
-                        imu.imu.gyro);
+                        imu.imu.gyro,
+                        clock.taskClock.conInner);
             }
             else if (!autopilot && ekfHealthy) {
                 momentsCmd =
@@ -314,7 +320,8 @@ int main() {
                         outer.out.attCmd,
                         manPsi,
                         navState.segment<3>(0),
-                        imu.imu.gyro);
+                        imu.imu.gyro,
+                        clock.taskClock.conInner);
             }
             else if (!autopilot && !ekfHealthy) {
                 attManual(2) = AHRSAtt(2);
@@ -323,7 +330,7 @@ int main() {
                         attManual,
                         manPsi,
                         AHRSAtt,
-                        imuReal.imu.gyro);
+                        imu.imu.gyro,clock.taskClock.conInner);
 
                 double den = cos(AHRSAtt(0)) * cos(AHRSAtt(1));
                 den = clamp(den, 0.2, 1.0);
@@ -337,7 +344,8 @@ int main() {
                         Vec<3>::Zero(),
                         0.0,
                         AHRSAtt,
-                        imu.imu.gyro);
+                        imu.imu.gyro,
+                        clock.taskClock.conInner);
                 outer.out.Fz = mass * g;
             }
 
@@ -348,11 +356,11 @@ int main() {
 
             thrustCmd = mixer.mix2Thrust(wrenchCmd);
 
-            if (!armed && (armTime < 5.0)) {
-                thrustCmd = Vec<4>::Zero();
-            }
-
             pwmCmd = mixer.thr2PWM(thrustCmd); //this will go directly to the four motors
+
+            if (!armed || (armTime < 5.0)) {
+                pwmCmd = Vec<4>::Constant(1000.0);
+            }
 
             clock.taskClock.conInner = 0.0;
 
@@ -365,8 +373,7 @@ int main() {
                     motdrv.initialize();
                     motorInit = true;
                 }
-                else if (motorInit && armed && armTime >= 5.0) {
-
+                else if (motorInit && armed) {
                     motdrv.command(pwmCmd); //takes in four for motors 1 2 3 4 pwmCmd
                 }
                 else if (motorInit && !armed) {
@@ -416,7 +423,7 @@ int main() {
 
             const Vec<3> posCmd = MM.out.posCmd;
   
-            const Vec<3> attCmd = outer.out.attCmd;
+            const Vec<3> attCmd = attManual;
 
 #ifdef _WIN32
             const Vec<3> gyro = imu.imu.gyro;
