@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.16)
+﻿cmake_minimum_required(VERSION 3.25)
 
 # Enable Hot Reload for MSVC compilers if supported.
 if (POLICY CMP0141)
@@ -91,6 +91,8 @@ endif()
 # ==============================
 target_include_directories(FireMission PRIVATE
     ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include/sensors
+    ${CMAKE_SOURCE_DIR}/include/vision
     ${CMAKE_SOURCE_DIR}/external/eigen
     ${CMAKE_SOURCE_DIR}/external/Navio2  
     ${CMAKE_SOURCE_DIR}/external
