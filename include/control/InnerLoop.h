@@ -8,11 +8,11 @@ public:
 	Vec<3> computeWrench(const Vec<3>& att_cmd,double yaw_rate_cmd, const Vec<3>& att, const Vec<3>& omega,double dt);
 
 private:
-	static const inline Vec<3> kp{ 0.5,0.5,0.5};
+	static const inline Vec<3> kp{ 0.27,0.27,0.5};
 
-	static const inline Vec<3> kd{ 0.15,0.15,0.15 };
+	static const inline Vec<3> kd{ 0.0305,0.0305,0.15 };
 	
-	static const inline Vec<3> ki{ 0.001,0.001,0.001 };
+	static const inline Vec<3> ki{ 0.0,0.0,0.0 };
 
 	double tauI = 0.025;
 	double tauA = 0.025;
