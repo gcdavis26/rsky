@@ -2,11 +2,13 @@
 #include "telemetry/udp_sender.h"
 #include <stdexcept>
 #include <utility>
+#include <mutex> // Needed for std::call_once
 
 using json = nlohmann::json;
 
 #ifdef _WIN32
-bool UdpSender::wsa_started_ = false;
+// Define the flag for Windows WSA initialization
+std::once_flag UdpSender::wsa_flag_;
 #endif
 
 static inline json vec3ToJson(const Vecf<3>& v) {
@@ -14,18 +16,19 @@ static inline json vec3ToJson(const Vecf<3>& v) {
 }
 
 static inline json vec4ToJson(const Veci<4>& v) {
-    return json::array({ v(0), v(1), v(2), v(3)});
+    return json::array({ v(0), v(1), v(2), v(3) });
 }
 
 void UdpSender::platformStartup_() {
 #ifdef _WIN32
-    if (!wsa_started_) {
+    // std::call_once guarantees WSAStartup only runs exactly once, 
+    // even if multiple threads create a UdpSender simultaneously.
+    std::call_once(wsa_flag_, []() {
         WSADATA wsa{};
         if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
             throw std::runtime_error("WSAStartup failed");
         }
-        wsa_started_ = true;
-    }
+        });
 #endif
 }
 
@@ -63,7 +66,12 @@ UdpSender& UdpSender::operator=(UdpSender&& other) noexcept {
     closeSocket_();
     sock_ = other.sock_; other.sock_ = INVALID_SOCKET;
     dst_ = other.dst_;
-    seq_ = other.seq_; other.seq_ = 0;
+
+    // std::atomic variables cannot be explicitly copied/moved. 
+    // We must manually load from the old and store into the new.
+    seq_.store(other.seq_.load());
+    other.seq_.store(0);
+
     return *this;
 }
 
@@ -77,7 +85,9 @@ void UdpSender::closeSocket_() noexcept {
     sock_ = INVALID_SOCKET;
 }
 
-void UdpSender::resetSeq(uint32_t seq) { seq_ = seq; }
+void UdpSender::resetSeq(uint32_t seq) {
+    seq_.store(seq); // Safely store the new sequence number
+}
 
 bool UdpSender::sendJson_(const json& j) {
     const std::string payload = j.dump();
@@ -124,7 +134,10 @@ bool UdpSender::sendFromSim(
     const float NISf = static_cast<float>(NIS);
 
     json j;
+
+    // seq_++ is now a thread-safe atomic post-increment
     j["seq"] = seq_++;
+
     j["t"] = tf;
     j["dt"] = dtf;
     j["Hz"] = Hzf;
@@ -141,7 +154,7 @@ bool UdpSender::sendFromSim(
     j["pwm_cmd"] = vec4ToJson(PWMCmd);
     j["vel_est"] = vec3ToJson(vel_est);
     j["euler_est"] = vec3ToJson(euler_est);
-    
+
     j["omega_est"] = vec3ToJson(omega_est);
     j["accel"] = vec3ToJson(accel);
 

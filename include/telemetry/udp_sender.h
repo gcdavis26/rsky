@@ -3,6 +3,8 @@
 #include <nlohmann/json.hpp>
 #include <cstdint>
 #include <string>
+#include <atomic> // Added for thread-safe sequence counter
+#include <mutex>  // Added for std::once_flag
 
 #include "common/MathUtils.h"
 #include "sensors/ImuSim.h"
@@ -60,9 +62,12 @@ private:
 private:
     socket_handle_t sock_ = INVALID_SOCKET;
     sockaddr_in dst_{};
-    uint32_t seq_ = 0;
+
+    // Thread-safe sequence counter
+    std::atomic<uint32_t> seq_{ 0 };
 
 #ifdef _WIN32
-    static bool wsa_started_;
+    // Thread-safe flag for Windows socket initialization
+    static std::once_flag wsa_flag_;
 #endif
 };
