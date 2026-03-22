@@ -5,7 +5,7 @@
 #include <errno.h>
 #include <netdb.h>
 #include <arpa/inet.h>
-#include "network.h"
+#include "mocap/network.h"
 
 #define BSD_BASE_PORT 0
 #define MYNAME "192.168.1.6"     // my IP address (onboard computer)
