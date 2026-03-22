@@ -9,19 +9,16 @@ Vec<3> InnerLoop::computeWrench(
 {
     Vec<3> attErr = wrapAngles(att_cmd - att);
 
-    // 1) Choose what to integrate (start with roll/pitch only)
     Vec<3> intErr = Vec<3>::Zero();
     intErr(0) = attErr(0);
     intErr(1) = attErr(1);
 
-    // Optional yaw integral logic:
      if (yaw_rate_cmd == 0.0) intErr(2) = attErr(2);
 
-    // 2) Leaky integrator (x4): x4_dot = intErr - x4/tauI
     Vec<3> x4_dot = intErr - x4 / tauI;
     x4 += x4_dot * dt;
 
-    // (Good practice) clamp integrator state to prevent windup
+    // clamp integrator state to prevent windup
     //x4(0) = clamp(x4(0), -x4max_x, x4max_x);
 
     // 3) Raw (unfiltered) wrench command u

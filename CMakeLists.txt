@@ -39,24 +39,85 @@ foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
 endforeach()
 
 # ==============================
-# Executable
+# Shared source files
 # ==============================
-add_executable(FireMission
-    executables/main.cpp
-    src/common/TimeKeeper.cpp 
-    src/common/MathUtils.cpp 
+set(COMMON_SOURCES
+    src/common/TimeKeeper.cpp
+    src/common/MathUtils.cpp
     src/control/InnerLoop.cpp
     src/control/OuterLoop.cpp
     src/guidance/ModeManager.cpp
     src/estimation/EKF.cpp
-    src/control/QuadMixer.cpp 
-    src/simulator/Dynamics.cpp  
-    src/simulator/MotorModel.cpp 
-    src/sensors/ImuSim.cpp 
+    src/control/QuadMixer.cpp
+    src/simulator/Dynamics.cpp
+    src/simulator/MotorModel.cpp
+    src/sensors/ImuSim.cpp
     src/sensors/OptiSim.cpp
-    src/telemetry/udp_sender.cpp 
+    src/telemetry/udp_sender.cpp
     src/estimation/AHRS.cpp
 )
+
+# ==============================
+# Executables
+# ==============================
+
+add_executable(FireSim
+    executables/SimMain.cpp
+    ${COMMON_SOURCES}
+)
+
+if(UNIX AND NOT APPLE)
+    add_executable(FireMission
+    executables/main.cpp
+    ${COMMON_SOURCES}
+)
+endif()
+
+# ==============================
+# Shared include directories
+# ==============================
+target_include_directories(FireMission PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include/sensors
+    ${CMAKE_SOURCE_DIR}/include/vision
+    ${CMAKE_SOURCE_DIR}/external/eigen
+    ${CMAKE_SOURCE_DIR}/external/Navio2
+    ${CMAKE_SOURCE_DIR}/external
+)
+
+target_include_directories(FireSim PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include/sensors
+    ${CMAKE_SOURCE_DIR}/include/vision
+    ${CMAKE_SOURCE_DIR}/external/eigen
+    ${CMAKE_SOURCE_DIR}/external/Navio2
+    ${CMAKE_SOURCE_DIR}/external
+)
+
+# ==============================
+# Precompile Headers
+# ==============================
+target_precompile_headers(FireMission PRIVATE <Eigen/Dense>)
+target_precompile_headers(FireSim PRIVATE <Eigen/Dense>)
+
+# ==============================
+# Compiler warnings & Optimizations
+# ==============================
+if (MSVC)
+    target_compile_options(FireMission PRIVATE /W4)
+    target_compile_options(FireSim PRIVATE /W4)
+
+    # MSVC Release Optimizations
+    target_compile_options(FireMission PRIVATE $<$<CONFIG:Release>:/O2 /Ob2 /arch:AVX2 /DNDEBUG>)
+    target_compile_options(FireSim PRIVATE $<$<CONFIG:Release>:/O2 /Ob2 /arch:AVX2 /DNDEBUG>)
+else()
+    target_compile_options(FireMission PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(FireSim PRIVATE -Wall -Wextra -Wpedantic)
+
+    # GCC/Clang Release Optimizations
+    target_compile_options(FireMission PRIVATE $<$<CONFIG:Release>:-O3 -march=native -DNDEBUG>)
+    target_compile_options(FireSim PRIVATE $<$<CONFIG:Release>:-O3 -march=native -DNDEBUG>)
+endif()
 
 # ==============================
 # Navio2 & Hardware (Linux only)
@@ -70,13 +131,13 @@ if(UNIX AND NOT APPLE)
     # Build the Melexis MLX90640 raw I2C drivers
     add_subdirectory(${CMAKE_SOURCE_DIR}/external/thermal-camera)
 
-    # Your drivers and Linux-only hardware sensors
+    # FireMission-only hardware and Linux-only sources
     target_sources(FireMission PRIVATE
         src/drivers/MotorDriver.cpp
         src/drivers/RCIn.cpp
         src/sensors/IMUHandler.cpp
-        
-        # Your Thermal Camera and Vision algorithms
+        src/mocap/network.cpp
+        src/mocap/mocapHandler.cpp
         src/sensors/ThermalCamera.cpp
         src/vision/SearchGrid.cpp
         src/vision/WildfireDetection.cpp
@@ -84,34 +145,4 @@ if(UNIX AND NOT APPLE)
 
     # Link Navio2 and the MLX library
     target_link_libraries(FireMission PRIVATE Navio2 MLX90640_API)
-endif()
-
-# ==============================
-# Include directories
-# ==============================
-target_include_directories(FireMission PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/include/sensors
-    ${CMAKE_SOURCE_DIR}/include/vision
-    ${CMAKE_SOURCE_DIR}/external/eigen
-    ${CMAKE_SOURCE_DIR}/external/Navio2  
-    ${CMAKE_SOURCE_DIR}/external
-)
-
-# ==============================
-# Precompile Headers (Massive compilation speedup)
-# ==============================
-target_precompile_headers(FireMission PRIVATE <Eigen/Dense>)
-
-# ==============================
-# Compiler warnings & Optimizations
-# ==============================
-if (MSVC)
-    target_compile_options(FireMission PRIVATE /W4)
-    # MSVC Release Optimizations (equivalent to -O3 -march=native)
-    target_compile_options(FireMission PRIVATE $<$<CONFIG:Release>:/O2 /Ob2 /arch:AVX2 /DNDEBUG>)
-else()
-    target_compile_options(FireMission PRIVATE -Wall -Wextra -Wpedantic)
-    # GCC/Clang Release Optimizations
-    target_compile_options(FireMission PRIVATE $<$<CONFIG:Release>:-O3 -march=native -DNDEBUG>)
 endif()

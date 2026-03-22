@@ -17,7 +17,7 @@ EKF::EKF() {
     P.setZero();
 }
 
-void EKF::initializeFromOpti(const OptiSim::OptiMeas& opti) {
+void EKF::initializeFromOptiImpl(const OptiMeas& opti) {
     const double phi0 = 0.0;
     const double th0 = 0.0;
     const double psi0 = wrapToPi(opti.psi);
@@ -27,7 +27,7 @@ void EKF::initializeFromOpti(const OptiSim::OptiMeas& opti) {
     x_est(THETA) = th0;
     x_est(PSI) = psi0;
 
-    // If opti measures an offset point: p_cg = z_pos - Rnb*r_OPTI
+    // If opti measures an offset point: p_cg = z_pos - Rnb * r_OPTI
     const Mat<3, 3> Rnb0 = RotB2N(phi0, th0, psi0);
     const Vec<3> p_cg = opti.pos - Rnb0 * r_OPTI;
 
@@ -39,9 +39,11 @@ void EKF::initializeFromOpti(const OptiSim::OptiMeas& opti) {
     have_prev_gyro = false;
     gyro_prev.setZero();
     omega_dot_prev.setZero();
+
+    init = true;
 }
 
-void EKF::predict(const ImuSim::ImuMeas& imu, double dt) {
+void EKF::predictImpl(const ImuMeas& imu, double dt) {
     // omega_dot estimate
     Vec<3> omega_dot = Vec<3>::Zero();
 
@@ -65,23 +67,22 @@ void EKF::predict(const ImuSim::ImuMeas& imu, double dt) {
 
     // wrap rpy
     x_pred.template segment<3>(PHI) = wrapAngles(x_pred.template segment<3>(PHI));
-    
-    // Covariance propagation 
+
+    // covariance propagation
     const Mat<NX, NX> F = computeF(x_est, imu, omega_dot, k1);
     const Mat<NX, 12> G = computeG(x_est);
 
     const Mat<NX, NX> Pk = P;
-
     const Mat<NX, NX> FP = F * Pk;
-    
+
     const Mat<NX, NX> Pdot1 = FP + FP.transpose() + G * Qc * G.transpose();
     const Mat<NX, NX> P_pred = Pk + dt * Pdot1;
+
     P = P_pred;
-    
     x_est = x_pred;
 }
 
-void EKF::correct(const OptiSim::OptiMeas& opti) {
+void EKF::correctImpl(const OptiMeas& opti) {
     const Mat<NX, NX> I = Mat<NX, NX>::Identity();
 
     // z = [pos_ned; psi]
@@ -114,7 +115,7 @@ void EKF::correct(const OptiSim::OptiMeas& opti) {
 
     // health update
     double nis = res.transpose() * S.ldlt().solve(res);
-    const double alpha = 0.05;
+    const double alpha = 0.95;
 
     if (!nisInit) {
         nisAvg = nis;
@@ -124,22 +125,20 @@ void EKF::correct(const OptiSim::OptiMeas& opti) {
         nisAvg = (1.0 - alpha) * nisAvg + alpha * nis;
     }
 
-    if (nisAvg < 13.28) {
-        // state update
-        x_est = x_est + K * res;
+    // Joseph form covariance update
+    const Mat<NX, NX> A = (I - K * H);
+    P = A * P * A.transpose() + K * R * K.transpose();
 
-        // Joseph form covariance update
-        const Mat<NX, NX> A = (I - K * H);
-        P = A * P * A.transpose() + K * R * K.transpose();
+    // state update
+    x_est = x_est + K * res;
 
-        // wrap rpy
-        x_est.template segment<3>(PHI) = wrapAngles(x_est.template segment<3>(PHI));
-    }
+    // wrap rpy
+    x_est.template segment<3>(PHI) = wrapAngles(x_est.template segment<3>(PHI));
 }
 
 // ------------------- dynamics f(x) -------------------
 Vec<EKF::NX> EKF::f_nonlin(const Vec<NX>& x,
-    const ImuSim::ImuMeas& imu,
+    const ImuMeas& imu,
     const Vec<3>& omega_dot) const
 {
     Vec<NX> f = Vec<NX>::Zero();
@@ -171,7 +170,8 @@ Vec<EKF::NX> EKF::f_nonlin(const Vec<NX>& x,
 
     // v_dot = Rnb * a_corr + g_n
     const Mat<3, 3> Rnb = RotB2N(phi, th, psi); // body->NED
-    Vec<3> g_n; g_n << 0.0, 0.0, g;      // use your constant if you have one
+    Vec<3> g_n;
+    g_n << 0.0, 0.0, g;
 
     const Vec<3> v_dot = Rnb * a_corr + g_n;
 
@@ -183,13 +183,14 @@ Vec<EKF::NX> EKF::f_nonlin(const Vec<NX>& x,
     return f;
 }
 
-// ------------------- F numeric  -------------------
+// ------------------- F numeric -------------------
 Mat<EKF::NX, EKF::NX> EKF::computeF(const Vec<NX>& x,
-    const ImuSim::ImuMeas& imu,
+    const ImuMeas& imu,
     const Vec<3>& omega_dot,
     const Vec<NX>& k1) const
 {
-    Mat<NX, NX> A; A.setZero();
+    Mat<NX, NX> A;
+    A.setZero();
 
     // --- unpack ---
     const double phi = x(PHI);
@@ -219,31 +220,30 @@ Mat<EKF::NX, EKF::NX> EKF::computeF(const Vec<NX>& x,
         - omega_dot.cross(r)
         - omega.cross(omega.cross(r));
 
-    // --- T(?,?) ---
+    // --- T(phi, theta) ---
     Mat<3, 3> T;
     T << 1.0, sph* tth, cph* tth,
         0.0, cph, -sph,
         0.0, sph* sec, cph* sec;
 
-    // dT/d?
+    // dT/dphi
     Mat<3, 3> dT_dphi;
     dT_dphi << 0.0, cph* tth, -sph * tth,
         0.0, -sph, -cph,
         0.0, cph* sec, -sph * sec;
 
-    // dT/d?
+    // dT/dtheta
     Mat<3, 3> dT_dth;
     dT_dth << 0.0, sph* sec2, cph* sec2,
         0.0, 0.0, 0.0,
         0.0, sph* sec* tth, cph* sec* tth;
 
     // eul_dot = T * omega
-    // A_eta,eta columns:
-    A.template block<3, 1>(PHI, PHI) = dT_dphi * omega; // ?eul_dot/?phi
-    A.template block<3, 1>(PHI, THETA) = dT_dth * omega; // ?eul_dot/?theta
-    // ?eul_dot/?psi = 0
+    A.template block<3, 1>(PHI, PHI) = dT_dphi * omega;
+    A.template block<3, 1>(PHI, THETA) = dT_dth * omega;
+    // d(eul_dot)/d(psi) = 0
 
-    // A_eta,bw = -T  (bw = [bp bq br])
+    // A_eta,bw = -T
     A.template block<3, 3>(PHI, BP) = -T;
 
     // --- position: p_dot = v ---
@@ -251,7 +251,7 @@ Mat<EKF::NX, EKF::NX> EKF::computeF(const Vec<NX>& x,
     A(PE, VE) = 1.0;
     A(PD, VD) = 1.0;
 
-    // --- R(?,?,?) = Rz*Ry*Rx (your RotB2N) ---
+    // --- R(phi,theta,psi) = Rz*Ry*Rx ---
     Mat<3, 3> R;
     R << cps * cth,
         cps* sth* sph - sps * cph,
@@ -265,7 +265,7 @@ Mat<EKF::NX, EKF::NX> EKF::computeF(const Vec<NX>& x,
         cth* sph,
         cth* cph;
 
-    // dR/d?
+    // dR/dphi
     Mat<3, 3> dR_dphi;
     dR_dphi << 0.0,
         cps* sth* cph + sps * sph,
@@ -279,7 +279,7 @@ Mat<EKF::NX, EKF::NX> EKF::computeF(const Vec<NX>& x,
         cth* cph,
         -cth * sph;
 
-    // dR/d?
+    // dR/dtheta
     Mat<3, 3> dR_dth;
     dR_dth << -cps * sth,
         cps* cth* sph,
@@ -293,7 +293,7 @@ Mat<EKF::NX, EKF::NX> EKF::computeF(const Vec<NX>& x,
         -sth * sph,
         -sth * cph;
 
-    // dR/d?
+    // dR/dpsi
     Mat<3, 3> dR_dpsi;
     dR_dpsi << -sps * cth,
         -sps * sth * sph - cps * cph,
@@ -306,16 +306,14 @@ Mat<EKF::NX, EKF::NX> EKF::computeF(const Vec<NX>& x,
         0.0, 0.0, 0.0;
 
     // v_dot = R * a_corr + g_n
-    // A_v,eta columns:
     A.template block<3, 1>(VN, PHI) = dR_dphi * a_corr;
     A.template block<3, 1>(VN, THETA) = dR_dth * a_corr;
     A.template block<3, 1>(VN, PSI) = dR_dpsi * a_corr;
 
-    // A_v,ba = R * ?a_corr/?ba = R * (-I) = -R
+    // A_v,ba = R * d(a_corr)/d(ba) = R * (-I) = -R
     A.template block<3, 3>(VN, BAX) = -R;
 
-    // A_v,bw = R * ?a_corr/?bw
-    // where ?a_corr/?bw = ? r^T + (?^T r) I - 2 r ?^T
+    // A_v,bw = R * d(a_corr)/d(bw)
     Mat<3, 3> daCorr_dbw;
     daCorr_dbw = omega * r.transpose()
         + (omega.dot(r)) * Mat<3, 3>::Identity()
@@ -326,8 +324,6 @@ Mat<EKF::NX, EKF::NX> EKF::computeF(const Vec<NX>& x,
     // biases have zero dynamics in f_nonlin(), so their rows stay zero
     return A;
 
-
-
     /*
     Mat<NX, NX> F = Mat<NX, NX>::Zero();
 
@@ -337,7 +333,7 @@ Mat<EKF::NX, EKF::NX> EKF::computeF(const Vec<NX>& x,
 
         const Vec<NX> f1 = f_nonlin(x + dx, imu, omega_dot);
 
-        F.col(j) = (f1 - k1) / (eps_F);
+        F.col(j) = (f1 - k1) / eps_F;
     }
 
     return F;

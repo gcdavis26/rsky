@@ -1,5 +1,12 @@
 #include <iostream>
 #include <iomanip>
+
+#ifdef _WIN32
+    #include <WinSock2.h>
+    #include <Windows.h>
+    #include <thread>
+#endif
+
 #include "common/TimeKeeper.h"
 #include "common/MathUtils.h"
 #include "control/InnerLoop.h"
@@ -7,38 +14,42 @@
 #include "control/QuadMixer.h"
 #include "estimation/EKF.h"
 #include "guidance/ModeManager.h"
+#include "sensors/ImuSim.h"
+#include "sensors/OptiSim.h"
+#include "simulator/Dynamics.h"
+#include "simulator/MotorModel.h"
 #include "telemetry/udp_sender.h"
 #include "estimation/AHRS.h"
-#include "drivers/MotorDriver.h"
-#include "drivers/RCIn.h"
-#include "sensors/IMUHandler.h"
-#include <unistd.h>
-#include "mocap/mocapHandler.h"
 
+#ifdef PLATFORM_LINUX
+    #include "drivers/RCIn.h"
+    #include <unistd.h>
+#endif
 
 int main() {
 
     std::cout << std::fixed << std::setprecision(4);
     //init objects
+
     TimeKeeper clock;
+    Dynamics dynamics;
+    ImuSim imu;
+    OptiSim opti;
     ModeManager MM;
     OuterLoop outer;
     InnerLoop inner;
     QuadMixer mixer;
+    MotorModel motormodel;
     UdpSender udp("127.0.0.1", 8080); //KINETIC 192.168.1.2
     
+#ifdef PLATFORM_LINUX
     RCIn rcin;
     rcin.initialize();
+#endif
 
-    MotorDriver motdrv;
-
-    IMUHandler imuReal;
-    Vec<12> imuStats = imuReal.initialize(); //(mgx,mgy,mgz,max,may,maz,siggx,siggy,siggz,sigax,sigay,sigaz)
-    imuStats(5) = imuStats(5) + g;
-    AHRS ahrs(imuStats.segment<6>(0));
-    EKF ekf; // add bias constructor
-    MocapHandler mocap;
-    bool mocapInit = mocap.init();
+    //init nav after imu so that you can put the biasees and noise into the constructor.
+    EKF ekf;
+    AHRS ahrs;
 
     //init vars
     double lastPrint = 0.0;
@@ -53,13 +64,16 @@ int main() {
     Vec<3> manVel = Vec<3>::Zero();
     double manPsi = 0.0;
 
+    Vec<4> thrustAct = Vec<4>::Zero();
+    Vec<4> wrenchAct = Vec<4>::Zero();
+
     int step = 0;
     double Hz = 0.0;
     double HzTimer = 0.0;
     int HzCounter = 0;
+    bool printOn = false;
 
-    bool autopilot = false;
-    bool printOn = true;
+    bool autopilot = true;
     bool armed = true;
     bool motorInit = false;
     double armTime = 0.0;
@@ -86,30 +100,29 @@ int main() {
         }
 
         if (clock.taskClock.imu >= clock.rates.imu) {
-            imuReal.update();
+            imu.step(dynamics.getTrueState(), clock.taskClock.imu);
             clock.taskClock.imu = 0.0;
         }
 
         if (clock.taskClock.opti >= clock.rates.opti) {
-            mocap.update();
+            opti.step(dynamics.getTrueState());
             clock.taskClock.opti = 0.0;
         }
-
 
         // ---------------- EKF ----------------
         
         if (!ekf.init) {
-            ekf.initializeFromOpti(mocap.opti);
+            ekf.initializeFromOpti(opti.opti);
             ekf.init = true;
         }
 
         if (clock.taskClock.navPred >= clock.rates.navPred) {
-            ekf.predict(imuReal.imu, clock.taskClock.navPred);
+            ekf.predict(imu.imu, clock.taskClock.navPred);
             clock.taskClock.navPred = 0.0;
         }
 
         if (clock.taskClock.navCorr >= clock.rates.navCorr) {
-            ekf.correct(mocap.opti);
+            ekf.correct(opti.opti);
 
             NIS = ekf.getHealth();
             if (NIS > 13.28) {
@@ -141,7 +154,66 @@ int main() {
             clock.taskClock.MM = 0.0;
         }
 
+        // ---------------- Manual Keyboard Controls (Windows Only) -----------
+#ifdef _WIN32
+        if (clock.taskClock.keys >= clock.rates.keys) {
+
+            Vec<3> keyVel = Vec<3>::Zero();
+            double keyPsi = 0.0;
+
+            if (GetAsyncKeyState('W') & 0x8000) {
+                keyVel(0) = 1;
+            }
+            else if (GetAsyncKeyState('S') & 0x8000) {
+                keyVel(0) = -1;
+            }
+            else {
+                keyVel(0) = 0;
+            }
+
+            if (GetAsyncKeyState('A') & 0x8000) {
+                keyVel(1) = -1;
+            }
+            else if (GetAsyncKeyState('D') & 0x8000) {
+                keyVel(1) = 1;
+            }
+            else {
+                keyVel(1) = 0;
+            }
+
+            if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
+                keyVel(2) = -1;
+            }
+            else if (GetAsyncKeyState(VK_SHIFT) & 0x8000) {
+                keyVel(2) = 1;
+            }
+            else {
+                keyVel(2) = 0;
+            }
+
+            if (GetAsyncKeyState('Q') & 0x8000) {
+                keyPsi = -1;
+            }
+            else if (GetAsyncKeyState('E') & 0x8000) {
+                keyPsi = 1;
+            }
+            else {
+                keyPsi = 0;
+            }
+
+            if (armed) {
+                manVel = keyVel;
+                manPsi = keyPsi;
+                armTime += clock.taskClock.keys;
+            }
+
+            clock.taskClock.keys = 0.0;
+        }
+
+#endif
+
         // ---------------- Manual RC Controls (Linux Only) -------------------
+#ifdef PLATFORM_LINUX
         if (clock.taskClock.keys >= clock.rates.keys) {
             Vec<3> rcVel = Vec<3>::Zero();
             double rcPsi = 0.0;
@@ -181,6 +253,8 @@ int main() {
                 manPsi = rcPsi;
                 manVel = rcVel; // 1m/s max speed in each direction 
             }
+        }
+#endif
         // ---------------- Outer Loop ----------------
 
         if (clock.taskClock.conOuter >= clock.rates.conOuter) {
@@ -203,13 +277,12 @@ int main() {
             clock.taskClock.conOuter = 0.0;
         }
 
-        // ---------------- AHRS ------------------------
         if (!ahrs.init) {
-            ahrs.initializeFromAccel(imuReal.imu.accel);
+            ahrs.initializeFromAccel(imu.imu.accel);
             ahrs.init = true;
         }
         if (clock.taskClock.AHRS >= clock.rates.AHRS) {
-            ahrs.update(imuReal.imu.accel, imuReal.imu.gyro, clock.taskClock.AHRS);
+            ahrs.update(imu.imu.accel, imu.imu.gyro,clock.taskClock.AHRS);
             clock.taskClock.AHRS = 0.0;
         }
 
@@ -221,16 +294,13 @@ int main() {
             attManual << 10 * PI / 180 * manVel(1), -10 * PI / 180 * manVel(0), navState(2);
             manPsi = manPsi * 10 * PI / 180;
 
-            autopilot = false;
-            ekfHealthy = false;
-
             if (autopilot && ekfHealthy) {
                 momentsCmd =
                     inner.computeWrench(
                         outer.out.attCmd,
                         0.0,
                         navState.segment<3>(0),
-                        imuReal.imu.gyro,
+                        imu.imu.gyro,
                         clock.taskClock.conInner);
             }
             else if (!autopilot && ekfHealthy) {
@@ -239,7 +309,7 @@ int main() {
                         outer.out.attCmd,
                         manPsi,
                         navState.segment<3>(0),
-                        imuReal.imu.gyro,
+                        imu.imu.gyro,
                         clock.taskClock.conInner);
             }
             else if (!autopilot && !ekfHealthy) {
@@ -249,7 +319,7 @@ int main() {
                         attManual,
                         manPsi,
                         AHRSAtt,
-                        imuReal.imu.gyro,clock.taskClock.conInner);
+                        imu.imu.gyro,clock.taskClock.conInner);
 
                 double den = cos(AHRSAtt(0)) * cos(AHRSAtt(1));
                 den = clamp(den, 0.2, 1.0);
@@ -263,7 +333,7 @@ int main() {
                         Vec<3>::Zero(),
                         0.0,
                         AHRSAtt,
-                        imuReal.imu.gyro,
+                        imu.imu.gyro,
                         clock.taskClock.conInner);
                 outer.out.Fz = mass * g;
             }
@@ -283,33 +353,36 @@ int main() {
 
             clock.taskClock.conInner = 0.0;
 
-                  // ----------------Real Commands -------------
+        }
 
-                if (!motorInit && armed && (pwmCmd.array() <= 1001).all()) { 
-                    motdrv.initialize();
-                    motorInit = true;
-                }
-                else if (motorInit && armed) {
-                    motdrv.command(pwmCmd); //takes in four for motors 1 2 3 4 pwmCmd
-                }
-                else if (motorInit && !armed) {
-                    motdrv.wind_down();
-                    motorInit = false;
-                }
-                else if (!motorInit && !armed) {
-                    //do nothing; <-- wow douchebagself really put a semicolon on a comment...
-                }
+        // ---------------- Simulation ----------------
+        if (clock.taskClock.sim >= clock.rates.sim) {
+            if (!armed) {
+                thrustCmd = Vec<4>::Zero();
+            }
+            thrustAct = motormodel.step(clock.taskClock.sim, thrustCmd);
+            wrenchAct = mixer.mix2Wrench(thrustAct);
+
+            dynamics.step(clock.taskClock.sim, wrenchAct);
+
+            clock.taskClock.sim = 0.0;
         }
 
         // ---------------- Telemetry -----------------
         if (clock.taskClock.tele >= clock.rates.tele) {
 
+            Vec<15> trueState;
+
+            trueState.segment<3>(0) = dynamics.getTrueState().segment<3>(6);
+            trueState.segment<3>(3) = dynamics.getTrueState().segment<3>(0);
+            trueState.segment<3>(6) = dynamics.getTrueState().segment<3>(3);
+
             udp.sendFromSim(
                 t, dt, Hz,
-                navState,
+                trueState,
                 MM,
                 outer,
-                imuReal,
+                imu,
                 armed,
                 NIS,
                 pwmCmd
@@ -330,12 +403,13 @@ int main() {
   
             const Vec<3> attCmd = attManual;
 
-            const Vec<3> gyro = imuReal.imu.gyro;
-            const Vec<3> accel = imuReal.imu.accel;
+#ifdef _WIN32
+            const Vec<3> gyro = imu.imu.gyro;
+            const Vec<3> accel = imu.imu.accel;
             const Vec<12> imuStat = Vec<12>::Zero();
-
-            const Vec<3> optPos = mocap.opti.pos;
-            const double optPsi = mocap.opti.psi;
+#endif
+            const Vec<3> optPos = opti.opti.pos;
+            const double optPsi = opti.opti.psi;
 
             std::cout
                 << "====================== QUADCOPTER STATE ======================\n"
@@ -392,7 +466,7 @@ int main() {
                     << std::setw(8) << pwmCmd(1) << " "
                     << std::setw(8) << pwmCmd(2) << " "
                     << std::setw(8) << pwmCmd(3) << "\n"
-
+#ifdef PLATFORM_LINUX
                     << "   rcPWM          : "
                     << std::setw(8) << rcPWM(0) << " "
                     << std::setw(8) << rcPWM(1) << " "
@@ -400,6 +474,7 @@ int main() {
                     << std::setw(8) << rcPWM(3) << " "
                     << std::setw(8) << rcPWM(4) << " "
                     << std::setw(8) << rcPWM(5) << "\n\n"
+#endif
 
                     << " SENSORS\n"
                     << "   IMU Stats : "
@@ -435,8 +510,21 @@ int main() {
                     << std::setw(8) << thrustCmd(2) << " "
                     << std::setw(8) << thrustCmd(3) << "\n"
 
+                    << "   ThrustAct [t1 t2 t3 t4] : "
+                    << std::setw(8) << thrustAct(0) << " "
+                    << std::setw(8) << thrustAct(1) << " "
+                    << std::setw(8) << thrustAct(2) << " "
+                    << std::setw(8) << thrustAct(3) << "\n"
+
+                    << "   WrenchAct [Fz Mx My Mz] : "
+                    << std::setw(8) << wrenchAct(0) << " "
+                    << std::setw(8) << wrenchAct(1) << " "
+                    << std::setw(8) << wrenchAct(2) << " "
+                    << std::setw(8) << wrenchAct(3) << "\n"
+
                     << "==============================================================\n";
                 
+
             lastPrint = t;
         }
         

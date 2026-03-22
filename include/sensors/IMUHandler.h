@@ -14,12 +14,12 @@ public:
 
     // Reads sensor and returns 6x1 Eigen Matrix [ax, ay, az, gx, gy, gz]
 
-    struct imuOut {
+    struct ImuMeas {
         Vec<3> gyro = Vec<3>::Zero();
         Vec<3> accel = Vec<3>::Zero();
     };
 
-    imuOut imu;
+    ImuMeas imu;
 
     void update();
 

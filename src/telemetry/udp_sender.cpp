@@ -107,7 +107,6 @@ bool UdpSender::sendFromSim(
     const Vec<15>& navState,
     const ModeManager& MM,
     const OuterLoop& outer,
-    const ImuSim& imu,
     const bool& armed,
     const double NIS,
     const Vec<4>& PWMcmd)
@@ -125,8 +124,6 @@ bool UdpSender::sendFromSim(
     const Veci<4> PWMCmd = PWMcmd.cast<int>();
 
     // IMU outputs
-    const Vecf<3> omega_est = imu.imu.gyro.cast<float>();
-    const Vecf<3> accel = imu.imu.accel.cast<float>();
 
     const float tf = static_cast<float>(t);
     const float dtf = static_cast<float>(dt);
@@ -154,9 +151,6 @@ bool UdpSender::sendFromSim(
     j["pwm_cmd"] = vec4ToJson(PWMCmd);
     j["vel_est"] = vec3ToJson(vel_est);
     j["euler_est"] = vec3ToJson(euler_est);
-
-    j["omega_est"] = vec3ToJson(omega_est);
-    j["accel"] = vec3ToJson(accel);
 
     // MATLAB prefers euler_cmd if present
     j["euler_cmd"] = vec3ToJson(euler_cmd);

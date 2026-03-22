@@ -46,7 +46,7 @@ void Dynamics::step(double dt, const Vec<4>& bodyWrench) {
 
 	Vec<3> pos_dot;
 	pos_dot << vel;
-	double dragcoeff = 0.25;
+	double dragcoeff = 0.05;
 	Vec<3> vel_dot = a_ned - dragcoeff * vel.norm() * vel;
 
 	Vec<3> omega_dot;

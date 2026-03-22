@@ -48,7 +48,6 @@ public:
         const Vec<15>& navState,
         const ModeManager& MM,
         const OuterLoop& outer,
-        const ImuSim& imu,
         const bool& armed,
         const double NIS,
         const Vec<4>& PWMcmd);
