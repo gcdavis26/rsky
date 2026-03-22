@@ -382,7 +382,6 @@ int main() {
                 trueState,
                 MM,
                 outer,
-                imu,
                 armed,
                 NIS,
                 pwmCmd
