@@ -26,7 +26,7 @@ int main() {
     InnerLoop inner;
     QuadMixer mixer;
     UdpSender udp("127.0.0.1", 8080); //KINETIC 192.168.1.2
-    
+
     RCIn rcin;
     rcin.initialize();
 
@@ -42,7 +42,7 @@ int main() {
 
     //init vars
     double lastPrint = 0.0;
-    const double printDt = 1.0; 
+    const double printDt = 1.0;
 
     Vec<3> momentsCmd = Vec<3>::Zero();
     Vec<4> thrustCmd = Vec<4>::Zero();
@@ -96,7 +96,7 @@ int main() {
         }
 
         // ---------------- EKF ----------------
-        
+
         if (!ekf.init) {
             ekf.initializeFromOpti(mocap.opti);
             ekf.init = true;
@@ -130,7 +130,7 @@ int main() {
             clock.taskClock.navCorr = 0.0;
         }
         Vec<15> navState = ekf.getx();
-        
+
         // ---------------- Mode Manager ----------------
         if (clock.taskClock.MM >= clock.rates.MM) {
             MM.in.state = navState;
@@ -180,111 +180,112 @@ int main() {
                 manPsi = rcPsi;
                 manVel = rcVel; // 1m/s max speed in each direction 
             }
-        // ---------------- Outer Loop ----------------
-
-        if (clock.taskClock.conOuter >= clock.rates.conOuter) {
-            if (autopilot) {
-                outer.in.state = navState.segment<6>(3);
-                outer.in.posCmd = MM.out.posCmd;
-                outer.in.psi = navState(2);
-                outer.in.mode = MM.out.mode;
-                outer.update();
-            }
-            else {
-                outer.in.state = navState.segment<6>(3);
-                outer.in.posCmd = navState.segment<3>(3);
-                outer.in.psi = navState(2);
-                outer.in.mode = ModeManager::NavMode::Manual;
-                outer.in.velCmd = manVel;
-                outer.update();
-                outer.out.attCmd(2) = navState(2);
-            }
-            clock.taskClock.conOuter = 0.0;
         }
+            // ---------------- Outer Loop ----------------
 
-        // ---------------- AHRS ------------------------
-        if (!ahrs.init) {
-            ahrs.initializeFromAccel(imuReal.imu.accel);
-            ahrs.init = true;
-        }
-        if (clock.taskClock.AHRS >= clock.rates.AHRS) {
-            ahrs.update(imuReal.imu.accel, imuReal.imu.gyro, clock.taskClock.AHRS);
-            clock.taskClock.AHRS = 0.0;
-        }
-
-        Vec<3> AHRSAtt = ahrs.euler();
-        Vec<3> attManual;
-        // ---------------- Inner Loop ---------------- %% CHANGE IMU TO IMUREAL IF YOU ARE DOING TESTING!!!!
-
-        if (clock.taskClock.conInner >= clock.rates.conInner) {
-            attManual << 10 * PI / 180 * manVel(1), -10 * PI / 180 * manVel(0), navState(2);
-            manPsi = manPsi * 10 * PI / 180;
-
-            autopilot = false;
-            ekfHealthy = false;
-
-            if (autopilot && ekfHealthy) {
-                momentsCmd =
-                    inner.computeWrench(
-                        outer.out.attCmd,
-                        0.0,
-                        navState.segment<3>(0),
-                        imuReal.imu.gyro,
-                        clock.taskClock.conInner);
-            }
-            else if (!autopilot && ekfHealthy) {
-                momentsCmd =
-                    inner.computeWrench(
-                        outer.out.attCmd,
-                        manPsi,
-                        navState.segment<3>(0),
-                        imuReal.imu.gyro,
-                        clock.taskClock.conInner);
-            }
-            else if (!autopilot && !ekfHealthy) {
-                attManual(2) = AHRSAtt(2);
-                momentsCmd =
-                    inner.computeWrench(
-                        attManual,
-                        manPsi,
-                        AHRSAtt,
-                        imuReal.imu.gyro,clock.taskClock.conInner);
-
-                double den = cos(AHRSAtt(0)) * cos(AHRSAtt(1));
-                den = clamp(den, 0.2, 1.0);
-
-                double Fz_base = mass * g * (1 - manVel(2));
-                outer.out.Fz = clamp(Fz_base / den, 0, 2*mass*g);
-            }
-            else {
-                momentsCmd =
-                    inner.computeWrench(
-                        Vec<3>::Zero(),
-                        0.0,
-                        AHRSAtt,
-                        imuReal.imu.gyro,
-                        clock.taskClock.conInner);
-                outer.out.Fz = mass * g;
+            if (clock.taskClock.conOuter >= clock.rates.conOuter) {
+                if (autopilot) {
+                    outer.in.state = navState.segment<6>(3);
+                    outer.in.posCmd = MM.out.posCmd;
+                    outer.in.psi = navState(2);
+                    outer.in.mode = MM.out.mode;
+                    outer.update();
+                }
+                else {
+                    outer.in.state = navState.segment<6>(3);
+                    outer.in.posCmd = navState.segment<3>(3);
+                    outer.in.psi = navState(2);
+                    outer.in.mode = ModeManager::NavMode::Manual;
+                    outer.in.velCmd = manVel;
+                    outer.update();
+                    outer.out.attCmd(2) = navState(2);
+                }
+                clock.taskClock.conOuter = 0.0;
             }
 
-            wrenchCmd << outer.out.Fz,
-                momentsCmd(0),
-                momentsCmd(1),
-                momentsCmd(2);
-
-            thrustCmd = mixer.mix2Thrust(wrenchCmd);
-
-            pwmCmd = mixer.thr2PWM(thrustCmd); //this will go directly to the four motors
-
-            if (!armed || (armTime < 5.0)) {
-                pwmCmd = Vec<4>::Constant(1000.0);
+            // ---------------- AHRS ------------------------
+            if (!ahrs.init) {
+                ahrs.initializeFromAccel(imuReal.imu.accel);
+                ahrs.init = true;
+            }
+            if (clock.taskClock.AHRS >= clock.rates.AHRS) {
+                ahrs.update(imuReal.imu.accel, imuReal.imu.gyro, clock.taskClock.AHRS);
+                clock.taskClock.AHRS = 0.0;
             }
 
-            clock.taskClock.conInner = 0.0;
+            Vec<3> AHRSAtt = ahrs.euler();
+            Vec<3> attManual;
+            // ---------------- Inner Loop ---------------- %% CHANGE IMU TO IMUREAL IF YOU ARE DOING TESTING!!!!
 
-                  // ----------------Real Commands -------------
+            if (clock.taskClock.conInner >= clock.rates.conInner) {
+                attManual << 10 * PI / 180 * manVel(1), -10 * PI / 180 * manVel(0), navState(2);
+                manPsi = manPsi * 10 * PI / 180;
 
-                if (!motorInit && armed && (pwmCmd.array() <= 1001).all()) { 
+                autopilot = false;
+                ekfHealthy = false;
+
+                if (autopilot && ekfHealthy) {
+                    momentsCmd =
+                        inner.computeWrench(
+                            outer.out.attCmd,
+                            0.0,
+                            navState.segment<3>(0),
+                            imuReal.imu.gyro,
+                            clock.taskClock.conInner);
+                }
+                else if (!autopilot && ekfHealthy) {
+                    momentsCmd =
+                        inner.computeWrench(
+                            outer.out.attCmd,
+                            manPsi,
+                            navState.segment<3>(0),
+                            imuReal.imu.gyro,
+                            clock.taskClock.conInner);
+                }
+                else if (!autopilot && !ekfHealthy) {
+                    attManual(2) = AHRSAtt(2);
+                    momentsCmd =
+                        inner.computeWrench(
+                            attManual,
+                            manPsi,
+                            AHRSAtt,
+                            imuReal.imu.gyro, clock.taskClock.conInner);
+
+                    double den = cos(AHRSAtt(0)) * cos(AHRSAtt(1));
+                    den = clamp(den, 0.2, 1.0);
+
+                    double Fz_base = mass * g * (1 - manVel(2));
+                    outer.out.Fz = clamp(Fz_base / den, 0, 2 * mass * g);
+                }
+                else {
+                    momentsCmd =
+                        inner.computeWrench(
+                            Vec<3>::Zero(),
+                            0.0,
+                            AHRSAtt,
+                            imuReal.imu.gyro,
+                            clock.taskClock.conInner);
+                    outer.out.Fz = mass * g;
+                }
+
+                wrenchCmd << outer.out.Fz,
+                    momentsCmd(0),
+                    momentsCmd(1),
+                    momentsCmd(2);
+
+                thrustCmd = mixer.mix2Thrust(wrenchCmd);
+
+                pwmCmd = mixer.thr2PWM(thrustCmd); //this will go directly to the four motors
+
+                if (!armed || (armTime < 5.0)) {
+                    pwmCmd = Vec<4>::Constant(1000.0);
+                }
+
+                clock.taskClock.conInner = 0.0;
+
+                // ----------------Real Commands -------------
+
+                if (!motorInit && armed && (pwmCmd.array() <= 1001).all()) {
                     motdrv.initialize();
                     motorInit = true;
                 }
@@ -298,48 +299,48 @@ int main() {
                 else if (!motorInit && !armed) {
                     //do nothing; <-- wow douchebagself really put a semicolon on a comment...
                 }
-        }
+            }
 
-        // ---------------- Telemetry -----------------
-        if (clock.taskClock.tele >= clock.rates.tele) {
+            // ---------------- Telemetry -----------------
+            if (clock.taskClock.tele >= clock.rates.tele) {
 
-            udp.sendFromSim(
-                t, dt, Hz,
-                navState,
-                MM,
-                outer,
-                armed,
-                NIS,
-                pwmCmd
-            );
-            clock.taskClock.tele = 0.0;
-        }
+                udp.sendFromSim(
+                    t, dt, Hz,
+                    navState,
+                    MM,
+                    outer,
+                    armed,
+                    NIS,
+                    pwmCmd
+                );
+                clock.taskClock.tele = 0.0;
+            }
 
-        // ---------------- Console Print ----------------
-        if (t - lastPrint >= printDt && printOn) {
+            // ---------------- Console Print ----------------
+            if (t - lastPrint >= printDt && printOn) {
 
-            // Clear screen + cursor home (no helpers)
+                // Clear screen + cursor home (no helpers)
 
-            const Vec<3> pos = navState.segment<3>(3);
-            const Vec<3> vel = navState.segment<3>(6);
-            const Vec<3> rpy = navState.segment<3>(0);
+                const Vec<3> pos = navState.segment<3>(3);
+                const Vec<3> vel = navState.segment<3>(6);
+                const Vec<3> rpy = navState.segment<3>(0);
 
-            const Vec<3> posCmd = MM.out.posCmd;
-  
-            const Vec<3> attCmd = attManual;
+                const Vec<3> posCmd = MM.out.posCmd;
 
-            const Vec<3> gyro = imuReal.imu.gyro;
-            const Vec<3> accel = imuReal.imu.accel;
-            const Vec<12> imuStat = Vec<12>::Zero();
+                const Vec<3> attCmd = attManual;
 
-            const Vec<3> optPos = mocap.opti.pos;
-            const double optPsi = mocap.opti.psi;
+                const Vec<3> gyro = imuReal.imu.gyro;
+                const Vec<3> accel = imuReal.imu.accel;
+                const Vec<12> imuStat = Vec<12>::Zero();
 
-            std::cout
-                << "====================== QUADCOPTER STATE ======================\n"
-                << "  Time [s]: " << std::setw(8) << t
-                << " Rate [Hz]: " << std::setw(8) << Hz
-                << "      Mode: " << std::setw(8) << static_cast<int>(MM.out.mode)
+                const Vec<3> optPos = mocap.opti.pos;
+                const double optPsi = mocap.opti.psi;
+
+                std::cout
+                    << "====================== QUADCOPTER STATE ======================\n"
+                    << "  Time [s]: " << std::setw(8) << t
+                    << " Rate [Hz]: " << std::setw(8) << Hz
+                    << "      Mode: " << std::setw(8) << static_cast<int>(MM.out.mode)
                     << "     Armed: " << std::setw(8) << armed << "\n"
                     << "--------------------------------------------------------------\n"
 
@@ -434,13 +435,14 @@ int main() {
                     << std::setw(8) << thrustCmd(3) << "\n"
 
                     << "==============================================================\n";
-                
-            lastPrint = t;
-        }
-        
+
+                lastPrint = t;
+            }
+
 #ifdef PLATFORM_LINUX
-	//usleep(1);
+            //usleep(1);
 #endif
     //std::this_thread::yield();
     }
 }
+
