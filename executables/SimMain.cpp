@@ -402,10 +402,9 @@ int main() {
   
             const Vec<3> attCmd = attManual;
 
-#ifdef _WIN32
             const Vec<3> gyro = imu.imu.gyro;
             const Vec<3> accel = imu.imu.accel;
-#endif
+
             const Vec<12> imuStat = Vec<12>::Zero();
             const Vec<3> optPos = opti.opti.pos;
             const double optPsi = opti.opti.psi;
