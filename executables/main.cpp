@@ -95,7 +95,6 @@ int main() {
             clock.taskClock.opti = 0.0;
         }
 
-
         // ---------------- EKF ----------------
         
         if (!ekf.init) {
@@ -309,7 +308,6 @@ int main() {
                 navState,
                 MM,
                 outer,
-                imuReal,
                 armed,
                 NIS,
                 pwmCmd
