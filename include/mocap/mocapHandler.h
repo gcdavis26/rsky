@@ -22,14 +22,14 @@ public:
 		double psi = 0.0;
 	};
 	OptiMeas opti;
-
+	int m_valid;
 private:
-
+	Vec<4> q_prev;
 	Vec<4> m_ned;
 	Eigen::Quaternionf m_quaternion;
-	int m_valid;
+	
 	int m_frameNum;
 
-	float quaternionToHeading(const Eigen::Quaternionf& q) const;
+	float quaternionToHeading(const Eigen::Quaternionf& q);
 
 };

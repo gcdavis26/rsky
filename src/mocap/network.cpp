@@ -8,7 +8,7 @@
 #include "mocap/network.h"
 
 #define BSD_BASE_PORT 0
-#define MYNAME "192.168.1.6"     // my IP address (onboard computer)
+#define MYNAME "192.168.1.2"     // my IP address (onboard computer)
 #define REMOTENAME "192.168.1.5" // IP address from the desktop in 001
 #define THISPORTNUM 9001
 
@@ -243,6 +243,7 @@ int readDatalink( ) {
               case DATALINK_MESSAGE_OPTITRACK:
                 if( datalinkHeader.messageSize == sizeof( struct onboardMocapClient_ref ) ) {
                     memcpy( &onboardMocapClient, bf, datalinkHeader.messageSize );
+/*
                     printf("Pos_x=%.2f\n",onboardMocapClient.pos_x);
                     printf("Pos_y=%.2f\n",onboardMocapClient.pos_y);
                     printf("Pos_z=%.2f\n",onboardMocapClient.pos_z);
@@ -252,10 +253,11 @@ int readDatalink( ) {
                     printf("qw=%.2f\n",onboardMocapClient.qw);
                     printf("frameNum=%d\n",onboardMocapClient.frameNum);
                     printf("Valid=%d\n",onboardMocapClient.valid);
+*/
                     gotPacket = 1;
                 }
-              break;
-            }
+              break; 
+           }
           }
           index += datalinkHeader.messageSize - 1;
         } else {
