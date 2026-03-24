@@ -92,5 +92,5 @@ Vec<3> AHRS::euler() const {
 void AHRS::accelToAttitude(const Vec<3>& accel, double& roll, double& pitch) {
     const double ax = accel(0), ay = accel(1), az = accel(2);
     roll = std::atan2(-ay, -az);
-    pitch = std::atan2(ax, std::sqrt(ay * ay + az * az))
+    pitch = std::atan2(ax, std::sqrt(ay * ay + az * az));
 }

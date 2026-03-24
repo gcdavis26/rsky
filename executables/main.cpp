@@ -319,7 +319,7 @@ int main() {
             ts.armed = armed;
             ts.NIS = NIS;
             ts.PWMcmd = pwmCmd;
-            telemetry_task.updateState(ts)
+            telemetry_task.updateState(ts);
 
             // ---------------- Console Print ----------------
             if (t - lastPrint >= printDt && printOn) {
