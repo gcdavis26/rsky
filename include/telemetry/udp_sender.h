@@ -46,8 +46,10 @@ public:
         double dt,
         double Hz,
         const Vec<15>& navState,
-        const ModeManager& MM,
-        const OuterLoop& outer,
+        const Vec<3>& posCmd,
+        int phase,
+        int mode,
+        const Vec<3>& attCmd,
         const bool& armed,
         const double NIS,
         const Vec<4>& PWMcmd);
