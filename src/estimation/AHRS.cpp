@@ -1,5 +1,4 @@
-#include "estimation/AHRS.h"
-#include <cmath>
+#include "estimation/AHRS.h" include <cmath>
 
 
 static inline double clampd(double v, double lo, double hi) {

@@ -26,7 +26,7 @@ int main() {
     OuterLoop outer;
     InnerLoop inner;
     QuadMixer mixer;
-    UdpSender udp("127.0.0.1", 8080); //KINETIC 192.168.1.2
+    UdpSender udp("192.168.1.6", 8080); //KINETIC 192.168.1.2
 
     TelemetryTask telemetry_task(udp);
     std::thread telemetry_thread(&TelemetryTask::loop, &telemetry_task);
@@ -64,7 +64,7 @@ int main() {
 
     bool autopilot = false;
     bool printOn = true;
-    bool armed = true;
+    bool armed = false;
     bool motorInit = false;
     double armTime = 0.0;
 
@@ -101,7 +101,7 @@ int main() {
 
         // ---------------- EKF ----------------
 
-        if (!ekf.init) {
+        if (!ekf.init && mocapInit) {
             ekf.initializeFromOpti(mocap.opti);
             ekf.init = true;
         }
@@ -111,7 +111,7 @@ int main() {
             clock.taskClock.navPred = 0.0;
         }
 
-        if (clock.taskClock.navCorr >= clock.rates.navCorr) {
+        if ((clock.taskClock.navCorr >= clock.rates.navCorr) && mocap.m_valid) {
             ekf.correct(mocap.opti);
 
             NIS = ekf.getHealth();
@@ -306,6 +306,7 @@ int main() {
             }
 
             // ---------------- Telemetry -----------------
+
             TelemetryState ts;
             ts.t = t;
             ts.dt = dt;
@@ -335,7 +336,6 @@ int main() {
 
                 const Vec<3> gyro = imuReal.imu.gyro;
                 const Vec<3> accel = imuReal.imu.accel;
-                const Vec<12> imuStat = Vec<12>::Zero();
 
                 const Vec<3> optPos = mocap.opti.pos;
                 const double optPsi = mocap.opti.psi;
@@ -406,7 +406,7 @@ int main() {
 
                     << " SENSORS\n"
                     << "   IMU Stats : "
-                    << std::setw(8) << imuStat.transpose() << "\n"
+                    << std::setw(8) << imuStats.transpose() << "\n"
                     << "   IMU Gyro  [x y z] : "
                     << std::setw(8) << gyro(0) << " "
                     << std::setw(8) << gyro(1) << " "

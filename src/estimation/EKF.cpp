@@ -18,8 +18,8 @@ EKF::EKF() {
 }
 
 void EKF::initializeFromOptiImpl(const OptiMeas& opti) {
-    const double phi0 = 0.0;
-    const double th0 = 0.0;
+    const double phi0 = PI/90;
+    const double th0 = PI/90;
     const double psi0 = wrapToPi(opti.psi);
 
     x_est.setZero();
