@@ -380,8 +380,10 @@ int main() {
             udp.sendFromSim(
                 t, dt, Hz,
                 trueState,
-                MM,
-                outer,
+                MM.out.posCmd,
+                static_cast<int>(MM.out.phase),
+                static_cast<int>(MM.out.mode),
+                outer.out.attCmd,
                 armed,
                 NIS,
                 pwmCmd
