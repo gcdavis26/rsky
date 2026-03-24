@@ -28,8 +28,10 @@ private:
 	Vec<6> AHRSbias;       // static sensor biases (gyro[0:2], accel[3:5])
 
 	// --- Parameters / tuning ---
-	double kp_acc = 5.0;
-	double ki_acc = 0.01;
+
+	double kp_acc = 3.0;
+	double ki_acc = 0.05;
+
 	double gate_g = 0.15;
 	double max_abs_pitch_rad = 1.553343;
 

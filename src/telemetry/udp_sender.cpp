@@ -105,8 +105,10 @@ bool UdpSender::sendJson_(const json& j) {
 bool UdpSender::sendFromSim(
     double t, double dt, double Hz,
     const Vec<15>& navState,
-    const ModeManager& MM,
-    const OuterLoop& outer,
+    const Vec<3>& posCmd,
+    int phase,
+    int mode,
+    const Vec<3>& attCmd,
     const bool& armed,
     const double NIS,
     const Vec<4>& PWMcmd)
@@ -117,10 +119,10 @@ bool UdpSender::sendFromSim(
     const Vecf<3> vel_est = navState.segment<3>(6).cast<float>();
 
     // ModeManager outputs
-    const Vecf<3> pos_cmd = MM.out.posCmd.cast<float>();
+    const Vecf<3> pos_cmd = posCmd.cast<float>();
 
     // OuterLoop outputs (commanded attitude)
-    const Vecf<3> euler_cmd = outer.out.attCmd.cast<float>();
+    const Vecf<3> euler_cmd = attCmd.cast<float>();
     const Veci<4> PWMCmd = PWMcmd.cast<int>();
 
     // IMU outputs
@@ -141,8 +143,8 @@ bool UdpSender::sendFromSim(
 
     // If you do NOT have phase in ModeManager, set 0 or add it later.
     // If you DO have it, replace with static_cast<int>(MM.out.phase)
-    j["phase"] = static_cast<int>(MM.out.phase);
-    j["mode"] = static_cast<int>(MM.out.mode);
+    j["phase"] = phase;
+    j["mode"] = mode;
     j["armed"] = armed;
     j["EKF_Health"] = NISf;
 

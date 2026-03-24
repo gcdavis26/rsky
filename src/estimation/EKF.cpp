@@ -115,7 +115,7 @@ void EKF::correctImpl(const OptiMeas& opti) {
 
     // health update
     double nis = res.transpose() * S.ldlt().solve(res);
-    const double alpha = 0.95;
+    const double alpha = 0.19;
 
     if (!nisInit) {
         nisAvg = nis;

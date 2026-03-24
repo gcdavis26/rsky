@@ -8,6 +8,7 @@
 #include "estimation/EKF.h"
 #include "guidance/ModeManager.h"
 #include "telemetry/udp_sender.h"
+#include "telemetry/TelemetryTask.h"
 #include "estimation/AHRS.h"
 #include "drivers/MotorDriver.h"
 #include "drivers/RCIn.h"
@@ -26,6 +27,9 @@ int main() {
     InnerLoop inner;
     QuadMixer mixer;
     UdpSender udp("192.168.1.6", 8080); //KINETIC 192.168.1.2
+
+    TelemetryTask telemetry_task(udp);
+    std::thread telemetry_thread(&TelemetryTask::loop, &telemetry_task);
 
     RCIn rcin;
     rcin.initialize();
@@ -302,19 +306,20 @@ int main() {
             }
 
             // ---------------- Telemetry -----------------
-            if (clock.taskClock.tele >= clock.rates.tele) {
-		navState.segment<3>(0) = AHRSAtt;
-                udp.sendFromSim(
-                    t, dt, Hz,
-                    navState,
-                    MM,
-                    outer,
-                    armed,
-                    NIS,
-                    pwmCmd
-                );
-                clock.taskClock.tele = 0.0;
-            }
+
+            TelemetryState ts;
+            ts.t = t;
+            ts.dt = dt;
+            ts.Hz = Hz;
+            ts.navState = navState;
+            ts.posCmd = MM.out.posCmd;
+            ts.phase = static_cast<int>(MM.out.phase);
+            ts.mode = static_cast<int>(MM.out.mode);
+            ts.attCmd = outer.out.attCmd;
+            ts.armed = armed;
+            ts.NIS = NIS;
+            ts.PWMcmd = pwmCmd;
+            telemetry_task.updateState(ts)
 
             // ---------------- Console Print ----------------
             if (t - lastPrint >= printDt && printOn) {
@@ -442,6 +447,11 @@ int main() {
             //usleep(1);
 #endif
     //std::this_thread::yield();
+    }
+
+    telemetry_task.stop();
+    if (telemetry_thread.joinable()) {
+        telemetry_thread.join();
     }
 }
 
