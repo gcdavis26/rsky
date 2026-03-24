@@ -1,11 +1,6 @@
 #include "estimation/AHRS.h"
 #include <cmath>
 
-static inline double wrapToPi(double a) {
-    while (a > PI) a -= 2.0 * PI;
-    while (a < -PI) a += 2.0 * PI;
-    return a;
-}
 
 static inline double clampd(double v, double lo, double hi) {
     return v < lo ? lo : (v > hi ? hi : v);
