@@ -54,6 +54,7 @@ set(COMMON_SOURCES
     src/sensors/ImuSim.cpp
     src/sensors/OptiSim.cpp
     src/telemetry/udp_sender.cpp
+    src/telemetry/TelemetryTask.cpp
     src/estimation/AHRS.cpp
 )
 
@@ -136,6 +137,7 @@ if(UNIX AND NOT APPLE)
         src/drivers/MotorDriver.cpp
         src/drivers/RCIn.cpp
         src/sensors/IMUHandler.cpp
+        src/sensors/BatteryHandler.cpp
         src/mocap/network.cpp
         src/mocap/mocapHandler.cpp
         src/sensors/ThermalCamera.cpp
