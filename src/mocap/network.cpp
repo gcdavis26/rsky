@@ -182,27 +182,32 @@ int openPort( void ) {
 	return 0;
 }
 
-static int readSock( struct port_ref *s, void *buf, int nbytes ) {
-	int totalNew = 0;
-  if( s->portIsOpen ) {
-		int toread = 0, status;
-		socklen_t sizeofsockaddr = sizeof(struct sockaddr);
-		memcpy( &ra, &bra, sizeof(bra) );
-    do {
-        status = ioctl( s->fd, FIONREAD, &toread );
-        if( status == -1 ) {
-            printf( "network: problem receiving\n" );
-            return totalNew;
-        }
-        status = recvfrom( s->fd, (char*)buf, (toread<nbytes?toread:nbytes),  0, (struct sockaddr*)(&ra), &sizeofsockaddr );
-        if( status > 0 ) {
-            buf = (void*)( (char*)buf + status );
-            totalNew += status;
-            s->received += status;
-        }
-    } while( status > 0 );
-	}
-  return totalNew;
+static int readSock(struct port_ref* s, void* buf, int nbytes) {
+    int totalNew = 0;
+    if (s->portIsOpen) {
+        int toread = 0, status;
+        socklen_t sizeofsockaddr = sizeof(struct sockaddr);
+        memcpy(&ra, &bra, sizeof(bra));
+        do {
+            status = ioctl(s->fd, FIONREAD, &toread);
+            if (status == -1) {
+                printf("network: problem receiving\n");
+                return totalNew;
+            }
+
+            // Abort if our local buffer is out of space
+            if (nbytes <= 0) break;
+
+            status = recvfrom(s->fd, (char*)buf, (toread < nbytes ? toread : nbytes), 0, (struct sockaddr*)(&ra), &sizeofsockaddr);
+            if (status > 0) {
+                buf = (void*)((char*)buf + status);
+                totalNew += status;
+                s->received += status;
+                nbytes -= status; // CRITICAL: Reduce available space
+            }
+        } while (status > 0);
+    }
+    return totalNew;
 }
 
 int readDatalink( ) {

@@ -35,6 +35,7 @@ int main() {
     rcin.initialize();
 
     MotorDriver motdrv;
+    motdrv.initialize();
 
     IMUHandler imuReal;
     Vec<12> imuStats = imuReal.initialize(); //(mgx,mgy,mgz,max,may,maz,siggx,siggy,siggz,sigax,sigay,sigaz)
@@ -65,7 +66,7 @@ int main() {
     bool autopilot = false;
     bool printOn = true;
     bool armed = false;
-    bool motorInit = false;
+    bool motorInit = true;
     double armTime = 0.0;
 
     double NIS = 4.0;
@@ -289,11 +290,7 @@ int main() {
 
                 // ----------------Real Commands -------------
 
-                if (!motorInit && armed && (pwmCmd.array() <= 1001).all()) {
-                    motdrv.initialize();
-                    motorInit = true;
-                }
-                else if (motorInit && armed) {
+                if (armed) {
                     motdrv.command(pwmCmd); //takes in four for motors 1 2 3 4 pwmCmd
                 }
                 else if (motorInit && !armed) {
