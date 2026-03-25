@@ -77,6 +77,7 @@ endif()
 # ==============================
 # Shared include directories
 # ==============================
+if(UNIX AND NOT APPLE)
 target_include_directories(FireMission PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/include/sensors
@@ -85,38 +86,49 @@ target_include_directories(FireMission PRIVATE
     ${CMAKE_SOURCE_DIR}/external/Navio2
     ${CMAKE_SOURCE_DIR}/external
 )
+endif()
 
 target_include_directories(FireSim PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/include/sensors
     ${CMAKE_SOURCE_DIR}/include/vision
     ${CMAKE_SOURCE_DIR}/external/eigen
-    ${CMAKE_SOURCE_DIR}/external/Navio2
+    #${CMAKE_SOURCE_DIR}/external/Navio2
     ${CMAKE_SOURCE_DIR}/external
 )
 
 # ==============================
 # Precompile Headers
 # ==============================
+if (UNIX AND NOT APPLE)
 target_precompile_headers(FireMission PRIVATE <Eigen/Dense>)
+endif()
 target_precompile_headers(FireSim PRIVATE <Eigen/Dense>)
 
 # ==============================
 # Compiler warnings & Optimizations
 # ==============================
 if (MSVC)
+    if (UNIX AND NOT APPLE)
     target_compile_options(FireMission PRIVATE /W4)
+    endif()
     target_compile_options(FireSim PRIVATE /W4)
 
     # MSVC Release Optimizations
+    if (UNIX AND NOT APPLE)
     target_compile_options(FireMission PRIVATE $<$<CONFIG:Release>:/O2 /Ob2 /arch:AVX2 /DNDEBUG>)
+    endif()
     target_compile_options(FireSim PRIVATE $<$<CONFIG:Release>:/O2 /Ob2 /arch:AVX2 /DNDEBUG>)
 else()
+    if (UNIX AND NOT APPLE)
     target_compile_options(FireMission PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
     target_compile_options(FireSim PRIVATE -Wall -Wextra -Wpedantic)
 
     # GCC/Clang Release Optimizations
+    if (UNIX AND NOT APPLE)
     target_compile_options(FireMission PRIVATE $<$<CONFIG:Release>:-O3 -march=native -DNDEBUG>)
+    endif()
     target_compile_options(FireSim PRIVATE $<$<CONFIG:Release>:-O3 -march=native -DNDEBUG>)
 endif()
 

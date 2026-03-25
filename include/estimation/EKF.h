@@ -3,8 +3,12 @@
 
 #include "common/MathUtils.h"
 #include "sensors/ImuSim.h"
-#include "sensors/IMUHandler.h"
-#include "mocap/mocapHandler.h"
+
+#ifdef PLATFORM_LINUX
+    #include "sensors/IMUHandler.h"
+    #include "mocap/mocapHandler.h"
+#endif
+
 #include "sensors/OptiSim.h"
 
 class EKF {
@@ -42,6 +46,7 @@ private:
     struct ImuMeas {
         Vec<3> gyro = Vec<3>::Zero();
         Vec<3> accel = Vec<3>::Zero();
+        Vec<6> raw = Vec<6>::Zero();
     };
 
     struct OptiMeas {

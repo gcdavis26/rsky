@@ -6,6 +6,7 @@ public:
 	struct ImuMeas {
 		Vec<3> gyro = Vec<3>::Zero();
 		Vec<3> accel = Vec<3>::Zero();
+		Vec<6> raw = Vec<6>::Zero();
 	};
 
 	ImuMeas imu;
