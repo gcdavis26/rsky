@@ -56,6 +56,7 @@ set(COMMON_SOURCES
     src/telemetry/udp_sender.cpp
     src/telemetry/TelemetryTask.cpp
     src/estimation/AHRS.cpp
+    src/common/LowPass.cpp
 )
 
 # ==============================

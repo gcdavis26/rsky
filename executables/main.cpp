@@ -2,6 +2,7 @@
 #include <iomanip>
 #include "common/TimeKeeper.h"
 #include "common/MathUtils.h"
+#include "common/LowPass.h"
 #include "control/InnerLoop.h"
 #include "control/OuterLoop.h"
 #include "control/QuadMixer.h"

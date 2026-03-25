@@ -64,5 +64,5 @@ void IMUHandler::update() {
 
     imu.gyro << gy, gx, -gz;
     imu.accel << ay, ax, -az;
-    
+    imu.raw = data;
 }
