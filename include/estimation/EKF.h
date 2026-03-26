@@ -26,6 +26,8 @@ public:
 
     EKF();
 
+    EKF(Vec<6>& bias);
+
     bool init = false;
 
     template<typename OptiT>

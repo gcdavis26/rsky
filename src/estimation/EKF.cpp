@@ -17,12 +17,28 @@ EKF::EKF() {
     P.setZero();
 }
 
-void EKF::initializeFromOptiImpl(const OptiMeas& opti) {
-    const double phi0 = PI/90;
-    const double th0 = PI/90;
-    const double psi0 = wrapToPi(opti.psi);
+EKF::EKF(Vec<6>& bias) {
+    // Build continuous-time Qc (12x12): [n_g; n_a; n_ba; n_bw]
+    Qc.setZero();
+    Qc.diagonal() <<
+        sig_g * sig_g, sig_g* sig_g, sig_g* sig_g,
+        sig_acc* sig_acc, sig_acc* sig_acc, sig_acc* sig_acc,
+        sig_ba_walk* sig_ba_walk, sig_ba_walk* sig_ba_walk, sig_ba_walk* sig_ba_walk,
+        sig_bw_walk* sig_bw_walk, sig_bw_walk* sig_bw_walk, sig_bw_walk* sig_bw_walk;
+
+    Rpos = (sig_pos * sig_pos) * Mat<3, 3>::Identity();
+    Rpsi = (sig_psi * sig_psi);
 
     x_est.setZero();
+    x_est.segment<6>(9) = bias;
+    P.setZero();
+}
+
+void EKF::initializeFromOptiImpl(const OptiMeas& opti) {
+    const double phi0 = 0.0;
+    const double th0 = 0.0;
+    const double psi0 = wrapToPi(opti.psi);
+
     x_est(PHI) = phi0;
     x_est(THETA) = th0;
     x_est(PSI) = psi0;

@@ -27,7 +27,8 @@ int main() {
     OuterLoop outer;
     InnerLoop inner;
     QuadMixer mixer;
-    UdpSender udp("192.168.1.6", 8080); //KINETIC 192.168.1.2
+    UdpSender udp("127.0.0.1", 8080); //KINETIC 192.168.1.2
+    TelemetryState ts;
 
     TelemetryTask telemetry_task(udp);
     std::thread telemetry_thread(&TelemetryTask::loop, &telemetry_task);
@@ -42,7 +43,7 @@ int main() {
     Vec<12> imuStats = imuReal.initialize(); //(mgx,mgy,mgz,max,may,maz,siggx,siggy,siggz,sigax,sigay,sigaz)
     imuStats(5) = imuStats(5) + g;
     AHRS ahrs(imuStats.segment<6>(0));
-    EKF ekf; // add bias constructor
+    EKF ekf(imuStats.segment<6>(0)); // add bias constructor
     MocapHandler mocap;
     bool mocapInit = mocap.init();
 
@@ -304,20 +305,21 @@ int main() {
             }
 
             // ---------------- Telemetry -----------------
-
-            TelemetryState ts;
-            ts.t = t;
-            ts.dt = dt;
-            ts.Hz = Hz;
-            ts.navState = navState;
-            ts.posCmd = MM.out.posCmd;
-            ts.phase = static_cast<int>(MM.out.phase);
-            ts.mode = static_cast<int>(MM.out.mode);
-            ts.attCmd = outer.out.attCmd;
-            ts.armed = armed;
-            ts.NIS = NIS;
-            ts.PWMcmd = pwmCmd;
-            telemetry_task.updateState(ts);
+            if (clock.taskClock.tele >= clock.rates.tele) {
+                ts.t = t;
+                ts.dt = dt;
+                ts.Hz = Hz;
+                ts.navState = navState;
+                ts.posCmd = MM.out.posCmd;
+                ts.phase = static_cast<int>(MM.out.phase);
+                ts.mode = static_cast<int>(MM.out.mode);
+                ts.attCmd = outer.out.attCmd;
+                ts.armed = armed;
+                ts.NIS = NIS;
+                ts.PWMcmd = pwmCmd;
+                telemetry_task.updateState(ts);
+                clock.taskClock.tele = 0.0;
+            }
 
             // ---------------- Console Print ----------------
             if (t - lastPrint >= printDt && printOn) {
