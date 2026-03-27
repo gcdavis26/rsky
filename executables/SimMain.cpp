@@ -117,7 +117,11 @@ int main() {
         }
 
         if (clock.taskClock.navPred >= clock.rates.navPred) {
-            ekf.predict(imu.imu, clock.taskClock.navPred);
+            Vec<6> imuSim;
+            imuSim.segment<3>(0) = imu.imu.accel;
+            imuSim.segment<3>(3) = imu.imu.gyro;
+
+            ekf.predict(imuSim, clock.taskClock.navPred);
             clock.taskClock.navPred = 0.0;
         }
 
