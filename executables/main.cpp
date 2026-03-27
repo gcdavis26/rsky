@@ -99,8 +99,8 @@ int main() {
             imuReal.update();
             clock.taskClock.imu = 0.0;
             Vec<6> raw;
-            raw.segment<3>(0) = imuReal.accel;
-            raw.segment<3>(3) = imuReal.gyro;
+            raw.segment<3>(0) = imuReal.imu.accel;
+            raw.segment<3>(3) = imuReal.imu.gyro;
             ekf_filter.update(raw);
             ctrl_filter.update(raw);
         }
