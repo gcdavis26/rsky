@@ -30,7 +30,8 @@ EKF::EKF(Vec<6>& bias) {
     Rpsi = (sig_psi * sig_psi);
 
     x_est.setZero();
-    x_est.segment<6>(9) = bias;
+    x_est.segment<3>(9) = bias.segment<3>(3);
+    x_est.segment<3>(12) = bias.segment<3>(0);
     P.setZero();
 }
 
