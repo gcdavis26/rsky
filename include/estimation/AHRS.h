@@ -30,7 +30,7 @@ private:
 	// --- Parameters / tuning ---
 
 	double kp_acc = 3.0;
-	double ki_acc = 0.05;
+	double ki_acc = 0.01;
 
 	double gate_g = 0.15;
 	double max_abs_pitch_rad = 1.553343;

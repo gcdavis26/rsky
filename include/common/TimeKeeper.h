@@ -15,7 +15,7 @@ public:
 		static constexpr double conInner = 1.0 / 400;
 		static constexpr double conOuter = 1.0 / 50;
 		static constexpr double tele = 1.0 / 25;
-		static constexpr double imu = 1.0 / 500;
+		static constexpr double imu = 1.0 / 952;
 		static constexpr double opti = 1.0 / 25;
 		static constexpr double MM = 1.0 / 50;
 		static constexpr double AHRS = 1.0 / 100;

@@ -13,7 +13,7 @@ void ImuLpf::reset() {
 	output_.setZero();
 }
 
-void ImuLpf::update(const Vecf<6>& raw)
+void ImuLpf::update(const Vec<6>& raw)
 {
     // Direct Form II Transposed
     output_ = b0_ * raw + d1_;

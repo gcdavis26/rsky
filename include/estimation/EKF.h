@@ -33,8 +33,7 @@ public:
     template<typename OptiT>
     void initializeFromOpti(const OptiT& opti);
 
-    template<typename ImuT>
-    void predict(const ImuT& imu, double dt);
+    void predict(const Vec<6>& imu, double dt);
 
     template<typename OptiT>
     void correct(const OptiT& opti);
@@ -48,7 +47,6 @@ private:
     struct ImuMeas {
         Vec<3> gyro = Vec<3>::Zero();
         Vec<3> accel = Vec<3>::Zero();
-        Vec<6> raw = Vec<6>::Zero();
     };
 
     struct OptiMeas {
@@ -129,12 +127,11 @@ void EKF::initializeFromOpti(const OptiT& opti)
     initializeFromOptiImpl(z);
 }
 
-template<typename ImuT>
-void EKF::predict(const ImuT& imu, double dt)
+void EKF::predict(const Vec<6>& imu, double dt)
 {
     ImuMeas u;
-    u.gyro = imu.gyro;
-    u.accel = imu.accel;
+    u.gyro = imu.segment<3>(3);
+    u.accel = imu.segment<3>(0);
     predictImpl(u, dt);
 }
 
