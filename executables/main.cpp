@@ -164,7 +164,6 @@ int main() {
 
             if (rcPWM(4) > 1500.0) {
                 armed = true;
-                motdrv.calibrate();
                 armTime += clock.taskClock.keys;
             }
             else {
