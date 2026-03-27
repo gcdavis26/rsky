@@ -398,7 +398,7 @@ double EKF::h_psi(const Vec<NX>& x) const {
     return x(PSI);
 }
 
-// ------------------- Hpos numeric (central diff) -------------------
+// ------------------- Hpos numeric (not using anymore) -------------------
 Mat<3, EKF::NX> EKF::computeHpos(const Vec<NX>& x) const {
     Mat<3, NX> H = Mat<3, NX>::Zero();
 
