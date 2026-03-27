@@ -127,7 +127,7 @@ void EKF::initializeFromOpti(const OptiT& opti)
     initializeFromOptiImpl(z);
 }
 
-void EKF::predict(const Vec<6>& imu, double dt)
+inline void EKF::predict(const Vec<6>& imu, double dt)
 {
     ImuMeas u;
     u.gyro = imu.segment<3>(3);
