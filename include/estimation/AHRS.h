@@ -35,6 +35,12 @@ private:
 	double gate_g = 0.15;
 	double max_abs_pitch_rad = 1.553343;
 
+	bool have_prev_gyro = false;
+	Vec<3> gyro_prev = Vec<3>::Zero();
+	Vec<3> omega_dot_prev = Vec<3>::Zero();
+	double omega_dot_alpha = 0.7;
+	Vec<3> r_IMU = Vec<3>::Zero(); // ~set when you know it~
+
 	// --- Helpers ---
 	void accelToAttitude(const Vec<3>& accel, double& roll, double& pitch);
 };

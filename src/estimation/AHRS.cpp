@@ -44,12 +44,30 @@ void AHRS::update(const Vec<3>& accel, const Vec<3>& gyro, double dt) {
 
     const Vec<3> a = accel - AHRSbias.segment<3>(3);
 
-    const double amag = a.norm();
+    Vec<3> omega_dot = Vec<3>::Zero();
+
+    if (!have_prev_gyro) {
+        have_prev_gyro = true;
+        gyro_prev = gyro;
+        omega_dot_prev.setZero();
+        omega_dot.setZero();
+    }
+    else {
+        const Vec<3> raw = (gyro - gyro_prev) / dt;
+        gyro_prev = gyro;
+
+        omega_dot = omega_dot_alpha * omega_dot_prev + (1.0 - omega_dot_alpha) * raw;
+        omega_dot_prev = omega_dot;
+    }
+
+    const Vec<3> a_corr = a - omega_dot.cross(r_IMU) - gyro.cross(gyro.cross(r_IMU));
+
+    const double amag = a_corr.norm();
     const bool accel_ok = std::isfinite(amag) && std::abs(amag - g) <= (gate_g * g);
 
     Vec<3> e = Vec<3>::Zero();
     if (accel_ok && amag > 1e-6) {
-        const Vec<3> a_hat = a / amag;
+        const Vec<3> a_hat = a_corr / amag;
 
         // Predicted gravity direction in body frame = R^T * [0,0,1]
         // = 3rd row of R (body-to-NED rotation matrix)
@@ -63,6 +81,7 @@ void AHRS::update(const Vec<3>& accel, const Vec<3>& gyro, double dt) {
     }
 
     bg += (ki_acc * e) * dt;
+
     const Vec<3> omega = gyro - bg + (kp_acc * e);
 
     // q_dot = 0.5 * q ⊗ [0, omega]
