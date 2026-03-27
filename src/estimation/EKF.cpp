@@ -17,7 +17,7 @@ EKF::EKF() {
     P.setZero();
 }
 
-EKF::EKF(Vec<6>& bias) {
+EKF::EKF(const Vec<6>& bias) {
     // Build continuous-time Qc (12x12): [n_g; n_a; n_ba; n_bw]
     Qc.setZero();
     Qc.diagonal() <<

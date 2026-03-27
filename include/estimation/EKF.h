@@ -26,7 +26,7 @@ public:
 
     EKF();
 
-    EKF(Vec<6>& bias);
+    EKF(const Vec<6>& bias);
 
     bool init = false;
 
