@@ -29,7 +29,7 @@ bool MotorDriver::initialize() {
         pwm_driver.set_duty_cycle(pin, (float)PWM_MIN);
     }
 
-    //calibrate();  shouldn't need this because it might cause the motors to command 2000 PWM if already calibrated. Need to test again. 
+    calibrate();  shouldn't need this because it might cause the motors to command 2000 PWM if already calibrated. Need to test again. 
 
     usleep(50000);
     return true;
