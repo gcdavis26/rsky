@@ -30,7 +30,9 @@ external/eigen
 *.pdb
 *.ilk
 *.obj
-
+*.elf
+FireMission
+FireSim
 # =========================
 # Temporary / logs
 # =========================

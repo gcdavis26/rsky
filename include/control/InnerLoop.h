@@ -15,7 +15,7 @@ private:
 	static const inline Vec<3> ki{ 0.0,0.0,0.0 };
 
 	double tauI = 0.025;
-	double tauA = 0.025;
+	double tauA = 0.015;
 
 	Vec<3> x4 = Vec<3>::Zero();
 	Vec<3> x5 = Vec<3>::Zero();

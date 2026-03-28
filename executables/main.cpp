@@ -28,7 +28,7 @@ int main() {
     OuterLoop outer;
     InnerLoop inner;
     QuadMixer mixer;
-    UdpSender udp("127.0.0.1", 8080); //KINETIC 192.168.1.2
+    UdpSender udp("192.168.1.2", 8080); //KINETIC 192.168.1.2
     TelemetryState ts;
 
     TelemetryTask telemetry_task(udp);
@@ -63,6 +63,7 @@ int main() {
     Vec<4> wrenchCmd = Vec<4>::Zero();
     Vec<4> pwmCmd = Vec<4>::Zero();
     Vec<6> rcPWM = Vec<6> ::Zero();
+    Vec<4> throttleTest = Vec<4>::Zero();
 
     Vec<3> manVel = Vec<3>::Zero();
     double manPsi = 0.0;
@@ -283,17 +284,16 @@ int main() {
                 thrustCmd = mixer.mix2Thrust(wrenchCmd);
 
                 pwmCmd = mixer.thr2PWM(thrustCmd); //this will go directly to the four motors
-
+		throttleTest << rcPWM(2),rcPWM(2),rcPWM(2),rcPWM(2);
                 clock.taskClock.conInner = 0.0;
 
                 // ----------------Real Commands -------------
-
                 motor_task.updateState(pwmCmd, rcPWM(4));
-
             }
 
             // ---------------- Telemetry -----------------
             if (clock.taskClock.tele >= clock.rates.tele) {
+		navState.segment<3>(0) = AHRSAtt;
                 ts.t = t;
                 ts.dt = dt;
                 ts.Hz = Hz;
@@ -322,8 +322,8 @@ int main() {
 
                 const Vec<3> attCmd = attManual;
 
-                const Vec<3> gyro = imuReal.imu.gyro;
-                const Vec<3> accel = imuReal.imu.accel;
+                const Vec<3> gyro = ctrl_filter.output().segment<3>(3);
+                const Vec<3> accel = ctrl_filter.output().segment<3>(0);
 
                 const Vec<3> optPos = mocap.opti.pos;
                 const double optPsi = mocap.opti.psi;
