@@ -52,7 +52,7 @@ Vec<4> QuadMixer::thr2PWM(const Vec<4>& thrust_cmd) {
 
 	for (int i = 0; i < 4; i++) {
 
-		PWM(i) = (0.0468 + sqrt(2.226 * 0.00001 + 8.88 * 0.00001 * thrust_cmd(i))) / (4.44 * 0.00001);
+		PWM(i) = 923.9396 + sqrt(10082.8422 + 77813.6231*thrust_cmd(i));
 
 		PWM(i) = clamp(PWM(i), 1000.0, 2000.0);
 	}

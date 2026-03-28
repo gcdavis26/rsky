@@ -288,7 +288,7 @@ int main() {
                 clock.taskClock.conInner = 0.0;
 
                 // ----------------Real Commands -------------
-                motor_task.updateState(throttleTest, rcPWM(4));
+                motor_task.updateState(pwmCmd, rcPWM(4));
             }
 
             // ---------------- Telemetry -----------------
@@ -304,7 +304,7 @@ int main() {
                 ts.attCmd = outer.out.attCmd;
                 ts.armed = motor_task.isArmed();
                 ts.NIS = NIS;
-                ts.PWMcmd = throttleTest;
+                ts.PWMcmd = pwmCmd;
                 telemetry_task.updateState(ts);
                 clock.taskClock.tele = 0.0;
             }
