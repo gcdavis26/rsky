@@ -116,22 +116,21 @@ void EKF::correctImpl(const OptiMeas& opti) {
     res = z - h;
     res(3) = wrapToPi(res(3));
 
-    // H = [Hpos; Hpsi]
-    Mat<4, NX> H = Mat<4, NX>::Zero();
-    H.template topRows<3>() = computeHpos(x_est);
-    H(3, PSI) = 1.0;
-
     // R = blkdiag(Rpos, Rpsi)
     Mat<4, 4> R = Mat<4, 4>::Zero();
     R.template topLeftCorner<3, 3>() = Rpos;
     R(3, 3) = Rpsi;
 
     // S, K
-    S = H * P * H.transpose() + R;
-    const Mat<NX, 4> K = P * H.transpose() * S.inverse();
+    S = P.block(2, 2, 4, 4).selfadjointView<Eigen::Lower>();
+    S += R;
 
-    // health update
-    double nis = res.transpose() * S.ldlt().solve(res);
+    Eigen::LDLT<Mat<4, 4>> S_ldlt(S);
+    const Mat<NK, 4> K = P.block(0, 2, 15, 4) * S_ldlt.solve(Matrix4d::Identity());
+
+    // NIS
+    double nis = res.transpose() * S_ldlt.solve(res);
+
     const double alpha = 0.19;
 
     if (!nisInit) {
@@ -143,9 +142,8 @@ void EKF::correctImpl(const OptiMeas& opti) {
     }
 
     // Joseph form covariance update
-    const Mat<NX, NX> A = (I - K * H);
-    P = A * P * A.transpose() + K * R * K.transpose();
-
+    P.noalias() -= K * S * K.transpose();
+    P = P.selfadjointView<Eigen::Lower>(); //explicitly enforcing symmetry
     // state update
     x_est = x_est + K * res;
 
@@ -397,27 +395,4 @@ Vec<3> EKF::h_pos(const Vec<NX>& x) const {
 
 double EKF::h_psi(const Vec<NX>& x) const {
     return x(PSI);
-}
-
-// ------------------- Hpos numeric (not using anymore) -------------------
-Mat<3, EKF::NX> EKF::computeHpos(const Vec<NX>& x) const {
-    Mat<3, NX> H = Mat<3, NX>::Zero();
-
-    /*
-    for (int j = 0; j < 9; j++) {
-        Vec<NX> dx = Vec<NX>::Zero();
-        dx(j) = eps_H;
-
-        const Vec<3> h1 = h_pos(x + dx);
-        const Vec<3> h0 = h_pos(x - dx);
-
-        H.col(j) = (h1 - h0) / (2.0 * eps_H);
-    }
-    */
-
-    H(0, 3) = 1;
-    H(1, 4) = 1;
-    H(2, 5) = 1;
-
-    return H;
 }

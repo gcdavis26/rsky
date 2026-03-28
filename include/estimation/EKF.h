@@ -102,7 +102,6 @@ private:
     // measurement model + Jacobian
     Vec<3> h_pos(const Vec<NX>& x) const;
     double h_psi(const Vec<NX>& x) const;
-    Mat<3, NX> computeHpos(const Vec<NX>& x) const;
 
     // health monitoring
     double nisAvg = 0.0;
