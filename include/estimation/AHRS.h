@@ -29,7 +29,7 @@ private:
 
 	// --- Parameters / tuning ---
 
-	double kp_acc = 3.0;
+	double kp_acc = 5.0;
 	double ki_acc = 0.01;
 
 	double gate_g = 0.15;
