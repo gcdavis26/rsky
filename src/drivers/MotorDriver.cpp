@@ -57,7 +57,26 @@ void MotorDriver::calibrate() {
     }
 }
 
+void MotorDriver::arm() {
+    armed = true;
+}
+
+void MotorDriver::disarm() {
+    if (armed) {
+        armed = false;
+        wind_down();
+    }
+}
+
+bool MotorDriver::isArmed() const {
+    return armed;
+}
+
 void MotorDriver::command(const Vec<4>& pwm_values) {
+    if (!armed) {
+        return;
+    }
+
     for (int i = 0; i < NUM_MOTORS; ++i) {
 
         // Clamp the double input and cast to float for the hardware driver
@@ -72,5 +91,6 @@ void MotorDriver::wind_down()
     for (int pin : motor_pins) {
         pwm_driver.set_duty_cycle(pin, (float)PWM_MIN);
     }
+    // usleep(50000); // We may want to avoid sleeping inside a tight control loop command, but keeping it if it's required for wind_down
     usleep(50000);
 }
