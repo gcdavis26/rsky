@@ -74,7 +74,7 @@ int main() {
     int HzCounter = 0;
 
     bool autopilot = false;
-    bool printOn = true;
+    bool printOn = false;
 
     double NIS = 4.0;
     bool ekfHealthy = false;
