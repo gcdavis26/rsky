@@ -126,7 +126,7 @@ void EKF::correctImpl(const OptiMeas& opti) {
     S += R;
 
     Eigen::LDLT<Mat<4, 4>> S_ldlt(S);
-    const Mat<NK, 4> K = P.block(0, 2, 15, 4) * S_ldlt.solve(Matrix4d::Identity());
+    const Mat<NX, 4> K = P.block(0, 2, 15, 4) * S_ldlt.solve(Mat<4,4>::Identity());
 
     // NIS
     double nis = res.transpose() * S_ldlt.solve(res);
