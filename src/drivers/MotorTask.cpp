@@ -75,5 +75,9 @@ void MotorTask<MotorType>::loop() {
 }
 
 // Explicit template instantiations
+// Explicit template instantiations
+#ifdef PLATFORM_LINUX
 template class MotorTask<MotorDriver>;
+#endif
+
 template class MotorTask<MotorModel>;

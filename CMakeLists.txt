@@ -57,6 +57,7 @@ set(COMMON_SOURCES
     src/telemetry/TelemetryTask.cpp
     src/estimation/AHRS.cpp
     src/common/LowPass.cpp
+    src/drivers/MotorTask.cpp
 )
 
 # ==============================
@@ -94,7 +95,7 @@ target_include_directories(FireSim PRIVATE
     ${CMAKE_SOURCE_DIR}/include/sensors
     ${CMAKE_SOURCE_DIR}/include/vision
     ${CMAKE_SOURCE_DIR}/external/eigen
-    #${CMAKE_SOURCE_DIR}/external/Navio2
+    ${CMAKE_SOURCE_DIR}/external/Navio2
     ${CMAKE_SOURCE_DIR}/external
 )
 
