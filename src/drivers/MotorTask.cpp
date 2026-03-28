@@ -62,10 +62,14 @@ void MotorTask<MotorType>::loop() {
 
         // Real Commands (Simulated or Real Hardware)
         if (isArmedCached_.load()) {
-            motor_.command(state_copy.pwmCmd); // Takes in four motors 1 2 3 4 pwmCmd
-        } else {
-            // motor_.disarm() internally handles wind_down() on transition
-            // So we simply do nothing here while continuously disarmed
+            if (armTime_ >= 5.0 && armTime_ < 6.0) {
+                // For the first 2 seconds after arming, send exactly 1000 PWM
+                motor_.command(Vec<4>::Constant(1000.0));
+            }
+            else {
+                // After 2 seconds, send actual commands from the mixer
+                motor_.command(state_copy.pwmCmd);
+            }
         }
 
         // Sleep to maintain ~400Hz loop rate (2.5ms = 2500 microseconds) using sleep_until
