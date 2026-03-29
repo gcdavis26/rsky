@@ -118,8 +118,8 @@ void EKF::correctImpl(const OptiMeas& opti) {
 
     // R = blkdiag(Rpos, Rpsi)
     Mat<4, 4> R = Mat<4, 4>::Zero();
-    R.template topLeftCorner<3, 3>() = Rpos;
-    R(3, 3) = Rpsi;
+    R.template bottomRightCorner<3, 3>() = Rpos;
+    R(0, 0) = Rpsi;
 
     // S, K
     S = P.block(2, 2, 4, 4).selfadjointView<Eigen::Lower>();
