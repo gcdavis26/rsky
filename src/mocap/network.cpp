@@ -8,7 +8,7 @@
 #include "mocap/network.h"
 
 #define BSD_BASE_PORT 0
-#define MYNAME "192.168.1.2"     // my IP address (onboard computer)
+#define MYNAME "192.168.1.3"     // my IP address (onboard computer)
 #define REMOTENAME "192.168.1.5" // IP address from the desktop in 001
 #define THISPORTNUM 9001
 

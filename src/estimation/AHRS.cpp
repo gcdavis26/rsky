@@ -62,12 +62,12 @@ void AHRS::update(const Vec<3>& accel, const Vec<3>& gyro, double dt) {
 
     const Vec<3> a_corr = a - omega_dot.cross(r_IMU) - gyro.cross(gyro.cross(r_IMU));
 
-    const double amag = a.norm();
+    const double amag = a_corr.norm();
     const bool accel_ok = std::isfinite(amag) && std::abs(amag - g) <= (gate_g * g);
 
     Vec<3> e = Vec<3>::Zero();
     if (accel_ok && amag > 1e-6) {
-        const Vec<3> a_hat = a / amag;
+        const Vec<3> a_hat = a_corr / amag;
 
         // Predicted gravity direction in body frame = R^T * [0,0,1]
         // = 3rd row of R (body-to-NED rotation matrix)

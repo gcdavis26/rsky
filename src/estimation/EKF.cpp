@@ -104,22 +104,22 @@ void EKF::correctImpl(const OptiMeas& opti) {
 
     // z = [pos_ned; psi]
     Vec<4> z;
-    z.template head<3>() = opti.pos;
-    z(3) = wrapToPi(opti.psi);
+    z(0) = wrapToPi(opti.psi);
+    z.segment<3>(1) = opti.pos;
 
     // h(x) = [h_pos(x); h_psi(x)]
     Vec<4> h;
-    h.template head<3>() = h_pos(x_est);
-    h(3) = h_psi(x_est);
+    h.segment<3>(1) = h_pos(x_est);
+    h(0) = h_psi(x_est);
 
     // residual (wrap yaw residual)
     res = z - h;
-    res(3) = wrapToPi(res(3));
+    res(0) = wrapToPi(res(3));
 
     // R = blkdiag(Rpos, Rpsi)
     Mat<4, 4> R = Mat<4, 4>::Zero();
-    R.template topLeftCorner<3, 3>() = Rpos;
-    R(3, 3) = Rpsi;
+    R.template bottomRightCorner<3, 3>() = Rpos;
+    R(0, 0) = Rpsi;
 
     // S, K
     S = P.block(2, 2, 4, 4).selfadjointView<Eigen::Lower>();

@@ -51,8 +51,8 @@ int main() {
     MocapHandler mocap;
     bool mocapInit = mocap.init();
 
-    ImuLpf ekf_filter(952.0f, 80.0f);
-    ImuLpf ctrl_filter(952.0f, 160.0f);
+    ImuLpf ekf_filter(952.0f, 952.0f);
+    ImuLpf ctrl_filter(952.0f, 952.0f);
 
     //init vars
     double lastPrint = 0.0;
@@ -64,6 +64,7 @@ int main() {
     Vec<4> pwmCmd = Vec<4>::Zero();
     Vec<6> rcPWM = Vec<6> ::Zero();
     Vec<4> throttleTest = Vec<4>::Zero();
+    Vec<6> raw;
 
     Vec<3> manVel = Vec<3>::Zero();
     double manPsi = 0.0;
@@ -100,7 +101,6 @@ int main() {
         if (clock.taskClock.imu >= clock.rates.imu) {
             imuReal.update();
             clock.taskClock.imu = 0.0;
-            Vec<6> raw;
             raw.segment<3>(0) = imuReal.imu.accel;
             raw.segment<3>(3) = imuReal.imu.gyro;
             ekf_filter.update(raw);
@@ -120,7 +120,7 @@ int main() {
         }
 
         if (clock.taskClock.navPred >= clock.rates.navPred) {
-            ekf.predict(ekf_filter.output(), clock.taskClock.navPred);
+            ekf.predict(raw, clock.taskClock.navPred);
             clock.taskClock.navPred = 0.0;
         }
 
@@ -217,7 +217,7 @@ int main() {
                 ahrs.init = true;
             }
             if (clock.taskClock.AHRS >= clock.rates.AHRS) {
-                ahrs.update(ctrl_filter.output().segment<3>(0), ctrl_filter.output().segment<3>(3), clock.taskClock.AHRS);
+                ahrs.update(raw.segment<3>(0), raw.segment<3>(3), clock.taskClock.AHRS);
                 clock.taskClock.AHRS = 0.0;
             }
 
@@ -238,7 +238,7 @@ int main() {
                             outer.out.attCmd,
                             0.0,
                             navState.segment<3>(0),
-                            ctrl_filter.output().segment<3>(3),
+                            raw.segment<3>(3),
                             clock.taskClock.conInner);
                 }
                 else if (!autopilot && ekfHealthy) {
@@ -247,7 +247,7 @@ int main() {
                             outer.out.attCmd,
                             manPsi,
                             navState.segment<3>(0),
-                            ctrl_filter.output().segment<3>(3),
+                            raw.segment<3>(3),
                             clock.taskClock.conInner);
                 }
                 else if (!autopilot && !ekfHealthy) {
@@ -257,7 +257,7 @@ int main() {
                             attManual,
                             manPsi,
                             AHRSAtt,
-                            ctrl_filter.output().segment<3>(3), clock.taskClock.conInner);
+                            raw.segment<3>(3), clock.taskClock.conInner);
 
                     double den = cos(AHRSAtt(0)) * cos(AHRSAtt(1));
                     den = clamp(den, 0.2, 1.0);
@@ -271,7 +271,7 @@ int main() {
                             Vec<3>::Zero(),
                             0.0,
                             AHRSAtt,
-                            ctrl_filter.output().segment<3>(3),
+                            raw.segment<3>(3),
                             clock.taskClock.conInner);
                     outer.out.Fz = mass * g;
                 }
@@ -322,8 +322,8 @@ int main() {
 
                 const Vec<3> attCmd = attManual;
 
-                const Vec<3> gyro = ctrl_filter.output().segment<3>(3);
-                const Vec<3> accel = ctrl_filter.output().segment<3>(0);
+                const Vec<3> gyro = raw.segment<3>(3);
+                const Vec<3> accel = raw.segment<3>(0);
 
                 const Vec<3> optPos = mocap.opti.pos;
                 const double optPsi = mocap.opti.psi;
