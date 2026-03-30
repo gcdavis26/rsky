@@ -9,11 +9,10 @@ Vec<3> InnerLoop::computeWrench(
 {
     Vec<3> attErr = wrapAngles(att_cmd - att);
 
-    Vec<3> intErr = Vec<3>::Zero();
-    intErr(0) = attErr(0);
-    intErr(1) = attErr(1);
+    Vec<3> intErr;
+    intErr.segment<2>(0) = attErr.segment<2>(0);
 
-     if (yaw_rate_cmd == 0.0) intErr(2) = attErr(2);
+    if (yaw_rate_cmd == 0.0) intErr(2) = attErr(2);
 
     Vec<3> x4_dot = intErr - x4 / tauI;
     x4 += x4_dot * dt;
@@ -28,14 +27,10 @@ Vec<3> InnerLoop::computeWrench(
 
     // Keep your yaw-rate override
     if (yaw_rate_cmd != 0.0) {
-        // Optionally: disable yaw attitude P when in yaw-rate mode
-         u(2) = 0.0 + ki(2)*x4(2) - kd(2)*omega(2);
+        double yawRateErr = yaw_rate_cmd - omega(2);
+        x4(2) += (yawRateErr - x4(2) / tauI) * dt;
 
-        u(2) = kd(2) * (yaw_rate_cmd - omega(2));
-        // If you want integral on yaw rate:
-         double yawRateErr = yaw_rate_cmd - omega(2);
-         x4(2) += (yawRateErr - x4(2)/tauI) * dt;
-         u(2) += ki(2) * x4(2);
+        u(2) = 0.0 + ki(2)*x4(2) + kd(2)*(yaw_rate_cmd - omega(2));
     }
 
     // 4) Actuator low-pass filter (x5): x5_dot = (u - x5)/tauA
