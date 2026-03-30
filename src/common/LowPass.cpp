@@ -16,6 +16,7 @@ void ImuLpf::reset() {
 void ImuLpf::update(const Vec<6>& raw)
 {
     // Direct Form II Transposed
+    unfiltered = raw;
     output_ = b0_ * raw + d1_;
     d1_ = b1_ * raw - a1_ * output_ + d2_;
     d2_ = b2_ * raw - a2_ * output_;

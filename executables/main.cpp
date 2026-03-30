@@ -51,8 +51,10 @@ int main() {
     MocapHandler mocap;
     bool mocapInit = mocap.init();
 
-    ImuLpf ekf_filter(952.0f, 952.0f);
-    ImuLpf ctrl_filter(952.0f, 952.0f);
+    ImuLpf ekf_filter(500.0f, 80.0f);
+    ImuLpf ctrl_filter(500.0f, 160.0f);
+    ekf_filter.on = true;
+    ctrl_filter.on = true;
 
     //init vars
     double lastPrint = 0.0;
@@ -120,7 +122,7 @@ int main() {
         }
 
         if (clock.taskClock.navPred >= clock.rates.navPred) {
-            ekf.predict(raw, clock.taskClock.navPred);
+            ekf.predict(ekf_filter.output(), clock.taskClock.navPred);
             clock.taskClock.navPred = 0.0;
         }
 
@@ -217,7 +219,7 @@ int main() {
                 ahrs.init = true;
             }
             if (clock.taskClock.AHRS >= clock.rates.AHRS) {
-                ahrs.update(raw.segment<3>(0), raw.segment<3>(3), clock.taskClock.AHRS);
+                ahrs.update(ctrl_filter.output().segment<3>(0), ctrl_filter.output().segment<3>(3), clock.taskClock.AHRS);
                 clock.taskClock.AHRS = 0.0;
             }
 
@@ -238,7 +240,7 @@ int main() {
                             outer.out.attCmd,
                             0.0,
                             navState.segment<3>(0),
-                            raw.segment<3>(3),
+                            ctrl_filter.output().segment<3>(3),
                             clock.taskClock.conInner);
                 }
                 else if (!autopilot && ekfHealthy) {
@@ -247,7 +249,7 @@ int main() {
                             outer.out.attCmd,
                             manPsi,
                             navState.segment<3>(0),
-                            raw.segment<3>(3),
+                            ctrl_filter.output().segment<3>(3),
                             clock.taskClock.conInner);
                 }
                 else if (!autopilot && !ekfHealthy) {
@@ -257,7 +259,7 @@ int main() {
                             attManual,
                             manPsi,
                             AHRSAtt,
-                            raw.segment<3>(3), clock.taskClock.conInner);
+                            ctrl_filter.output().segment<3>(3), clock.taskClock.conInner);
 
                     double den = cos(AHRSAtt(0)) * cos(AHRSAtt(1));
                     den = clamp(den, 0.2, 1.0);
@@ -271,7 +273,7 @@ int main() {
                             Vec<3>::Zero(),
                             0.0,
                             AHRSAtt,
-                            raw.segment<3>(3),
+                            ctrl_filter.output().segment<3>(3),
                             clock.taskClock.conInner);
                     outer.out.Fz = mass * g;
                 }
