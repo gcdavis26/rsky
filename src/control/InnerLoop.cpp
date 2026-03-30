@@ -7,42 +7,40 @@ Vec<3> InnerLoop::computeWrench(
     const Vec<3>& omega,
     double dt)
 {
+    // ---- OUTER LOOP: attitude → desired rate ----
     Vec<3> attErr = wrapAngles(att_cmd - att);
 
-    Vec<3> intErr;
-    intErr.segment<2>(0) = attErr.segment<2>(0);
+    // Leaky integrator on attitude error
+    Vec<3> attIntInput;
+    attIntInput.segment<2>(0) = attErr.segment<2>(0);
+    attIntInput(2) = (yaw_rate_cmd == 0.0) ? attErr(2) : 0.0;
 
-    if (yaw_rate_cmd == 0.0) intErr(2) = attErr(2);
+    x4_att += (attIntInput - x4_att / tauI_att) * dt;
 
-    Vec<3> x4_dot = intErr - x4 / tauI;
-    x4 += x4_dot * dt;
+    Vec<3> desired_rate = kp_att.cwiseProduct(attErr)
+        + ki_att.cwiseProduct(x4_att);
 
-    // clamp integrator state to prevent windup
-    //x4(0) = clamp(x4(0), -x4max_x, x4max_x);
-
-    // 3) Raw (unfiltered) wrench command u
-    Vec<3> u = kp.cwiseProduct(attErr)
-        + ki.cwiseProduct(x4)
-        - kd.cwiseProduct(omega);
-
-    // Keep your yaw-rate override
+    // Yaw rate mode: bypass outer loop entirely
     if (yaw_rate_cmd != 0.0) {
-        double yawRateErr = yaw_rate_cmd - omega(2);
-        x4(2) += (yawRateErr - x4(2) / tauI) * dt;
-
-        u(2) = 0.0 + ki(2)*x4(2) + kd(2)*(yaw_rate_cmd - omega(2));
+        desired_rate(2) = yaw_rate_cmd;
     }
 
-    // 4) Actuator low-pass filter (x5): x5_dot = (u - x5)/tauA
-    Vec<3> x5_dot = (u - x5) / tauA;
-    x5 += x5_dot * dt;
+    // ---- INNER LOOP: rate → torque ----
+    Vec<3> rateErr = desired_rate - omega;
 
+    // Leaky integrator on rate error
+    x4_rate += (rateErr - x4_rate / tauI_rate) * dt;
+
+    Vec<3> u = kp_rate.cwiseProduct(rateErr)
+        + ki_rate.cwiseProduct(x4_rate);
+
+    // ---- Actuator lowpass (unchanged) ----
+    x5 += ((u - x5) / tauA) * dt;
     Vec<3> wrench = x5;
 
-    // 5) Saturation (keep yours)
+    // ---- Saturation (unchanged) ----
     wrench(0) = clamp(wrench(0), -Mx_max, Mx_max);
     wrench(1) = clamp(wrench(1), -My_max, My_max);
     wrench(2) = clamp(wrench(2), -Mz_max, Mz_max);
-
     return wrench;
 }

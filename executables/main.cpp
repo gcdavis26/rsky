@@ -229,7 +229,7 @@ int main() {
 
             if (clock.taskClock.conInner >= clock.rates.conInner) {
                 attManual << 10 * PI / 180 * manVel(1), -10 * PI / 180 * manVel(0), navState(2);
-                manPsi = manPsi * 10 * PI / 180;
+                manPsi = manPsi * 20 * PI / 180;
 
                 autopilot = false;
                 ekfHealthy = false;
