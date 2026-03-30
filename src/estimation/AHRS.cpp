@@ -19,13 +19,6 @@ AHRS::AHRS(const Vec<6>& bias)
 {
 }
 
-void AHRS::initializeFromAccel(const Vec<3>& accel) {
-    Vec<3> a = accel - AHRSbias.segment<3>(3);
-    double r = 0.0, p = 0.0;
-    accelToAttitude(a, r, p);
-    initialize(r, p, 0.0);
-}
-
 void AHRS::initialize(double roll, double pitch, double yaw) {
     double cr = std::cos(roll * 0.5), sr = std::sin(roll * 0.5);
     double cp = std::cos(pitch * 0.5), sp = std::sin(pitch * 0.5);
@@ -108,8 +101,3 @@ Vec<3> AHRS::euler() const {
     return rpy;
 }
 
-void AHRS::accelToAttitude(const Vec<3>& accel, double& roll, double& pitch) {
-    const double ax = accel(0), ay = accel(1), az = accel(2);
-    roll = std::atan2(-ay, -az);
-    pitch = std::atan2(ax, std::sqrt(ay * ay + az * az));
-}

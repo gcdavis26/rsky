@@ -10,7 +10,6 @@ public:
 	explicit AHRS(const Vec<6>& bias);
 
 	// Initialization
-	void initializeFromAccel(const Vec<3>& accel);
 	void initialize(double roll, double pitch, double yaw = 0.0);
 
 	// Main update
@@ -42,5 +41,4 @@ private:
 	Vec<3> r_IMU{-0.013, -0.009, -0.058};
 
 	// --- Helpers ---
-	void accelToAttitude(const Vec<3>& accel, double& roll, double& pitch);
 };

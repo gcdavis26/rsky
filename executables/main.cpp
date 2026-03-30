@@ -103,8 +103,8 @@ int main() {
         if (clock.taskClock.imu >= clock.rates.imu) {
             imuReal.update();
             clock.taskClock.imu = 0.0;
-            raw.segment<3>(0) = imuReal.imu.accel;
-            raw.segment<3>(3) = imuReal.imu.gyro;
+            raw.segment<3>(0) = imuReal.imu.accel - imuStats.segment<3>(3);
+            raw.segment<3>(3) = imuReal.imu.gyro - imuStats.segment<3>(0);
             ekf_filter.update(raw);
             ctrl_filter.update(raw);
         }
@@ -215,7 +215,7 @@ int main() {
 
             // ---------------- AHRS ------------------------
             if (!ahrs.init) {
-                ahrs.initializeFromAccel(ctrl_filter.output().segment<3>(0));
+                ahrs.initialize(0.0, 0.0, 0.0);
                 ahrs.init = true;
             }
             if (clock.taskClock.AHRS >= clock.rates.AHRS) {
@@ -286,7 +286,7 @@ int main() {
                 thrustCmd = mixer.mix2Thrust(wrenchCmd);
 
                 pwmCmd = mixer.thr2PWM(thrustCmd); //this will go directly to the four motors
-		throttleTest << rcPWM(2),rcPWM(2),rcPWM(2),rcPWM(2);
+		        throttleTest << rcPWM(2),rcPWM(2),rcPWM(2),rcPWM(2);
                 clock.taskClock.conInner = 0.0;
 
                 // ----------------Real Commands -------------
@@ -295,7 +295,7 @@ int main() {
 
             // ---------------- Telemetry -----------------
             if (clock.taskClock.tele >= clock.rates.tele) {
-		navState.segment<3>(0) = AHRSAtt;
+		        navState.segment<3>(0) = AHRSAtt;
                 ts.t = t;
                 ts.dt = dt;
                 ts.Hz = Hz;
