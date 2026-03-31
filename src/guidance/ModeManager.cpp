@@ -1,5 +1,7 @@
 #include "guidance/ModeManager.h"
-ModeManager(bool test = false) {
+ModeManager::ModeManager() {
+}
+ModeManager::ModeManager(bool test) {
 	simplemission = test; //this is for simple milestone flight
 }
 void ModeManager::update() {
@@ -92,7 +94,7 @@ void ModeManager::update() {
 			break;
 		case MissionPhase::Hover:
 			out.mode = NavMode::Waypoint;
-			out.posCmd.segment<2>(0) = in.posCmd.segment<2>(0);
+			out.posCmd.segment<2>(0) = in.targPos.segment<2>(0);
 			out.posCmd(2) = surveyAlt;
 			if (reachedWaypoint(in.state.segment<6>(3), out.posCmd) && out.phaseTime >= 5.0) {
 				advancePhase(MissionPhase::DescendToLand);

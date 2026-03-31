@@ -24,7 +24,7 @@ int main() {
     std::cout << std::fixed << std::setprecision(4);
     //init objects
     TimeKeeper clock;
-    ModeManager MM;
+    ModeManager MM(false);
     OuterLoop outer;
     InnerLoop inner;
     QuadMixer mixer;
