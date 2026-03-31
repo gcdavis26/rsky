@@ -4,7 +4,7 @@
 #include <iostream>
 
 template <typename MotorType>
-MotorTask<MotorType>::MotorTask(MotorType& motor) : motor_(motor), armTime_(0.0) {
+MotorTask<MotorType>::MotorTask(MotorType& motor) : motor_(motor), armedTime_(0.0) {
     last_time_ = std::chrono::steady_clock::now();
 }
 
@@ -47,14 +47,17 @@ void MotorTask<MotorType>::loop() {
             state_copy = current_state_;
         }
 
-        // Arming logic
+        // Arming logic: arm immediately when arm switch is high.
         if (state_copy.arm_switch_pwm > 1500.0) {
-            armTime_ += dt;
-            if (armTime_ >= 5.0) {
+            if (!motor_.isArmed()) {
                 motor_.arm();
+                armedTime_ = 0.0;
+            }
+            else {
+                armedTime_ += dt;
             }
         } else {
-            armTime_ = 0.0;
+            armedTime_ = 0.0;
             motor_.disarm();
         }
 
@@ -62,12 +65,12 @@ void MotorTask<MotorType>::loop() {
 
         // Real Commands (Simulated or Real Hardware)
         if (isArmedCached_.load()) {
-            if (armTime_ >= 5.0 && armTime_ < 6.0) {
-                // For the first 2 seconds after arming, send exactly 1000 PWM
+            if (armedTime_ < 1.0) {
+                // For the first 1 second after arming, send exactly 1000 PWM
                 motor_.command(Vec<4>::Constant(1000.0));
             }
             else {
-                // After 2 seconds, send actual commands from the mixer
+                // After 1 second, send actual commands from the mixer
                 motor_.command(state_copy.pwmCmd);
             }
         }

@@ -40,14 +40,16 @@ int main() {
     MotorDriver motdrv;
     motdrv.initialize();
 
-    MotorTask<MotorDriver> motor_task(motdrv);
-    std::thread motor_thread(&MotorTask<MotorDriver>::loop, &motor_task);
-
     IMUHandler imuReal;
     Vec<12> imuStats = imuReal.initialize(); //(mgx,mgy,mgz,max,may,maz,siggx,siggy,siggz,sigax,sigay,sigaz)
     imuStats(5) = imuStats(5) + g;
+    std::cout << "IMU values initialized successfully." << std::endl;
     AHRS ahrs(imuStats.segment<6>(0));
     EKF ekf(imuStats.segment<6>(0)); // add bias constructor
+
+    MotorTask<MotorDriver> motor_task(motdrv);
+    std::thread motor_thread(&MotorTask<MotorDriver>::loop, &motor_task);
+    std::cout << "Motors initialized. System ready to arm." << std::endl;
     MocapHandler mocap;
     bool mocapInit = mocap.init();
 
