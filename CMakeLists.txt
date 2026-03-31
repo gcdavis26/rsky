@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.25)
 
 # Enable Hot Reload for MSVC compilers if supported.
 if (POLICY CMP0141)
@@ -55,6 +55,7 @@ set(COMMON_SOURCES
     src/sensors/OptiSim.cpp
     src/telemetry/udp_sender.cpp
     src/telemetry/TelemetryTask.cpp
+    src/sensors/BatteryHandler.cpp
     src/estimation/AHRS.cpp
     src/common/LowPass.cpp
     src/drivers/MotorTask.cpp
@@ -151,7 +152,6 @@ if(UNIX AND NOT APPLE)
         src/drivers/MotorDriver.cpp
         src/drivers/RCIn.cpp
         src/sensors/IMUHandler.cpp
-        src/sensors/BatteryHandler.cpp
         src/mocap/network.cpp
         src/mocap/mocapHandler.cpp
         src/sensors/ThermalCamera.cpp

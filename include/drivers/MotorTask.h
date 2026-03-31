@@ -38,7 +38,7 @@ private:
     std::mutex state_mutex_;
     std::atomic<bool> running_{true};
 
-    // Timer for the 5-second arming rule
-    double armTime_ = 0.0;
+    // Time elapsed since entering armed state
+    double armedTime_ = 0.0;
     std::chrono::steady_clock::time_point last_time_;
 };

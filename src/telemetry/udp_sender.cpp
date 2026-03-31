@@ -111,12 +111,16 @@ bool UdpSender::sendFromSim(
     const Vec<3>& attCmd,
     const bool& armed,
     const double NIS,
-    const Vec<4>& PWMcmd)
+    const Vec<4>& res,
+    const Vec<4>& PWMcmd,
+    double battery_voltage_mv,
+    double battery_current_ma)
 {
     // ---- Extract what MATLAB expects ----
     const Vecf<3> euler_est = navState.segment<3>(0).cast<float>();
     const Vecf<3> pos_est = navState.segment<3>(3).cast<float>();
     const Vecf<3> vel_est = navState.segment<3>(6).cast<float>();
+    const Vecf<4> resf = res.cast<float>();
 
     // ModeManager outputs
     const Vecf<3> pos_cmd = posCmd.cast<float>();
@@ -147,6 +151,7 @@ bool UdpSender::sendFromSim(
     j["mode"] = mode;
     j["armed"] = armed;
     j["EKF_Health"] = NISf;
+    j["Residuals"] = resf;
 
     j["pos_cmd"] = vec3ToJson(pos_cmd);
     j["pos_est"] = vec3ToJson(pos_est);
@@ -156,6 +161,8 @@ bool UdpSender::sendFromSim(
 
     // MATLAB prefers euler_cmd if present
     j["euler_cmd"] = vec3ToJson(euler_cmd);
+    j["battery_voltage_mv"] = battery_voltage_mv;
+    j["battery_current_ma"] = battery_current_ma;
 
     return sendJson_(j);
 }

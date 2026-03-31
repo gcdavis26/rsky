@@ -377,7 +377,10 @@ int main() {
                 outer.out.attCmd,
                 motor_task.isArmed(),
                 NIS,
-                pwmCmd
+                Vec<4>::Zero(),
+                pwmCmd,
+                0.0,
+                0.0
             );
             clock.taskClock.tele = 0.0;
         }
