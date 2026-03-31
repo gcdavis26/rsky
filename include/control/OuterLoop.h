@@ -11,6 +11,7 @@ public:
 		double psi = 0.0;
 		ModeManager::NavMode mode;
 		double dt = 0.0;
+		bool arm = false;
 	};
 
 	input in;

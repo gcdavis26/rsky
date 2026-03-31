@@ -17,11 +17,16 @@ void OuterLoop::update() {
 		Vec<3> accCmd;
 
 		if (in.mode == ModeManager::NavMode::Waypoint) {
-            posInt += posErr * in.dt;
+            if (in.arm) {
+                posInt += posErr * in.dt;
+            }
 			accCmd = Kp.cwiseProduct(posErr) + Kd.cwiseProduct(velErr);
 		}
         else if (in.mode == ModeManager::NavMode::Manual) {
-            velInt += (in.velCmd + velErr) * in.dt;
+            if (in.arm) {
+                velInt += (in.velCmd + velErr) * in.dt;
+            }
+
             accCmd = Kd.cwiseProduct(in.velCmd + velErr);
         }
 		else {
