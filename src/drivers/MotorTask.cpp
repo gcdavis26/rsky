@@ -2,6 +2,7 @@
 #include "drivers/MotorDriver.h"
 #include "simulator/MotorModel.h"
 #include <iostream>
+#include <type_traits>
 
 template <typename MotorType>
 MotorTask<MotorType>::MotorTask(MotorType& motor) : motor_(motor), armedTime_(0.0) {
@@ -34,6 +35,11 @@ template <typename MotorType>
 void MotorTask<MotorType>::loop() {
     auto next_loop_time = std::chrono::steady_clock::now();
     last_time_ = next_loop_time;
+
+    if constexpr (std::is_same_v<MotorType, MotorDriver>) {
+        motor_.initialize();
+        std::cout << "Motors initialized. System ready to arm." << std::endl;
+    }
 
     while (running_) {
         auto current_time = std::chrono::steady_clock::now();

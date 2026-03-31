@@ -38,7 +38,6 @@ int main() {
     rcin.initialize();
 
     MotorDriver motdrv;
-    motdrv.initialize();
 
     IMUHandler imuReal;
     Vec<12> imuStats = imuReal.initialize(); //(mgx,mgy,mgz,max,may,maz,siggx,siggy,siggz,sigax,sigay,sigaz)
@@ -49,7 +48,7 @@ int main() {
 
     MotorTask<MotorDriver> motor_task(motdrv);
     std::thread motor_thread(&MotorTask<MotorDriver>::loop, &motor_task);
-    std::cout << "Motors initialized. System ready to arm." << std::endl;
+    std::cout << "Motor thread started. Waiting for motor initialization..." << std::endl;
     MocapHandler mocap;
     bool mocapInit = mocap.init();
 
