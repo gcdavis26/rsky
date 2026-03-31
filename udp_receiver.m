@@ -23,6 +23,8 @@ vel_log = [];          % Nx3 [n e d]
 eul_log = [];          % Nx3 [r p y]
 hz_log  = [];          % [Hz]
 health_log = [];
+batt_voltage_mv_log = [];
+batt_current_ma_log = [];
 
 % Optional: stop if telemetry disappears for too long
 telemetryTimeout_s = 10.0;     % set [] or inf to disable
@@ -196,6 +198,16 @@ while ishandle(ax)
         eul_log(end+1,1:3)  = reshape(s.euler_est,1,3);
         hz_log(end+1,1)     = s.Hz;
         health_log(end+1,1) = s.EKF_Health;
+        if isfield(s,'battery_voltage_mv')
+            batt_voltage_mv_log(end+1,1) = s.battery_voltage_mv;
+        else
+            batt_voltage_mv_log(end+1,1) = NaN;
+        end
+        if isfield(s,'battery_current_ma')
+            batt_current_ma_log(end+1,1) = s.battery_current_ma;
+        else
+            batt_current_ma_log(end+1,1) = NaN;
+        end
 
         k = k + 1;
         idx = mod(k-1,N)+1;
@@ -258,6 +270,7 @@ while ishandle(ax)
         txt = sprintf([ ...
             't [s]: %.2f ','Rate [Hz]: %.2f\n' ...
             '%s | phase: %s | mode: %s\n','EKF Health: %.2f \n' ...
+            'Battery: V=%.3f mV  I=%.3f mA\n' ...
             'pos [n e d]: [% .2f % .2f % .2f]\n' ...
             'vel [n e d]: [% .2f % .2f % .2f]\n' ...
             'euler [r p y]: [% .2f % .2f % .2f]'], ...
@@ -267,6 +280,7 @@ while ishandle(ax)
             phaseStr, ...
             modeStr, ...
             s.EKF_Health,...
+            batt_voltage_mv_log(end), batt_current_ma_log(end), ...
             s.pos_est(1), s.pos_est(2), s.pos_est(3), ...
             s.vel_est(1), s.vel_est(2), s.vel_est(3), ...
             s.euler_est(1), s.euler_est(2), s.euler_est(3));
@@ -290,6 +304,8 @@ if ~isempty(t_log)
     eul_log = eul_log(order,:);
     hz_log  = hz_log(order,:);
     health_log = health_log(order,:);
+    batt_voltage_mv_log = batt_voltage_mv_log(order,:);
+    batt_current_ma_log = batt_current_ma_log(order,:);
 
     % Position
     figure('Name','Telemetry Log - Position'); clf;
@@ -327,6 +343,22 @@ if ~isempty(t_log)
     ylabel('NIS');
     title('EKF Health vs Time');
     legend('NIS','Mean NIS');
+
+    % Battery voltage vs time
+    figure('Name','Battery Voltage Log'); clf;
+    plot(t_log, batt_voltage_mv_log, 'LineWidth', 1.2);
+    grid on;
+    xlabel('t [s]');
+    ylabel('Voltage [mV]');
+    title('Battery Voltage vs Time');
+
+    % Battery current vs time
+    figure('Name','Battery Current Log'); clf;
+    plot(t_log, batt_current_ma_log, 'LineWidth', 1.2);
+    grid on;
+    xlabel('t [s]');
+    ylabel('Current [mA]');
+    title('Battery Current vs Time');
 
     % ============================================================
     % NEW: Actual vs Ideal distribution comparison (m = 4)

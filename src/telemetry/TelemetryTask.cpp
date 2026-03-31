@@ -26,6 +26,9 @@ void TelemetryTask::loop() {
             std::lock_guard<std::mutex> lock(state_mutex_);
             state_copy = current_state_;
         }
+        const Eigen::Vector2d battery_data = battery_handler_.read_battery();
+        const double battery_voltage_mv = battery_data(0);
+        const double battery_current_ma = battery_data(1);
 
         // We use the modified sendFromSim that takes primitives
         udp_.sendFromSim(
@@ -40,7 +43,9 @@ void TelemetryTask::loop() {
             state_copy.armed,
             state_copy.NIS,
             state_copy.res,
-            state_copy.PWMcmd
+            state_copy.PWMcmd,
+            battery_voltage_mv,
+            battery_current_ma
         );
     }
 }

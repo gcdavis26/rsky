@@ -1,5 +1,6 @@
 #pragma once
 #include "common/MathUtils.h"
+#include "common/LowPass.h"
 
 class InnerLoop {
 public:
@@ -11,6 +12,8 @@ public:
         double dt);
 
 private:
+
+    bool yawLatch = true;
     // ---- Outer loop (attitude → desired rate) ----
     static const inline Vec<3> kp_att{ 8.0, 8.0, 8.0 };
     static const inline Vec<3> ki_att{ 0.0, 0.0, 0.0 };
