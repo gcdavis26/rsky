@@ -6,6 +6,7 @@ class ModeManager {
 public:
 	ModeManager();
 	ModeManager(bool);
+
 	enum class NavMode {
 		Manual,
 		Waypoint,
