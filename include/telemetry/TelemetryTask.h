@@ -18,6 +18,7 @@ struct TelemetryState {
     int mode = 0;
     bool armed = false;
     double NIS = 0.0;
+    Vec<4> res = Vec<4>::Zero();
     Vec<4> PWMcmd = Vec<4>::Zero();
 };
 

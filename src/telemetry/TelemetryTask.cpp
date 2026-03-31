@@ -39,6 +39,7 @@ void TelemetryTask::loop() {
             state_copy.attCmd,
             state_copy.armed,
             state_copy.NIS,
+            state_copy.res,
             state_copy.PWMcmd
         );
     }

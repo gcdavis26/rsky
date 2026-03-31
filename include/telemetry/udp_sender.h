@@ -52,6 +52,7 @@ public:
         const Vec<3>& attCmd,
         const bool& armed,
         const double NIS,
+        const Vec<4>& res,
         const Vec<4>& PWMcmd);
 
 private:
