@@ -201,6 +201,7 @@ int main() {
                     outer.in.posCmd = MM.out.posCmd;
                     outer.in.psi = navState(2);
                     outer.in.mode = MM.out.mode;
+                    outer.in.dt = clock.taskClock.conOuter;
                     outer.update();
                 }
                 else {
@@ -208,6 +209,7 @@ int main() {
                     outer.in.posCmd = navState.segment<3>(3);
                     outer.in.psi = navState(2);
                     outer.in.mode = ModeManager::NavMode::Manual;
+                    outer.in.dt = clock.taskClock.conOuter;
                     outer.in.velCmd = manVel;
                     outer.update();
                     outer.out.attCmd(2) = navState(2);

@@ -9,14 +9,19 @@ void OuterLoop::update() {
 		velErr = -in.state.segment<3>(3);
 
 		Kp << kpn, kpe, kpd;
-		Kd << kdn, kde, kdd;
+		Kd << kdn, kde, kdd;    
+
+        Ki_pos << kin, kie, kid;
+        Ki_vel << kivn, kive, kivd;
 
 		Vec<3> accCmd;
 
 		if (in.mode == ModeManager::NavMode::Waypoint) {
+            posInt += posErr * in.dt;
 			accCmd = Kp.cwiseProduct(posErr) + Kd.cwiseProduct(velErr);
 		}
         else if (in.mode == ModeManager::NavMode::Manual) {
+            velInt += (in.velCmd + velErr) * in.dt;
             accCmd = Kd.cwiseProduct(in.velCmd + velErr);
         }
 		else {

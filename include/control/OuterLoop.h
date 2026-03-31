@@ -10,6 +10,7 @@ public:
 		Vec<3> velCmd = Vec<3>::Zero();
 		double psi = 0.0;
 		ModeManager::NavMode mode;
+		double dt = 0.0;
 	};
 
 	input in;
@@ -24,9 +25,14 @@ public:
 	void update();
 
 private:
-
+	
 	Vec<3> Kp;
 	Vec<3> Kd;
+	Vec<3> Ki_pos;
+	Vec<3> Ki_vel;
+
+	Vec<3> posInt = Vec<3>::Zero();
+	Vec<3> velInt = Vec<3>::Zero();
 
 	struct SweepState {
 		int stripeIdx = 1;
@@ -64,6 +70,14 @@ private:
 	double kdn = 1.5;
 	double kde = 1.5;
 	double kdd = 2.0;
+
+	double kin = 0.0;
+	double kie = 0.0;
+	double kid = 0.0;
+
+	double kivn = 0.0;
+	double kive = 0.0;
+	double kivd = 0.0;
 
 	Vec<3> sweepControl();
 };
