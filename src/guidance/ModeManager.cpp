@@ -1,10 +1,15 @@
 #include "guidance/ModeManager.h"
-
+ModeManager::ModeManager() {
+}
+ModeManager::ModeManager(bool test) {
+	simplemission = test; //this is for simple milestone flight
+}
 void ModeManager::update() {
 	double surveyAlt = -2.0;
 	double lowAlt = -0.5;
 
-	if (!init) {
+	if (!init)
+	{ 
 		init = true;
 		toCmd(0) = in.state(3);
 		toCmd(1) = in.state(4);
@@ -12,8 +17,9 @@ void ModeManager::update() {
 	}
 
 	out.phaseTime += in.dt;
-
-	switch (out.phase) {
+	if (!simplemission)
+	{
+		switch (out.phase) {
 		case MissionPhase::Takeoff:
 			out.mode = NavMode::Waypoint;
 			out.posCmd = toCmd;
@@ -22,7 +28,7 @@ void ModeManager::update() {
 				advancePhase(MissionPhase::Search);
 			}
 			break;
-		case MissionPhase::Search: 
+		case MissionPhase::Search:
 			out.mode = NavMode::Sweep;
 			out.posCmd = in.state.segment<3>(3);
 			if (in.detected) {
@@ -49,7 +55,7 @@ void ModeManager::update() {
 			out.mode = NavMode::Waypoint;
 			out.posCmd.segment<2>(0) = in.targPos.segment<2>(0);
 			out.posCmd(2) = lowAlt;
-			if (reachedWaypoint(in.state.segment<6>(3),out.posCmd) && in.drop) {
+			if (reachedWaypoint(in.state.segment<6>(3), out.posCmd) && in.drop) {
 				computelndCmd(in.state.segment<3>(3));
 			}
 			break;
@@ -73,6 +79,41 @@ void ModeManager::update() {
 			out.mode = NavMode::Waypoint;
 			out.posCmd = in.state.segment<3>(3);
 			break;
+		}
+	}
+	else
+	{
+		switch (out.phase) {
+		case MissionPhase::Takeoff:
+			out.mode = NavMode::Waypoint;
+			out.posCmd = toCmd;
+
+			if (reachedWaypoint(in.state.segment<6>(3), out.posCmd)) {
+				advancePhase(MissionPhase::Hover);
+			}
+			break;
+		case MissionPhase::Hover:
+			out.mode = NavMode::Waypoint;
+			out.posCmd.segment<2>(0) = in.targPos.segment<2>(0);
+			out.posCmd(2) = surveyAlt;
+			if (reachedWaypoint(in.state.segment<6>(3), out.posCmd) && out.phaseTime >= 5.0) {
+				advancePhase(MissionPhase::DescendToLand);
+			}
+			break;
+
+		case MissionPhase::DescendToLand:
+			out.mode = NavMode::Waypoint;
+			out.posCmd.segment<2>(0) = lndCmd.segment<2>(0);
+			out.posCmd(2) = 0.0;
+			if (reachedWaypoint(in.state.segment<6>(3), out.posCmd) && out.phaseTime >= 5.0) {
+				advancePhase(MissionPhase::Terminate);
+			}
+			break;
+		case MissionPhase::Terminate:
+			out.mode = NavMode::Waypoint;
+			out.posCmd = in.state.segment<3>(3);
+			break;
+		}
 	}
 }
 

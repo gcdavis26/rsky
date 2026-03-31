@@ -275,7 +275,7 @@ int main() {
         }
 
         if (!ahrs.init) {
-            ahrs.initializeFromAccel(imu.imu.accel);
+            ahrs.initialize(0.0,0.0,0.0);
             ahrs.init = true;
         }
         if (clock.taskClock.AHRS >= clock.rates.AHRS) {
