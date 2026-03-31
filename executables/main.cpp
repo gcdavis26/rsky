@@ -1,5 +1,7 @@
 #include <iostream>
 #include <iomanip>
+#include <unistd.h>
+
 #include "common/TimeKeeper.h"
 #include "common/MathUtils.h"
 #include "common/LowPass.h"
@@ -15,7 +17,6 @@
 #include "drivers/MotorTask.h"
 #include "drivers/RCIn.h"
 #include "sensors/IMUHandler.h"
-#include <unistd.h>
 #include "mocap/mocapHandler.h"
 
 
@@ -152,7 +153,7 @@ int main() {
         Vec<15> navState = ekf.getx();
 
         // ---------------- Mode Manager ----------------
-        if (clock.taskClock.MM >= clock.rates.MM) {
+        if ((clock.taskClock.MM >= clock.rates.MM) && ekfHealthy) {
             MM.in.state = navState;
             MM.in.dt = dt;
             MM.in.detected = false;
@@ -307,6 +308,7 @@ int main() {
                 ts.attCmd = outer.out.attCmd;
                 ts.armed = motor_task.isArmed();
                 ts.NIS = NIS;
+                ts.res = ekf.getRes();
                 ts.PWMcmd = pwmCmd;
                 telemetry_task.updateState(ts);
                 clock.taskClock.tele = 0.0;

@@ -23,7 +23,7 @@ Vec<3> InnerLoop::computeWrench(
     // Yaw rate mode: bypass outer loop entirely
     if (yaw_rate_cmd != 0.0) {
         desired_rate(2) = yaw_rate_cmd;
-	yawLatch = false;
+	    yawLatch = false;
     }
 
     // ---- INNER LOOP: rate → torque ----
@@ -40,7 +40,7 @@ Vec<3> InnerLoop::computeWrench(
     Vec<3> wrench = x5;
 
     if(yawLatch){
-	wrench(2) = 0;
+	    wrench(2) = 0;
     }
 
     // ---- Saturation (unchanged) ----
