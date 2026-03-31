@@ -261,7 +261,7 @@ int main() {
                             AHRSAtt,
                             ctrl_filter.output().segment<3>(3), clock.taskClock.conInner);
 
-                    double den = cos(AHRSAtt(0)) * cos(AHRSAtt(1));
+                    double den = cos(attManual(0)) * cos(attManual(1));
                     den = clamp(den, 0.2, 1.0);
 
                     double Fz_base = mass * g * (1 - manVel(2));
