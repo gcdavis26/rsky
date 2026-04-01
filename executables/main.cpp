@@ -202,7 +202,7 @@ int main() {
                     outer.in.psi = navState(2);
                     outer.in.mode = MM.out.mode;
                     outer.in.dt = clock.taskClock.conOuter;
-                    outer.in.arm = armed;
+                    outer.in.arm = motor_task.isArmed();
                     outer.update();
                 }
                 else {
@@ -211,7 +211,7 @@ int main() {
                     outer.in.psi = navState(2);
                     outer.in.mode = ModeManager::NavMode::Manual;
                     outer.in.dt = clock.taskClock.conOuter;
-                    outer.in.arm = armed;
+                    outer.in.arm = motor_task.isArmed();
                     outer.in.velCmd = manVel;
                     outer.update();
                     outer.out.attCmd(2) = navState(2);
