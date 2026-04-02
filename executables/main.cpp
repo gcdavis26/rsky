@@ -105,8 +105,8 @@ int main() {
         if (clock.taskClock.imu >= clock.rates.imu) {
             imuReal.update();
             clock.taskClock.imu = 0.0;
-            raw.segment<3>(0) = imuReal.imu.accel - imuStats.segment<3>(3);
-            raw.segment<3>(3) = imuReal.imu.gyro - imuStats.segment<3>(0);
+            raw.segment<3>(0) = imuReal.imu.accel;
+            raw.segment<3>(3) = imuReal.imu.gyro;
             ekf_filter.update(raw);
             ctrl_filter.update(raw);
         }
@@ -225,7 +225,7 @@ int main() {
                 ahrs.init = true;
             }
             if (clock.taskClock.AHRS >= clock.rates.AHRS) {
-                ahrs.update(ctrl_filter.output().segment<3>(0), ctrl_filter.output().segment<3>(3), clock.taskClock.AHRS);
+                ahrs.update(ctrl_filter.output().segment<3>(0) - imuStats.segment<3>(3), ctrl_filter.output().segment<3>(3) - imuStats.segment<3>(0), clock.taskClock.AHRS);
                 clock.taskClock.AHRS = 0.0;
             }
 
@@ -246,7 +246,7 @@ int main() {
                             outer.out.attCmd,
                             0.0,
                             navState.segment<3>(0),
-                            ctrl_filter.output().segment<3>(3),
+                            ctrl_filter.output().segment<3>(3) - imuStats.segment<3>(0),
                             clock.taskClock.conInner);
                 }
                 else if (!autopilot && ekfHealthy) {
@@ -255,7 +255,7 @@ int main() {
                             outer.out.attCmd,
                             manPsi,
                             navState.segment<3>(0),
-                            ctrl_filter.output().segment<3>(3),
+                            ctrl_filter.output().segment<3>(3) - imuStats.segment<3>(0),
                             clock.taskClock.conInner);
                 }
                 else if (!autopilot && !ekfHealthy) {
@@ -265,7 +265,7 @@ int main() {
                             attManual,
                             manPsi,
                             AHRSAtt,
-                            ctrl_filter.output().segment<3>(3), clock.taskClock.conInner);
+                            ctrl_filter.output().segment<3>(3) - imuStats.segment<3>(0), clock.taskClock.conInner);
 
                     double den = cos(attManual(0)) * cos(attManual(1));
                     den = clamp(den, 0.2, 1.0);
@@ -279,7 +279,7 @@ int main() {
                             Vec<3>::Zero(),
                             0.0,
                             AHRSAtt,
-                            ctrl_filter.output().segment<3>(3),
+                            ctrl_filter.output().segment<3>(3)-imuStats.segment<3>(3),
                             clock.taskClock.conInner);
                     outer.out.Fz = mass * g;
                 }
@@ -301,7 +301,7 @@ int main() {
 
             // ---------------- Telemetry -----------------
             if (clock.taskClock.tele >= clock.rates.tele) {
-		 //       navState.segment<3>(0) = AHRSAtt;
+		 //     navState.segment<3>(0) = AHRSAtt;
                 ts.t = t;
                 ts.dt = dt;
                 ts.Hz = Hz;
