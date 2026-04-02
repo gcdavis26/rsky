@@ -114,7 +114,7 @@ void EKF::correctImpl(const OptiMeas& opti) {
 
     // residual (wrap yaw residual)
     res = z - h;
-    res(0) = wrapToPi(res(3));
+    res(0) = wrapToPi(res(0));
 
     // R = blkdiag(Rpos, Rpsi)
     Mat<4, 4> R = Mat<4, 4>::Zero();

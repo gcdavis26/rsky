@@ -21,13 +21,13 @@ Vec<3> InnerLoop::computeWrench(
         + ki_att.cwiseProduct(x4_att);
 
     // Yaw rate mode: bypass outer loop entirely
-    if (yaw_rate_cmd < 0.0001) {
-        desired_rate(2) = yaw_rate_cmd;
-<<<<<<< HEAD
-	    yawLatch = false; //this turns on yaw control. Yaw control turned off on ground in order to help with takeoff stability.
-=======
-	    yawLatch = false;
->>>>>>> 03b32cd6b879f90f2e31afe42aa30cd16ae14252
+    if (std::abs(yaw_rate_cmd) >  0.0001 || std::abs(attErr(2)) > 0.0001) {
+        yawLatch = false;
+	desired_rate(2) = yaw_rate_cmd;
+    }
+
+    if(yawLatch){
+    desired_rate(2) = omega(2);
     }
 
     // ---- INNER LOOP: rate → torque ----
@@ -43,9 +43,6 @@ Vec<3> InnerLoop::computeWrench(
     x5 += ((u - x5) / tauA) * dt;
     Vec<3> wrench = x5;
 
-    if(yawLatch){
-	    wrench(2) = 0;
-    }
 
     // ---- Saturation (unchanged) ----
     wrench(0) = clamp(wrench(0), -Mx_max, Mx_max);

@@ -53,7 +53,7 @@ int main() {
     MocapHandler mocap;
     bool mocapInit = mocap.init();
 
-    ImuLpf ekf_filter(500.0f, 40.0f);
+    ImuLpf ekf_filter(500.0f, 80.0f);
     ImuLpf ctrl_filter(500.0f, 160.0f);
     ekf_filter.on = true;
     ctrl_filter.on = true;
@@ -202,7 +202,7 @@ int main() {
                     outer.in.psi = navState(2);
                     outer.in.mode = MM.out.mode;
                     outer.in.dt = clock.taskClock.conOuter;
-                    outer.in.arm = armed;
+                    outer.in.arm = false;
                     outer.update();
                 }
                 else {
@@ -211,7 +211,7 @@ int main() {
                     outer.in.psi = navState(2);
                     outer.in.mode = ModeManager::NavMode::Manual;
                     outer.in.dt = clock.taskClock.conOuter;
-                    outer.in.arm = armed;
+                    outer.in.arm = false;
                     outer.in.velCmd = manVel;
                     outer.update();
                     outer.out.attCmd(2) = navState(2);
@@ -301,7 +301,7 @@ int main() {
 
             // ---------------- Telemetry -----------------
             if (clock.taskClock.tele >= clock.rates.tele) {
-		        navState.segment<3>(0) = AHRSAtt;
+		 //       navState.segment<3>(0) = AHRSAtt;
                 ts.t = t;
                 ts.dt = dt;
                 ts.Hz = Hz;
