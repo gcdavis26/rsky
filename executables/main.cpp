@@ -96,7 +96,7 @@ int main() {
         HzTimer += dt;
         HzCounter++;
 
-        if (HzTimer >= 0.1) {
+        if (HzTimer >= 0.001) {
             Hz = HzCounter / HzTimer;
             HzTimer = 0.0;
             HzCounter = 0;
