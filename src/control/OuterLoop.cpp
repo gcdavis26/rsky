@@ -100,7 +100,7 @@ void OuterLoop::update() {
         -cos(in.psi), -sin(in.psi);
 
     out.attCmd.segment<2>(0) = (1.0 / g) * A * accCmd.segment<2>(0);
-    out.attCmd(2) = 0.0;
+    out.attCmd(2) = in.psi;
     out.attCmd(0) = clamp(out.attCmd(0), -maxAtt, maxAtt);
     out.attCmd(1) = clamp(out.attCmd(1), -maxAtt, maxAtt);
 
