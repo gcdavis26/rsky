@@ -92,6 +92,8 @@ int main() {
         clock.stepClocks(dt);
         step++;
 
+        motor_task.updateState(Vec<4>::Zero(), 1750.0);
+
         HzTimer += dt;
         HzCounter++;
 

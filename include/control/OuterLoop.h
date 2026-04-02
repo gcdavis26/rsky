@@ -13,27 +13,36 @@ public:
 		double dt = 0.0;
 		bool arm = false;
 	};
-
 	input in;
 
 	struct output {
 		Vec<3> attCmd = Vec<3>::Zero();
 		double Fz = 0.0;
 	};
-
 	output out;
 
 	void update();
 
 private:
-	
+
 	Vec<3> Kp;
 	Vec<3> Kd;
 	Vec<3> Ki_pos;
 	Vec<3> Ki_vel;
+	Vec<3> Ki_sweep;
 
 	Vec<3> posInt = Vec<3>::Zero();
 	Vec<3> velInt = Vec<3>::Zero();
+	Vec<3> sweepInt = Vec<3>::Zero();
+
+	// mode transition / bumpless transfer state
+	ModeManager::NavMode prevMode = ModeManager::NavMode::Manual;
+	Vec<3> accCmd_prev = Vec<3>::Zero();
+
+	// integrator clamp bounds (per-axis)
+	Vec<3> posIntMax = (Vec<3>() << 5.0, 5.0, 10.0).finished();
+	Vec<3> velIntMax = (Vec<3>() << 5.0, 5.0, 10.0).finished();
+	Vec<3> sweepIntMax = (Vec<3>() << 5.0, 5.0, 10.0).finished();
 
 	struct SweepState {
 		int stripeIdx = 1;
@@ -42,7 +51,6 @@ private:
 		int pass = 1;
 		bool init = false;
 	};
-
 	SweepState sweep;
 
 	double buffer = 0.25;
@@ -52,13 +60,16 @@ private:
 	double e_max = 4.572 - buffer;
 	double n_margin = 0.50;
 	double deStripe = 0.0;
-	
+
 	double v_sweep = 1.0;
 	double kp_cross = 1.0;
 	double kd_cross = 1.5;
 	double kVel = 1.0;
-
 	double surveyAlt = -2.0;
+
+	double ki_sweep_n = 0.0;
+	double ki_sweep_e = 0.0;
+	double ki_sweep_d = 0.0;
 
 	double maxAtt = 10 * PI / 180;
 	double Fz_min = 0.0;
@@ -67,7 +78,6 @@ private:
 	double kpn = 0.5;
 	double kpe = 0.5;
 	double kpd = 2.0;
-
 	double kdn = 1.5;
 	double kde = 1.5;
 	double kdd = 2.0;
@@ -75,10 +85,10 @@ private:
 	double kin = 0.0;
 	double kie = 0.0;
 	double kid = 0.0;
-
 	double kivn = 0.0;
 	double kive = 0.0;
 	double kivd = 0.0;
 
-	Vec<3> sweepControl();
+	// returns PD-only accCmd, outputs error vector for integrator
+	Vec<3> sweepControl(Vec<3>& sweepErr);
 };

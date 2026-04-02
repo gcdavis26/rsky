@@ -2,69 +2,127 @@
 
 void OuterLoop::update() {
 
-		Vec<3> posErr;
-		posErr = in.posCmd - in.state.segment<3>(0);
+    Vec<3> posErr = in.posCmd - in.state.segment<3>(0);
+    Vec<3> velErr = -in.state.segment<3>(3);
 
-		Vec<3> velErr;
-		velErr = -in.state.segment<3>(3);
+    Kp << kpn, kpe, kpd;
+    Kd << kdn, kde, kdd;
+    Ki_pos << kin, kie, kid;
+    Ki_vel << kivn, kive, kivd;
+    Ki_sweep << ki_sweep_n, ki_sweep_e, ki_sweep_d;
 
-		Kp << kpn, kpe, kpd;
-		Kd << kdn, kde, kdd;    
+    // ---- mode transition detection ----
+    bool modeChanged = (in.mode != prevMode);
+    prevMode = in.mode;
 
-        Ki_pos << kin, kie, kid;
-        Ki_vel << kivn, kive, kivd;
+    Vec<3> accCmd;
 
-		Vec<3> accCmd;
+    if (in.mode == ModeManager::NavMode::Waypoint) {
 
-		if (in.mode == ModeManager::NavMode::Waypoint) {
-            if (in.arm) {
-                posInt += posErr * in.dt;
+        if (in.arm) {
+            if (modeChanged) {
+                // bumpless transfer: back-solve integrator so output is continuous
+                posInt = (accCmd_prev - Kp.cwiseProduct(posErr)
+                    - Kd.cwiseProduct(velErr))
+                    .cwiseQuotient(Ki_pos.cwiseMax(1e-9));
+                posInt = posInt.cwiseMax(-posIntMax).cwiseMin(posIntMax);
             }
-			accCmd = Kp.cwiseProduct(posErr) + Kd.cwiseProduct(velErr);
-		}
-        else if (in.mode == ModeManager::NavMode::Manual) {
-            if (in.arm) {
-                velInt += (in.velCmd + velErr) * in.dt;
-            }
-
-            accCmd = Kd.cwiseProduct(in.velCmd + velErr);
+            posInt += posErr * in.dt;
+            posInt = posInt.cwiseMax(-posIntMax).cwiseMin(posIntMax);
         }
-		else {
-			accCmd = sweepControl();
-		}
+        else {
+            posInt = Vec<3>::Zero();
+        }
 
-        Mat<2, 2> A;
-        A << -sin(in.psi), cos(in.psi),
-            -cos(in.psi), -sin(in.psi);
+        accCmd = Kp.cwiseProduct(posErr)
+            + Kd.cwiseProduct(velErr)
+            + Ki_pos.cwiseProduct(posInt);
 
-        out.attCmd.segment<2>(0) = 1 / g * A * accCmd.segment<2>(0);
-        out.attCmd(2) = 0.0;
+        // zero other integrators
+        velInt = Vec<3>::Zero();
+        sweepInt = Vec<3>::Zero();
+    }
+    else if (in.mode == ModeManager::NavMode::Manual) {
 
-        out.attCmd(0) = clamp(out.attCmd(0), -maxAtt, maxAtt);
-        out.attCmd(1) = clamp(out.attCmd(1), -maxAtt, maxAtt);
+        Vec<3> velErrManual = in.velCmd + velErr; // velCmd - velocity
 
-        double den = cos(out.attCmd(0)) * cos(out.attCmd(1));
-        den = clamp(den, 0.2, den);
-        double FzCmd = mass * (g - accCmd(2)) / den;
-        out.Fz = clamp(FzCmd, Fz_min, Fz_max);
+        if (in.arm) {
+            if (modeChanged) {
+                velInt = (accCmd_prev - Kd.cwiseProduct(velErrManual))
+                    .cwiseQuotient(Ki_vel.cwiseMax(1e-9));
+                velInt = velInt.cwiseMax(-velIntMax).cwiseMin(velIntMax);
+            }
+            velInt += velErrManual * in.dt;
+            velInt = velInt.cwiseMax(-velIntMax).cwiseMin(velIntMax);
+        }
+        else {
+            velInt = Vec<3>::Zero();
+        }
+
+        accCmd = Kd.cwiseProduct(velErrManual)
+            + Ki_vel.cwiseProduct(velInt);
+
+        // zero other integrators
+        posInt = Vec<3>::Zero();
+        sweepInt = Vec<3>::Zero();
+    }
+    else {
+        // sweep mode
+        Vec<3> sweepErr;
+        Vec<3> sweepPD = sweepControl(sweepErr);
+
+        if (in.arm) {
+            if (modeChanged) {
+                sweepInt = (accCmd_prev - sweepPD)
+                    .cwiseQuotient(Ki_sweep.cwiseMax(1e-9));
+                sweepInt = sweepInt.cwiseMax(-sweepIntMax).cwiseMin(sweepIntMax);
+            }
+            sweepInt += sweepErr * in.dt;
+            sweepInt = sweepInt.cwiseMax(-sweepIntMax).cwiseMin(sweepIntMax);
+        }
+        else {
+            sweepInt = Vec<3>::Zero();
+        }
+
+        accCmd = sweepPD + Ki_sweep.cwiseProduct(sweepInt);
+
+        // zero other integrators
+        posInt = Vec<3>::Zero();
+        velInt = Vec<3>::Zero();
+    }
+
+    // save for bumpless transfer on next mode switch
+    accCmd_prev = accCmd;
+
+    // ---- attitude command ----
+    Mat<2, 2> A;
+    A << -sin(in.psi), cos(in.psi),
+        -cos(in.psi), -sin(in.psi);
+
+    out.attCmd.segment<2>(0) = (1.0 / g) * A * accCmd.segment<2>(0);
+    out.attCmd(2) = 0.0;
+    out.attCmd(0) = clamp(out.attCmd(0), -maxAtt, maxAtt);
+    out.attCmd(1) = clamp(out.attCmd(1), -maxAtt, maxAtt);
+
+    double den = cos(out.attCmd(0)) * cos(out.attCmd(1));
+    den = clamp(den, 0.2, den);
+    double FzCmd = mass * (g - accCmd(2)) / den;
+    out.Fz = clamp(FzCmd, Fz_min, Fz_max);
 }
 
-Vec<3> OuterLoop::sweepControl() {
-	Vec<3> pos;
-	Vec<3> vel;
+Vec<3> OuterLoop::sweepControl(Vec<3>& sweepErr) {
+    Vec<3> pos = in.state.segment<3>(0);
+    Vec<3> vel = in.state.segment<3>(3);
 
-	pos = in.state.segment<3>(0);
-	vel = in.state.segment<3>(3);
+    if (!sweep.init) {
+        double widthE = e_max - e_min;
+        deStripe = widthE / (sweep.numStr - 1);
+        sweep.stripeIdx = 1;
+        sweep.dir = 1;
+        sweep.pass = 1;
+        sweep.init = true;
+    }
 
-	if (!sweep.init) {
-		double widthE = e_max - e_min;
-		deStripe = widthE / (sweep.numStr - 1);
-
-		sweep.stripeIdx = 1;
-		sweep.dir = 1;
-		sweep.pass = 1;
-		sweep.init = true;
-	}
     bool at_top = (pos(0) >= (n_max - n_margin));
     bool at_bottom = (pos(0) <= (n_min + n_margin));
 
@@ -126,7 +184,6 @@ Vec<3> OuterLoop::sweepControl() {
 
     Vec<2> vCmd;
     vCmd << vnCmd, veCmd;
-
     double speed = vCmd.norm();
     if (speed > 1e-9) {
         vCmd = vCmd * (v_sweep / speed);
@@ -135,11 +192,18 @@ Vec<3> OuterLoop::sweepControl() {
         vCmd << sweep.dir * v_sweep, 0.0;
     }
 
-    Vec<2> accCmdne;
-    accCmdne = kVel * (vCmd - vel.segment<2>(0));
-    double accCmdd = kpd * (surveyAlt - pos(2)) - kdd * vel(2);
-    
+    // velocity error for N/E, position error for D
+    Vec<2> velErrNE = vCmd - vel.segment<2>(0);
+    double posErrD = surveyAlt - pos(2);
+
+    // output error vector for integrator (accumulated in update())
+    sweepErr << velErrNE(0), velErrNE(1), posErrD;
+
+    // PD-only acceleration command
     Vec<3> accCmd;
-    accCmd << accCmdne(0), accCmdne(1), accCmdd;
+    accCmd << kVel * velErrNE(0),
+        kVel* velErrNE(1),
+        kpd* posErrD - kdd * vel(2);
+
     return accCmd;
 }
