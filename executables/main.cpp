@@ -301,7 +301,11 @@ int main() {
 
             // ---------------- Telemetry -----------------
             if (clock.taskClock.tele >= clock.rates.tele) {
+<<<<<<< Updated upstream
 		 //     navState.segment<3>(0) = AHRSAtt;
+=======
+		//navState.segment<3>(0) = AHRSAtt;
+>>>>>>> Stashed changes
                 ts.t = t;
                 ts.dt = dt;
                 ts.Hz = Hz;
