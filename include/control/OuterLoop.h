@@ -73,21 +73,21 @@ private:
 
 	double maxAtt = 10 * PI / 180;
 	double Fz_min = 0.0;
-	double Fz_max = 2 * mass * g;
+	double Fz_max = 4.0 * mass * g;
 
 	double kpn = 0.5;
 	double kpe = 0.5;
 	double kpd = 2.0;
-	double kdn = 1.5;
-	double kde = 1.5;
-	double kdd = 2.0;
+	double kdn = 1.25;
+	double kde = 1.25;
+	double kdd = 3.0;
 
-	double kin = 0.0;
-	double kie = 0.0;
-	double kid = 0.0;
-	double kivn = 0.0;
-	double kive = 0.0;
-	double kivd = 0.0;
+	double kin = 0.001;
+	double kie = 0.001;
+	double kid = 0.001;
+	double kivn = 0.05;
+	double kive = 0.05;
+	double kivd = 0.025;
 
 	// returns PD-only accCmd, outputs error vector for integrator
 	Vec<3> sweepControl(Vec<3>& sweepErr);

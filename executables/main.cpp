@@ -53,7 +53,7 @@ int main() {
     MocapHandler mocap;
     bool mocapInit = mocap.init();
 
-    ImuLpf ekf_filter(500.0f, 80.0f);
+    ImuLpf ekf_filter(500.0f, 225.0f);
     ImuLpf ctrl_filter(500.0f, 160.0f);
     ekf_filter.on = true;
     ctrl_filter.on = true;
@@ -238,7 +238,6 @@ int main() {
                 manPsi = manPsi * 20 * PI / 180;
 
                 autopilot = false;
-                ekfHealthy = false;
 
                 if (autopilot && ekfHealthy) {
                     momentsCmd =
