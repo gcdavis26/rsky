@@ -75,9 +75,9 @@ private:
 	double Fz_min = 0.0;
 	double Fz_max = 4.0 * mass * g;
 
-	double kpn = 0.5;
-	double kpe = 0.5;
-	double kpd = 2.0;
+	double kpn = 1.0;
+	double kpe = 1.0;
+	double kpd = 1.0;
 	double kdn = 1.25;
 	double kde = 1.25;
 	double kdd = 3.0;

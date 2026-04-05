@@ -3,7 +3,7 @@ ModeManager::ModeManager() {
 }
 ModeManager::ModeManager(bool test) {
 	simplemission = test; //this is for simple milestone flight
-}
+	}
 void ModeManager::update() {
 	double surveyAlt = -2.0;
 	double lowAlt = -0.5;
@@ -13,7 +13,7 @@ void ModeManager::update() {
 		init = true;
 		toCmd(0) = in.state(3);
 		toCmd(1) = in.state(4);
-		toCmd(2) = surveyAlt;
+		toCmd(2) = lowAlt;
 	}
 
 	out.phaseTime += in.dt;
