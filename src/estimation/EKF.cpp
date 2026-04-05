@@ -198,7 +198,7 @@ Vec<EKF::NX> EKF::f_nonlin(const Vec<NX>& x,
     return f;
 }
 
-// ------------------- F numeric -------------------
+// ------------------- F  -------------------
 Mat<EKF::NX, EKF::NX> EKF::computeF(const Vec<NX>& x,
     const ImuMeas& imu,
     const Vec<3>& omega_dot,
