@@ -16,7 +16,7 @@ Eigen::Vector2d BatteryHandler::read_battery() {
 
     // Apply calibration scaling
     // Using constants used in Navio2 SAS
-    double actual_voltage_mv = raw_voltage_mv * 10.88;
+    double actual_voltage_mv = raw_voltage_mv * 11.161;
     double actual_current_ma = raw_current_mv * 200.0;
 
     battery_data(0) = actual_voltage_mv;
