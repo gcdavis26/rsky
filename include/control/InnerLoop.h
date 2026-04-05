@@ -15,7 +15,7 @@ private:
 
     bool yawLatch = true;
     // ---- Outer loop (attitude → desired rate) ----
-    static const inline Vec<3> kp_att{ 7.0, 7.0, 7.0 };
+    static const inline Vec<3> kp_att{ 6.8, 6.8, 7.0 };
     static const inline Vec<3> ki_att{ 0.0, 0.0, 0.0 };
     double tauI_att = 0.025;
     Vec<3> x4_att = Vec<3>::Zero();
