@@ -237,8 +237,6 @@ int main() {
                 attManual << 10 * PI / 180 * manVel(1), -10 * PI / 180 * manVel(0), navState(2);
                 manPsi = manPsi * 20 * PI / 180;
 
-                autopilot = false;
-
                 if (autopilot && ekfHealthy) {
                     momentsCmd =
                         inner.computeWrench(
