@@ -92,6 +92,3 @@ private:
 	// returns PD-only accCmd, outputs error vector for integrator
 	Vec<3> sweepControl(Vec<3>& sweepErr);
 };
-     double kdn = 1.25;
-        double kde = 1.25;
-        double kdd = 3.0;
