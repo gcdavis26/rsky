@@ -270,17 +270,23 @@ int main() {
                     double Fz_base = mass * g * (1 - manVel(2));
                     outer.out.Fz = clamp(Fz_base / den, 0, 2 * mass * g);
                 }
-                else {
+                else { // Autopilot is ON, but EKF is UNHEALTHY
                     momentsCmd =
                         inner.computeWrench(
-                            Vec<3>::Zero(),
+                            Vec<3>::Zero(), // Command flat level flight
                             0.0,
                             AHRSAtt,
-                            ctrl_filter.output().segment<3>(3)-imuStats.segment<3>(3),
+                            ctrl_filter.output().segment<3>(3) - imuStats.segment<3>(0),
                             clock.taskClock.conInner);
-                    outer.out.Fz = mass * g;
+                    
+                    double den = cos(AHRSAtt(0)) * cos(AHRSAtt(1));
+                    den = clamp(den, 0.2, 1.0);
+                    
+                    // Command a slow descent (e.g., 0.5 m/s) to land safely
+                    double Fz_base = mass * g * (1.0 - 0.5); 
+                    outer.out.Fz = clamp(Fz_base / den, 0.0, 2.0 * mass * g);
                 }
-
+                
                 wrenchCmd << outer.out.Fz,
                     momentsCmd(0),
                     momentsCmd(1),

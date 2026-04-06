@@ -21,15 +21,21 @@ void OuterLoop::update() {
 
         if (in.arm) {
             if (modeChanged) {
-                // bumpless transfer: back-solve integrator so output is continuous
-                posInt = (accCmd_prev - Kp.cwiseProduct(posErr)
-                    - Kd.cwiseProduct(velErr))
-                    .cwiseQuotient(Ki_pos.cwiseMax(1e-9));
-                posInt = posInt.cwiseMax(-posIntMax).cwiseMin(posIntMax);
+                // FIX: Only back-solve if we are already in the air (Z pos < -0.2m)
+                // Otherwise, start the integrator at zero to avoid clamping downwards on takeoff
+                if (in.state(2) < -0.2) { 
+                    posInt = (accCmd_prev - Kp.cwiseProduct(posErr)
+                        - Kd.cwiseProduct(velErr))
+                        .cwiseQuotient(Ki_pos.cwiseMax(1e-9));
+                    posInt = posInt.cwiseMax(-posIntMax).cwiseMin(posIntMax);
+                } else {
+                    posInt = Vec<3>::Zero();
+                }
             }
             posInt += posErr * in.dt;
             posInt = posInt.cwiseMax(-posIntMax).cwiseMin(posIntMax);
         }
+        
         else {
             posInt = Vec<3>::Zero();
         }
@@ -105,7 +111,7 @@ void OuterLoop::update() {
     out.attCmd(1) = clamp(out.attCmd(1), -maxAtt, maxAtt);
 
     double den = cos(out.attCmd(0)) * cos(out.attCmd(1));
-    den = clamp(den, 0.2, den);
+    den = clamp(den, 0.2, 1.0);
     double FzCmd = mass * (g - accCmd(2)) / den;
     out.Fz = clamp(FzCmd, Fz_min, Fz_max);
 }

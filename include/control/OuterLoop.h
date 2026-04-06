@@ -40,7 +40,7 @@ private:
 	Vec<3> accCmd_prev = Vec<3>::Zero();
 
 	// integrator clamp bounds (per-axis)
-	Vec<3> posIntMax = (Vec<3>() << 5.0, 5.0, 10.0).finished();
+	Vec<3> posIntMax = (Vec<3>() << 5.0, 5.0, 25.0).finished();
 	Vec<3> velIntMax = (Vec<3>() << 5.0, 5.0, 10.0).finished();
 	Vec<3> sweepIntMax = (Vec<3>() << 5.0, 5.0, 10.0).finished();
 
@@ -84,7 +84,7 @@ private:
 
 	double kin = 0.001;
 	double kie = 0.001;
-	double kid = 0.05;
+	double kid = 0.25;
 	double kivn = 0.05;
 	double kive = 0.05;
 	double kivd = 0.025;
