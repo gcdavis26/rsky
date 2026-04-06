@@ -72,9 +72,14 @@ add_executable(FireSim
 
 if(UNIX AND NOT APPLE)
     add_executable(FireMission
-    executables/main.cpp
-    ${COMMON_SOURCES}
-)
+        executables/main.cpp
+        ${COMMON_SOURCES}
+    )
+
+    add_executable(FireMissionNoTK
+        executables/main_no_timekeeper.cpp
+        ${COMMON_SOURCES}
+    )
 endif()
 
 # ==============================
@@ -82,6 +87,15 @@ endif()
 # ==============================
 if(UNIX AND NOT APPLE)
 target_include_directories(FireMission PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include/sensors
+    ${CMAKE_SOURCE_DIR}/include/vision
+    ${CMAKE_SOURCE_DIR}/external/eigen
+    ${CMAKE_SOURCE_DIR}/external/Navio2
+    ${CMAKE_SOURCE_DIR}/external
+)
+
+target_include_directories(FireMissionNoTK PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/include/sensors
     ${CMAKE_SOURCE_DIR}/include/vision
@@ -105,6 +119,7 @@ target_include_directories(FireSim PRIVATE
 # ==============================
 if (UNIX AND NOT APPLE)
 target_precompile_headers(FireMission PRIVATE <Eigen/Dense>)
+target_precompile_headers(FireMissionNoTK PRIVATE <Eigen/Dense>)
 endif()
 target_precompile_headers(FireSim PRIVATE <Eigen/Dense>)
 
@@ -114,23 +129,27 @@ target_precompile_headers(FireSim PRIVATE <Eigen/Dense>)
 if (MSVC)
     if (UNIX AND NOT APPLE)
     target_compile_options(FireMission PRIVATE /W4)
+    target_compile_options(FireMissionNoTK PRIVATE /W4)
     endif()
     target_compile_options(FireSim PRIVATE /W4)
 
     # MSVC Release Optimizations
     if (UNIX AND NOT APPLE)
     target_compile_options(FireMission PRIVATE $<$<CONFIG:Release>:/O2 /Ob2 /arch:AVX2 /DNDEBUG>)
+    target_compile_options(FireMissionNoTK PRIVATE $<$<CONFIG:Release>:/O2 /Ob2 /arch:AVX2 /DNDEBUG>)
     endif()
     target_compile_options(FireSim PRIVATE $<$<CONFIG:Release>:/O2 /Ob2 /arch:AVX2 /DNDEBUG>)
 else()
     if (UNIX AND NOT APPLE)
     target_compile_options(FireMission PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(FireMissionNoTK PRIVATE -Wall -Wextra -Wpedantic)
     endif()
     target_compile_options(FireSim PRIVATE -Wall -Wextra -Wpedantic)
 
     # GCC/Clang Release Optimizations
     if (UNIX AND NOT APPLE)
     target_compile_options(FireMission PRIVATE $<$<CONFIG:Release>:-O3 -march=native -DNDEBUG>)
+    target_compile_options(FireMissionNoTK PRIVATE $<$<CONFIG:Release>:-O3 -march=native -DNDEBUG>)
     endif()
     target_compile_options(FireSim PRIVATE $<$<CONFIG:Release>:-O3 -march=native -DNDEBUG>)
 endif()
@@ -140,6 +159,7 @@ endif()
 # ==============================
 if(UNIX AND NOT APPLE)
     target_compile_definitions(FireMission PRIVATE PLATFORM_LINUX)
+    target_compile_definitions(FireMissionNoTK PRIVATE PLATFORM_LINUX)
 
     # Build Navio2 + Common static libs using Navio2's own CMakeLists.txt
     add_subdirectory(${CMAKE_SOURCE_DIR}/external/Navio2)
@@ -159,6 +179,18 @@ if(UNIX AND NOT APPLE)
         src/vision/WildfireDetection.cpp
     )
 
+    target_sources(FireMissionNoTK PRIVATE
+        src/drivers/MotorDriver.cpp
+        src/drivers/RCIn.cpp
+        src/sensors/IMUHandler.cpp
+        src/mocap/network.cpp
+        src/mocap/mocapHandler.cpp
+        src/sensors/ThermalCamera.cpp
+        src/vision/SearchGrid.cpp
+        src/vision/WildfireDetection.cpp
+    )
+
     # Link Navio2 and the MLX library
     target_link_libraries(FireMission PRIVATE Navio2 MLX90640_API)
+    target_link_libraries(FireMissionNoTK PRIVATE Navio2 MLX90640_API)
 endif()
