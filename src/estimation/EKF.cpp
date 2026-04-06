@@ -141,9 +141,15 @@ void EKF::correctImpl(const OptiMeas& opti) {
         nisAvg = (1.0 - alpha) * nisAvg + alpha * nis;
     }
 
-    // Joseph form covariance update
-    P.noalias() -= K * S * K.transpose();
-    P = P.selfadjointView<Eigen::Lower>(); //explicitly enforcing symmetry
+
+    Mat<NX, NX> I_KH = Mat<NX, NX>::Identity();
+    I_KH.block<NX, 4>(0, 2) -= K; 
+
+    P = I_KH * P * I_KH.transpose() + K * R * K.transpose();
+
+    // Enforce symmetry to prevent floating-point asymmetry
+    P = P.selfadjointView<Eigen::Lower>(); 
+
     // state update
     x_est = x_est + K * res;
 
