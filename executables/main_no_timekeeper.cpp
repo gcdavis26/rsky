@@ -3,6 +3,8 @@
 #include <thread>
 #include <chrono>
 #include <unistd.h>
+#include <pthread.h>
+#include <sched.h>
 
 #include "common/MathUtils.h"
 #include "common/LowPass.h"
@@ -19,6 +21,31 @@
 #include "drivers/RCIn.h"
 #include "sensors/IMUHandler.h"
 #include "mocap/mocapHandler.h"
+
+
+// Helper function to set priority and pin a std::thread
+void configureThread(std::thread& target_thread, int priority, int core_id = -1) {
+    pthread_t handle = target_thread.native_handle();
+
+    // 1. Set Priority
+    if (priority > 0) {
+        sched_param sch_params;
+        sch_params.sched_priority = priority;
+        if (pthread_setschedparam(handle, SCHED_FIFO, &sch_params) != 0) {
+            std::cerr << "Failed to set SCHED_FIFO " << priority << ". Need sudo?" << std::endl;
+        }
+    }
+
+    // 2. Set Core Affinity (Pinning)
+    if (core_id >= 0) {
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);
+        CPU_SET(core_id, &cpuset);
+        if (pthread_setaffinity_np(handle, sizeof(cpu_set_t), &cpuset) != 0) {
+            std::cerr << "Failed to pin thread to core " << core_id << std::endl;
+        }
+    }
+}
 
 int main() {
     std::cout << std::fixed << std::setprecision(4);
@@ -48,6 +75,9 @@ int main() {
 
     MotorTask<MotorDriver> motor_task(motdrv);
     std::thread motor_thread(&MotorTask<MotorDriver>::loop, &motor_task);
+    
+    // Elevate and pin the Motor Thread (Priority 80, Core 2)
+    configureThread(motor_thread, 80, 2);
     std::cout << "Motor thread started. Waiting for motor initialization..." << std::endl;
 
     MocapHandler mocap;
@@ -120,6 +150,18 @@ int main() {
     const double rate_AHRS = 1.0 / 650.0;
     const double rate_conInner = 1.0 / 650.0;
     const double rate_tele = 1.0 / 100.0;
+
+    // Elevate and pin the current Main Thread (Priority 90, Core 3)
+    pthread_t main_handle = pthread_self();
+    
+    sched_param main_params;
+    main_params.sched_priority = 90;
+    pthread_setschedparam(main_handle, SCHED_FIFO, &main_params);
+
+    cpu_set_t main_cpuset;
+    CPU_ZERO(&main_cpuset);
+    CPU_SET(3, &main_cpuset);
+    pthread_setaffinity_np(main_handle, sizeof(cpu_set_t), &main_cpuset);
 
     while (true) {
         auto loop_start = clock_t::now();
