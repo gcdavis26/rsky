@@ -163,6 +163,10 @@ int main() {
     CPU_SET(3, &main_cpuset);
     pthread_setaffinity_np(main_handle, sizeof(cpu_set_t), &main_cpuset);
 
+    double max_compute = 0.0;
+    double min_Hz = 1000.0;
+    double max_Hz = 0.0;
+
     while (true) {
         auto loop_start = clock_t::now();
         std::chrono::duration<double> dt_ch = loop_start - last_time;
@@ -403,22 +407,23 @@ int main() {
             acc_tele = 0.0;
         }
 
-        // ---------------- Console Print (timing only) ----------------
-        if (t - lastPrint >= printDt) {
-            std::cout << "t=" << t
-                      << "s  TargetHz=" << (1.0 / target_dt)
-                      << "  Hz=" << Hz
-                      << "  AvgSleep[us]=" << avg_sleep * 1e6
-                      << "  AvgComp[us]=" << avg_compute * 1e6
-                      << "  Overruns=" << overrun_count
-                      << std::endl;
-            lastPrint = t;
+
+        // ---------------- Silently Track Hz ----------------
+        // Skip the first 100 steps to let the OS stabilize and caches warm up
+        if (step > 100) {
+            if (Hz > max_Hz) max_Hz = Hz;
+            if (Hz < min_Hz) min_Hz = Hz;
         }
 
         // --------- Loop timing: compute sleep at fixed target rate ---------
         auto loop_end = clock_t::now();
         std::chrono::duration<double> compute_dur = loop_end - loop_start;
         double compute_s = compute_dur.count();
+
+        // ---------------- Silently Track Max Compute ----------------
+        if (compute_s > max_compute) {
+            max_compute = compute_s;
+        }
 
         // EMA for compute
         if (avg_compute == 0.0) {
@@ -455,9 +460,26 @@ int main() {
             overrun_count++;
         }
 
-        // No in-run tuning of target_dt: timing stats (avg_sleep, avg_compute, overrun_count)
-        // are only for logging so you can adjust target_dt between runs.
-    }
+        // ---------------- Benchmark Exit Condition ----------------
+        // Exit the while(true) loop automatically after 30 seconds
+        if (t >= 30.0) {
+            break; 
+        }
+
+    } // <--- THIS IS THE END OF YOUR while(true) LOOP
+
+
+    // ---------------- Final Benchmark Report ----------------
+    // This prints ONLY ONCE after the 30 seconds are over
+    std::cout << "\n--- 30 SECOND BENCHMARK COMPLETE ---" << std::endl;
+    std::cout << "Target Frequency : " << (1.0 / target_dt) << " Hz" << std::endl;
+    std::cout << "Average Frequency: " << Hz << " Hz" << std::endl;
+    std::cout << "Min/Max Frequency: " << min_Hz << " / " << max_Hz << " Hz" << std::endl;
+    std::cout << "Max Compute Time : " << max_compute * 1e6 << " us" << std::endl;
+    std::cout << "Total Overruns   : " << overrun_count << std::endl;
+    std::cout << "------------------------------------\n" << std::endl;
+
+    // ... (Your existing cleanup code, e.g., motor_task.stop(), goes here) ...
 
     // Unreachable in current structure, but keep for completeness
     motor_task.stop();
