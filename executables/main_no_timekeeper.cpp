@@ -120,7 +120,7 @@ int main() {
     auto last_time = start_time;
 
     // Fixed target period (change this value to adjust control rate between runs)
-    double target_dt = 1.0 / 650.0;     // 650 Hz target loop rate
+    double target_dt = 1.0 / 600.0;     // 650 Hz target loop rate
     double avg_sleep = 0.0;
     double avg_compute = 0.0;
     const double ema_alpha = 0.01;
@@ -140,15 +140,15 @@ int main() {
     double acc_tele = 0.0;
 
     // rough guesses for task periods (seconds) – adjust if you know exact values
-    const double rate_imu = 1.0 / 650.0;
+    const double rate_imu = 1.0 / 600.0;
     const double rate_opti = 1.0 / 120.0;
-    const double rate_navPred = 1.0 / 650.0;
+    const double rate_navPred = 1.0 / 600.0;
     const double rate_navCorr = 1.0 / 120.0;
     const double rate_MM = 1.0 / 100.0;
     const double rate_keys = 1.0 / 100.0;
     const double rate_conOuter = 1.0 / 200.0;
-    const double rate_AHRS = 1.0 / 650.0;
-    const double rate_conInner = 1.0 / 650.0;
+    const double rate_AHRS = 1.0 / 600.0;
+    const double rate_conInner = 1.0 / 600.0;
     const double rate_tele = 1.0 / 100.0;
 
     // Elevate and pin the current Main Thread (Priority 90, Core 3)
