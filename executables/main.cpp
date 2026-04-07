@@ -143,6 +143,7 @@ int main() {
 
             if (ekfbadTimer > 5.0) {
                 ekfHealthy = false;
+                std::cout << "UNHEALTHY" << "\n";
             }
             else if (ekfgoodTimer > 1.0) {
                 ekfHealthy = true;
@@ -216,6 +217,7 @@ int main() {
                     outer.update();
                     outer.out.attCmd(2) = navState(2);
                 }
+                std::cout << outer.getAccels() << "\n";
                 clock.taskClock.conOuter = 0.0;
             }
 
