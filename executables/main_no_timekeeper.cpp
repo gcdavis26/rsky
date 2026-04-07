@@ -420,7 +420,7 @@ int main() {
         std::chrono::duration<double> compute_dur = loop_end - loop_start;
         double compute_s = compute_dur.count();
 
-        // EMA for compute and sleep
+        // EMA for compute
         if (avg_compute == 0.0) {
             avg_compute = compute_s;
         } else {
@@ -429,20 +429,30 @@ int main() {
 
         double sleep_s = target_dt - compute_s;
         if (sleep_s > 0.0) {
+            // Track the intended sleep for logging
             if (avg_sleep == 0.0) {
                 avg_sleep = sleep_s;
             } else {
                 avg_sleep = (1.0 - ema_alpha) * avg_sleep + ema_alpha * sleep_s;
             }
 
-            // sleep to enforce target period
-            auto sleep_us = static_cast<int>(sleep_s * 1e6);
-            if (sleep_us > 0) {
-                usleep(sleep_us);
+            // HYBRID SLEEP
+            // 1. usleep for the bulk of the time, stopping 100 microseconds early
+            double early_wake_s = sleep_s - 0.000100; 
+            if (early_wake_s > 0.0) {
+                usleep(static_cast<int>(early_wake_s * 1e6));
+            }
+
+            // 2. Spin-lock (busy wait) for the final fractions of a millisecond
+            while (true) {
+                auto current_time = clock_t::now();
+                std::chrono::duration<double> elapsed = current_time - loop_start;
+                if (elapsed.count() >= target_dt) {
+                    break; 
+                }
             }
         } else {
             overrun_count++;
-            sleep_s = 0.0;
         }
 
         // No in-run tuning of target_dt: timing stats (avg_sleep, avg_compute, overrun_count)
