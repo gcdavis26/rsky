@@ -91,4 +91,8 @@ private:
 
 	// returns PD-only accCmd, outputs error vector for integrator
 	Vec<3> sweepControl(Vec<3>& sweepErr);
+	Vec<3> getAccels()
+	{
+		return accCmd_prev;
+	}
 };
