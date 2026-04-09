@@ -88,10 +88,6 @@ int main() {
     ekf_filter.on = true;
     ctrl_filter.on = true;
 
-    // --- State / command vars (copied from main.cpp) ---
-    double lastPrint = 0.0;
-    const double printDt = 1.0;
-
     Vec<3> momentsCmd = Vec<3>::Zero();
     Vec<4> thrustCmd = Vec<4>::Zero();
     Vec<4> wrenchCmd = Vec<4>::Zero();
@@ -103,11 +99,9 @@ int main() {
     Vec<3> manVel = Vec<3>::Zero();
     double manPsi = 0.0;
 
-    int step = 0;
     double Hz = 0.0;
 
     bool autopilot = false;
-    bool printOn = false;
 
     double NIS = 4.0;
     bool ekfHealthy = false;
@@ -121,10 +115,6 @@ int main() {
 
     // Fixed target period (change this value to adjust control rate between runs)
     double target_dt = 1.0 / 600.0;     // 650 Hz target loop rate
-    double avg_sleep = 0.0;
-    double avg_compute = 0.0;
-    const double ema_alpha = 0.01;
-    int overrun_count = 0;
 
     // task-rate accumulators (approximate original TimeKeeper rates)
     double t = 0.0;
@@ -163,10 +153,6 @@ int main() {
     CPU_SET(3, &main_cpuset);
     pthread_setaffinity_np(main_handle, sizeof(cpu_set_t), &main_cpuset);
 
-    double max_compute = 0.0;
-    double min_Hz = 1000.0;
-    double max_Hz = 0.0;
-
     while (true) {
         auto loop_start = clock_t::now();
         std::chrono::duration<double> dt_ch = loop_start - last_time;
@@ -174,7 +160,6 @@ int main() {
         last_time = loop_start;
 
         t = std::chrono::duration<double>(loop_start - start_time).count();
-        step++;
 
         // Hz estimate (simple EMA)
         double inst_Hz = dt > 0.0 ? 1.0 / dt : 0.0;
@@ -407,48 +392,21 @@ int main() {
             acc_tele = 0.0;
         }
 
-
-        // ---------------- Silently Track Hz ----------------
-        // Skip the first 100 steps to let the OS stabilize and caches warm up
-        if (step > 100) {
-            if (Hz > max_Hz) max_Hz = Hz;
-            if (Hz < min_Hz) min_Hz = Hz;
-        }
-
         // --------- Loop timing: compute sleep at fixed target rate ---------
         auto loop_end = clock_t::now();
         std::chrono::duration<double> compute_dur = loop_end - loop_start;
         double compute_s = compute_dur.count();
 
-        // ---------------- Silently Track Max Compute ----------------
-        if (compute_s > max_compute) {
-            max_compute = compute_s;
-        }
-
-        // EMA for compute
-        if (avg_compute == 0.0) {
-            avg_compute = compute_s;
-        } else {
-            avg_compute = (1.0 - ema_alpha) * avg_compute + ema_alpha * compute_s;
-        }
 
         double sleep_s = target_dt - compute_s;
         if (sleep_s > 0.0) {
-            // Track the intended sleep for logging
-            if (avg_sleep == 0.0) {
-                avg_sleep = sleep_s;
-            } else {
-                avg_sleep = (1.0 - ema_alpha) * avg_sleep + ema_alpha * sleep_s;
-            }
-
-            // HYBRID SLEEP
-            // 1. usleep for the bulk of the time, stopping 100 microseconds early
+            // usleep for the bulk of the time, stopping 100 microseconds early
             double early_wake_s = sleep_s - 0.000100; 
             if (early_wake_s > 0.0) {
                 usleep(static_cast<int>(early_wake_s * 1e6));
             }
 
-            // 2. Spin-lock (busy wait) for the final fractions of a millisecond
+            // Spin-lock (busy wait) for the final fractions of a millisecond
             while (true) {
                 auto current_time = clock_t::now();
                 std::chrono::duration<double> elapsed = current_time - loop_start;
@@ -456,32 +414,10 @@ int main() {
                     break; 
                 }
             }
-        } else {
-            overrun_count++;
         }
 
-        // ---------------- Benchmark Exit Condition ----------------
-        // Exit the while(true) loop automatically after 30 seconds
-        if (t >= 30.0) {
-            break; 
-        }
+    }
 
-    } // <--- THIS IS THE END OF YOUR while(true) LOOP
-
-
-    // ---------------- Final Benchmark Report ----------------
-    // This prints ONLY ONCE after the 30 seconds are over
-    std::cout << "\n--- 30 SECOND BENCHMARK COMPLETE ---" << std::endl;
-    std::cout << "Target Frequency : " << (1.0 / target_dt) << " Hz" << std::endl;
-    std::cout << "Average Frequency: " << Hz << " Hz" << std::endl;
-    std::cout << "Min/Max Frequency: " << min_Hz << " / " << max_Hz << " Hz" << std::endl;
-    std::cout << "Max Compute Time : " << max_compute * 1e6 << " us" << std::endl;
-    std::cout << "Total Overruns   : " << overrun_count << std::endl;
-    std::cout << "------------------------------------\n" << std::endl;
-
-    // ... (Your existing cleanup code, e.g., motor_task.stop(), goes here) ...
-
-    // Unreachable in current structure, but keep for completeness
     motor_task.stop();
     if (motor_thread.joinable()) {
         motor_thread.join();
