@@ -22,9 +22,15 @@ public:
 	output out;
 
 	void update();
+	//getter functions
+
 	Vec<3> getAccels()
 	{
 		return accCmd_prev;
+	}
+	Vec<3> getIError()
+	{
+		return posInt;
 	}
 
 private:
@@ -95,4 +101,6 @@ private:
 
 	// returns PD-only accCmd, outputs error vector for integrator
 	Vec<3> sweepControl(Vec<3>& sweepErr);
+
+
 };

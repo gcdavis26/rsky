@@ -22,6 +22,9 @@
 #include "sensors/IMUHandler.h"
 #include "mocap/mocapHandler.h"
 
+#include <fstream>
+
+
 
 // Helper function to set priority and pin a std::thread
 void configureThread(std::thread& target_thread, int priority, int core_id = -1) {
@@ -153,6 +156,14 @@ int main() {
     CPU_SET(3, &main_cpuset);
     pthread_setaffinity_np(main_handle, sizeof(cpu_set_t), &main_cpuset);
 
+    std::ofstream logger("datalog.csv");
+    logger << "n,e,d,an,ae,ad\n";
+
+
+
+
+
+
     while (true) {
         auto loop_start = clock_t::now();
         std::chrono::duration<double> dt_ch = loop_start - last_time;
@@ -264,6 +275,17 @@ int main() {
             if (motor_task.isArmed()) {
                 manPsi = rcPsi;
                 manVel = rcVel;
+                if(!logger.is_open())
+                {
+                    logger.open("datalog.csv");
+                }
+            }
+            else
+            {
+                if (logger.is_open())
+                {
+                    logger.close();
+                }
             }
         }
 
@@ -373,6 +395,10 @@ int main() {
             // Real commands
             motor_task.updateState(pwmCmd, rcPWM(4));
         }
+        //----------------- Printing commands for testing ------------------
+        Vec<3> ierror = outer.getIError();
+        Vec<3> accels = outer.getAccels();
+        logger << ierror(0) << "," << ierror(1) << "," << ierror(2) << "," << accels(0) << "," << accels(1) << "," << accels(2) << "\n";
 
         // ---------------- Telemetry ----------------
         if (acc_tele >= rate_tele) {
