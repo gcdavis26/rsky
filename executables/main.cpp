@@ -79,7 +79,7 @@ int main() {
     int HzCounter = 0;
 
     bool autopilot = false;
-    bool printOn = false;
+    bool printOn = true;
 
     double NIS = 4.0;
     bool ekfHealthy = false;
@@ -217,7 +217,6 @@ int main() {
                     outer.update();
                     outer.out.attCmd(2) = navState(2);
                 }
-                std::cout << outer.getAccels() << "\n";
                 clock.taskClock.conOuter = 0.0;
             }
 

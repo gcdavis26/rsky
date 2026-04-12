@@ -396,12 +396,14 @@ int main() {
             motor_task.updateState(pwmCmd, rcPWM(4));
         }
         //----------------- Printing commands for testing ------------------
-        Vec<3> ierror = outer.getIError();
-        Vec<3> accels = outer.getAccels();
-        logger << ierror(0) << "," << ierror(1) << "," << ierror(2) << "," << accels(0) << "," << accels(1) << "," << accels(2) << "\n";
+        // Vec<3> ierror = outer.getIError();
+        // Vec<3> accels = outer.getAccels();
+        //logger << ierror(0) << "," << ierror(1) << "," << ierror(2) << "," << accels(0) << "," << accels(1) << "," << accels(2) << "\n";
 
         // ---------------- Telemetry ----------------
         if (acc_tele >= rate_tele) {
+	    navState.block(9,0,3,1) = outer.getIError();
+	    navState.block(12,0,3,1) = outer.getAccels();
             ts.t = t;
             ts.dt = dt;
             ts.Hz = Hz;
