@@ -20,7 +20,8 @@ k = 0;
 t_log   = [];          % [s]
 pos_log = [];          % Nx3 [n e d]
 vel_log = [];          % Nx3 [n e d]
-eul_log = [];          % Nx3 [r p y]
+eul_log     = [];      % Nx3 [r p y]
+eul_cmd_log = [];      % Nx3 [r p y] commanded
 hz_log  = [];          % [Hz]
 health_log = [];
 batt_voltage_mv_log = [];
@@ -196,6 +197,11 @@ while ishandle(ax)
         pos_log(end+1,1:3)  = reshape(s.pos_est,1,3);
         vel_log(end+1,1:3)  = reshape(s.vel_est,1,3);
         eul_log(end+1,1:3)  = reshape(s.euler_est,1,3);
+        if isfield(s,'euler_cmd')
+            eul_cmd_log(end+1,1:3) = reshape(s.euler_cmd,1,3);
+        else
+            eul_cmd_log(end+1,1:3) = NaN(1,3);
+        end
         hz_log(end+1,1)     = s.Hz;
         health_log(end+1,1) = s.EKF_Health;
         if isfield(s,'battery_voltage_mv')
@@ -301,7 +307,8 @@ if ~isempty(t_log)
     [t_log, order] = sort(t_log);
     pos_log = pos_log(order,:);
     vel_log = vel_log(order,:);
-    eul_log = eul_log(order,:);
+    eul_log     = eul_log(order,:);
+    eul_cmd_log = eul_cmd_log(order,:);
     hz_log  = hz_log(order,:);
     health_log = health_log(order,:);
     batt_voltage_mv_log = batt_voltage_mv_log(order,:);
@@ -319,11 +326,22 @@ if ~isempty(t_log)
     grid on; xlabel('t [s]'); ylabel('vel [m/s]'); legend('n','e','d','Location','best');
     title('Velocity vs Time');
 
-    % Euler
+    % Euler: estimated vs commanded
     figure('Name','Telemetry Log - Euler'); clf;
-    plot(t_log, eul_log(:,1), t_log, eul_log(:,2), t_log, eul_log(:,3), 'LineWidth', 1.2);
-    grid on; xlabel('t [s]'); ylabel('euler [rad]'); legend('roll','pitch','yaw','Location','best');
-    title('Euler Angles vs Time');
+    colors = lines(3);
+    hold on;
+    h1 = plot(t_log, eul_log(:,1), '-',  'LineWidth', 1.5, 'Color', colors(1,:));
+    h2 = plot(t_log, eul_log(:,2), '-',  'LineWidth', 1.5, 'Color', colors(2,:));
+    h3 = plot(t_log, eul_log(:,3), '-',  'LineWidth', 1.5, 'Color', colors(3,:));
+    h4 = plot(t_log, eul_cmd_log(:,1), '--', 'LineWidth', 1.2, 'Color', colors(1,:));
+    h5 = plot(t_log, eul_cmd_log(:,2), '--', 'LineWidth', 1.2, 'Color', colors(2,:));
+    h6 = plot(t_log, eul_cmd_log(:,3), '--', 'LineWidth', 1.2, 'Color', colors(3,:));
+    grid on; xlabel('t [s]'); ylabel('euler [rad]');
+    legend([h1 h2 h3 h4 h5 h6], ...
+        'roll est','pitch est','yaw est', ...
+        'roll cmd','pitch cmd','yaw cmd', ...
+        'Location','best');
+    title('Euler Angles vs Time (est = solid, cmd = dashed)');
 
     % Hz
     figure('Name','Telemetry Log - Rate'); clf;
