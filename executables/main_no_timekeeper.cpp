@@ -86,8 +86,8 @@ int main() {
     MocapHandler mocap;
     bool mocapInit = mocap.init();
 
-    ImuLpf ekf_filter(500.0f, 160.0f);
-    ImuLpf ctrl_filter(500.0f, 160.0f);
+    ImuLpf ekf_filter(500.0f, 250.0f);
+    ImuLpf ctrl_filter(500.0f, 250.0f);
     ekf_filter.on = true;
     ctrl_filter.on = true;
 
@@ -158,11 +158,6 @@ int main() {
 
     std::ofstream logger("datalog.csv");
     logger << "n,e,d,an,ae,ad\n";
-
-
-
-
-
 
     while (true) {
         auto loop_start = clock_t::now();
@@ -241,7 +236,7 @@ int main() {
         // ---------------- Mode Manager ----------------
         if ((acc_MM >= rate_MM) && ekfHealthy && motor_task.isArmed()) {
             MM.in.state = navState;
-            MM.in.dt = dt;
+            MM.in.dt = acc_MM;
             MM.in.detected = false;
             MM.update();
             acc_MM = 0.0;
@@ -402,8 +397,6 @@ int main() {
 
         // ---------------- Telemetry ----------------
         if (acc_tele >= rate_tele) {
-	    navState.block(9,0,3,1) = outer.getIError();
-	    navState.block(12,0,3,1) = outer.getAccels();
             ts.t = t;
             ts.dt = dt;
             ts.Hz = Hz;
