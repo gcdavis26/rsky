@@ -94,6 +94,7 @@ private:
     void initializeFromOptiImpl(const OptiMeas& opti);
     void predictImpl(const ImuMeas& imu, double dt);
     void correctImpl(const OptiMeas& opti);
+    void applyAttitudePrior();
 
     // dynamics + Jacobians
     Vec<NX> f_nonlin(const Vec<NX>& x, const ImuMeas& imu, const Vec<3>& omega_dot) const;
