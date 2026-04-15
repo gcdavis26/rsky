@@ -86,8 +86,8 @@ int main() {
     MocapHandler mocap;
     bool mocapInit = mocap.init();
 
-    ImuLpf ekf_filter(500.0f, 250.0f);
-    ImuLpf ctrl_filter(500.0f, 250.0f);
+    ImuLpf ekf_filter(600.0f, 250.0f);
+    ImuLpf ctrl_filter(600.0f, 250.0f);
     ekf_filter.on = true;
     ctrl_filter.on = true;
 
