@@ -58,7 +58,7 @@ int main() {
     OuterLoop outer;
     InnerLoop inner;
     QuadMixer mixer;
-    UdpSender udp("192.168.1.2", 8080); // KINETIC 192.168.1.2
+    UdpSender udp("192.168.1.13", 8080); // KINETIC 192.168.1.2
     TelemetryState ts;
 
     TelemetryTask telemetry_task(udp);
@@ -86,8 +86,8 @@ int main() {
     MocapHandler mocap;
     bool mocapInit = mocap.init();
 
-    ImuLpf ekf_filter(500.0f, 250.0f);
-    ImuLpf ctrl_filter(500.0f, 250.0f);
+    ImuLpf ekf_filter(600.0f, 250.0f);
+    ImuLpf ctrl_filter(600.0f, 250.0f);
     ekf_filter.on = true;
     ctrl_filter.on = true;
 
@@ -289,6 +289,8 @@ int main() {
             if (autopilot) {
                 outer.in.state = navState.segment<6>(3);
                 outer.in.posCmd = MM.out.posCmd;
+		outer.in.phi = navState(0);
+		outer.in.theta = navState(1);
                 outer.in.psi = navState(2);
                 outer.in.mode = MM.out.mode;
                 outer.in.dt = acc_conOuter;
@@ -297,6 +299,8 @@ int main() {
             } else {
                 outer.in.state = navState.segment<6>(3);
                 outer.in.posCmd = navState.segment<3>(3);
+		outer.in.phi = navState(0);
+		outer.in.theta = navState(1);
                 outer.in.psi = navState(2);
                 outer.in.mode = ModeManager::NavMode::Manual;
                 outer.in.dt = acc_conOuter;

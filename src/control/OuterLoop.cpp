@@ -110,7 +110,7 @@ void OuterLoop::update() {
     out.attCmd(0) = clamp(out.attCmd(0), -maxAtt, maxAtt);
     out.attCmd(1) = clamp(out.attCmd(1), -maxAtt, maxAtt);
 
-    double den = cos(out.attCmd(0)) * cos(out.attCmd(1));
+    double den = cos(in.phi) * cos(in.theta);
     den = clamp(den, 0.2, 1.0);
     double FzCmd = mass * (g - accCmd(2)) / den;
     out.Fz = clamp(FzCmd, Fz_min, Fz_max);

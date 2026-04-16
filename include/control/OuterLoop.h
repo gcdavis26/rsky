@@ -8,6 +8,8 @@ public:
 		Vec<6> state = Vec<6>::Zero();
 		Vec<3> posCmd = Vec<3>::Zero();
 		Vec<3> velCmd = Vec<3>::Zero();
+		double phi = 0.0;
+		double theta = 0.0;
 		double psi = 0.0;
 		ModeManager::NavMode mode;
 		double dt = 0.0;

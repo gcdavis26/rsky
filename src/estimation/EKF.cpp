@@ -33,6 +33,9 @@ EKF::EKF(const Vec<6>& bias) {
     x_est.segment<3>(9) = bias.segment<3>(3);
     x_est.segment<3>(12) = bias.segment<3>(0);
     P.setZero();
+    P(0,0) = 0.1;
+    P(1,1) = 0.1;
+    P(2,2) = 0.1;
 }
 
 void EKF::initializeFromOptiImpl(const OptiMeas& opti) {
@@ -97,8 +100,6 @@ void EKF::predictImpl(const ImuMeas& imu, double dt) {
 
     P = P_pred;
     x_est = x_pred;
-
-    applyAttitudePrior();
 }
 
 void EKF::correctImpl(const OptiMeas& opti) {
@@ -158,7 +159,6 @@ void EKF::correctImpl(const OptiMeas& opti) {
     // wrap rpy
     x_est.template segment<3>(PHI) = wrapAngles(x_est.template segment<3>(PHI));
 
-    applyAttitudePrior();
 }
 
 // ------------------- dynamics f(x) -------------------
@@ -407,23 +407,3 @@ double EKF::h_psi(const Vec<NX>& x) const {
     return x(PSI);
 }
 
-void EKF::applyAttitudePrior() {
-    const double sig_prior = 30.0 * PI / 180.0; // tune: smaller = stronger pull
-
-    Mat<2, NX> H = Mat<2, NX>::Zero();
-    H(0, PHI) = 1.0;
-    H(1, THETA) = 1.0;
-
-    Mat<2, 2> R_prior = Mat<2, 2>::Identity() * (sig_prior * sig_prior);
-
-    Vec<2> residual;
-    residual(0) = 0.0 - x_est(PHI);
-    residual(1) = 0.0 - x_est(THETA);
-
-    Mat<2, 2> S = H * P * H.transpose() + R_prior;
-    Mat<NX, 2> K = P * H.transpose() * S.inverse();
-
-    x_est += K * residual;
-    Mat<NX, NX> I_KH = Mat<NX, NX>::Identity() - K * H;
-    P = I_KH * P * I_KH.transpose() + K * R_prior * K.transpose();
-}

@@ -35,9 +35,8 @@ Vec<3> InnerLoop::computeWrench(
         desired_rate(2) = omega(2);
     }
 
-    // Convert body rates (omega) to Euler rates
-    Vec<3> euler_rate = eulerRates_ZYX(att(0), att(1), omega); 
-    Vec<3> rateErr = desired_rate - euler_rate;
+    // Convert body rates (omega) to Euler rates 
+    Vec<3> rateErr = desired_rate - omega;
 
     // Pure Integrator with Back-Calculation
     x4_rate += rateErr * dt;
