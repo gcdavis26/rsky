@@ -17,14 +17,14 @@ MocapHandler::MocapHandler() :
 }
 
 int MocapHandler::init() {
-	int result = openPort();
+	bool result = openPort();
 	if (result != 0) {
 		printf("Failed to init Mocap Port");
 	}
 	else {
 		printf("Socket open, waiting for data");
 	}
-	return result;
+	return !result;
 }
 
 int MocapHandler::update() {

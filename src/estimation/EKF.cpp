@@ -1,6 +1,6 @@
 // EKF.cpp
 #include "estimation/EKF.h"
-
+#include <iostream>
 EKF::EKF() {
     // Build continuous-time Qc (12x12): [n_g; n_a; n_ba; n_bw]
     Qc.setZero();
@@ -33,9 +33,9 @@ EKF::EKF(const Vec<6>& bias) {
     x_est.segment<3>(9) = bias.segment<3>(3);
     x_est.segment<3>(12) = bias.segment<3>(0);
     P.setZero();
-    P(0,0) = 0.1;
-    P(1,1) = 0.1;
-    P(2,2) = 0.1;
+    P(0,0) = 0.00;
+    P(1,1) = 0.00;
+    P(2,2) = 0.00;
 }
 
 void EKF::initializeFromOptiImpl(const OptiMeas& opti) {
@@ -50,6 +50,7 @@ void EKF::initializeFromOptiImpl(const OptiMeas& opti) {
     // If opti measures an offset point: p_cg = z_pos - Rnb * r_OPTI
     const Mat<3, 3> Rnb0 = RotB2N(phi0, th0, psi0);
     const Vec<3> p_cg = opti.pos - Rnb0 * r_OPTI;
+    std::cout << p_cg << '\n';
 
     x_est(PN) = p_cg(0);
     x_est(PE) = p_cg(1);
