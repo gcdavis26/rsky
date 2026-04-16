@@ -289,8 +289,13 @@ int main() {
             if (autopilot) {
                 outer.in.state = navState.segment<6>(3);
                 outer.in.posCmd = MM.out.posCmd;
+<<<<<<< HEAD
 		outer.in.phi = navState(0);
 		outer.in.theta = navState(1);
+=======
+                outer.in.phi = navState(0);
+                outer.in.theta = navState(1);
+>>>>>>> 9eda2c8f8b2d8c946e2cf7b02b1bdfb4c53f578b
                 outer.in.psi = navState(2);
                 outer.in.mode = MM.out.mode;
                 outer.in.dt = acc_conOuter;
@@ -299,8 +304,13 @@ int main() {
             } else {
                 outer.in.state = navState.segment<6>(3);
                 outer.in.posCmd = navState.segment<3>(3);
+<<<<<<< HEAD
 		outer.in.phi = navState(0);
 		outer.in.theta = navState(1);
+=======
+                outer.in.phi = navState(0);
+                outer.in.theta = navState(1);
+>>>>>>> 9eda2c8f8b2d8c946e2cf7b02b1bdfb4c53f578b
                 outer.in.psi = navState(2);
                 outer.in.mode = ModeManager::NavMode::Manual;
                 outer.in.dt = acc_conOuter;

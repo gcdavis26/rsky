@@ -311,7 +311,7 @@ if ~isempty(t_log)
     eul_log     = eul_log(order,:);
     eul_cmd_log = eul_cmd_log(order,:);
     hz_log  = hz_log(order,:);
-    health_log = health_log(order,:);
+    %%health_log = health_log(order,:);
     batt_voltage_mv_log = batt_voltage_mv_log(order,:);
     batt_current_ma_log = batt_current_ma_log(order,:);
 
@@ -349,7 +349,7 @@ if ~isempty(t_log)
     plot(t_log, hz_log, 'LineWidth', 1.2);
     grid on; xlabel('t [s]'); ylabel('Rate [Hz]');
     title('Telemetry Rate vs Time');
-
+%{
     % Health (NIS) vs time
     figure('Name','EKF Health Log'); clf;
     t_health = t_log(1:numel(health_log));
@@ -362,7 +362,7 @@ if ~isempty(t_log)
     ylabel('NIS');
     title('EKF Health vs Time');
     legend('NIS','Mean NIS');
-
+%}
     % Battery voltage vs time
     figure('Name','Battery Voltage Log'); clf;
     plot(t_log, batt_voltage_mv_log, 'LineWidth', 1.2);
@@ -378,7 +378,7 @@ if ~isempty(t_log)
     xlabel('t [s]');
     ylabel('Current [mA]');
     title('Battery Current vs Time');
-
+%{
     % ============================================================
     % NEW: Actual vs Ideal distribution comparison (m = 4)
     %   - Histogram (PDF) overlay with chi-square(4) PDF
@@ -463,5 +463,6 @@ if ~isempty(t_log)
     end
 
 else
+%}
     disp("No telemetry logged; nothing to plot.");
 end

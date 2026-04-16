@@ -407,4 +407,3 @@ Vec<3> EKF::h_pos(const Vec<NX>& x) const {
 double EKF::h_psi(const Vec<NX>& x) const {
     return x(PSI);
 }
-

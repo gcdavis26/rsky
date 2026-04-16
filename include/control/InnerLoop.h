@@ -21,7 +21,11 @@ private:
     Vec<3> x4_att = Vec<3>::Zero();
 
     // ---- Inner loop (rate → torque) ----
+<<<<<<< HEAD
     static const inline Vec<3> kp_rate{ 0.05, 0.05, 0.01 };
+=======
+    static const inline Vec<3> kp_rate{ 0.050, 0.050, 0.01 };
+>>>>>>> 9eda2c8f8b2d8c946e2cf7b02b1bdfb4c53f578b
     static const inline Vec<3> ki_rate{ 0.0, 0.0, 0.0 };
     double tauI_rate = 0.025;
     Vec<3> x4_rate = Vec<3>::Zero();
