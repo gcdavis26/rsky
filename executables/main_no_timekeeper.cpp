@@ -159,6 +159,7 @@ int main() {
     std::ofstream logger("datalog.csv");
     logger << "n,e,d,an,ae,ad\n";
 
+    bool opti_new  = mocap.update();
     while (true) {
         auto loop_start = clock_t::now();
         std::chrono::duration<double> dt_ch = loop_start - last_time;
@@ -196,23 +197,28 @@ int main() {
 
         // ---------------- Mocap ----------------
         if (acc_opti >= rate_opti) {
-            mocap.update();
+            opti_new = mocap.update();
             acc_opti -= rate_opti;
         }
 
+
         // ---------------- EKF ----------------
-        if (!ekf.init && mocapInit) {
+	//std::cout<<"ekfinit: " <<ekf.init <<  "\n" << "mocap: " << mocapInit << "\n\n";
+        if (!ekf.init && mocapInit && opti_new) {
             ekf.initializeFromOpti(mocap.opti);
             ekf.init = true;
         }
+	//std::cout<<"ekfinit: " <<ekf.init << "\n" << "mocap: " << mocapInit << "\n\n";
+	//return 0;
 
-        if (acc_navPred >= rate_navPred) {
+        if ((acc_navPred >= rate_navPred) && ekf.init) {
             ekf.predict(ekf_filter.output(), acc_navPred);
             acc_navPred = 0.0;
         }
 
-        if ((acc_navCorr >= rate_navCorr) && mocap.m_valid) {
+        if ((acc_navCorr >= rate_navCorr) && mocap.m_valid && ekf.init && opti_new) {
             ekf.correct(mocap.opti);
+	    opti_new = false;
 
             NIS = ekf.getHealth();
             if (NIS > 13.28) {
@@ -223,7 +229,7 @@ int main() {
                 ekfgoodTimer += acc_navCorr;
             }
 
-            if (ekfbadTimer > 5.0) {
+            if (ekfbadTimer > 10.0) {
                 ekfHealthy = false;
             } else if (ekfgoodTimer > 1.0) {
                 ekfHealthy = true;
@@ -289,13 +295,8 @@ int main() {
             if (autopilot) {
                 outer.in.state = navState.segment<6>(3);
                 outer.in.posCmd = MM.out.posCmd;
-<<<<<<< HEAD
 		outer.in.phi = navState(0);
 		outer.in.theta = navState(1);
-=======
-                outer.in.phi = navState(0);
-                outer.in.theta = navState(1);
->>>>>>> 9eda2c8f8b2d8c946e2cf7b02b1bdfb4c53f578b
                 outer.in.psi = navState(2);
                 outer.in.mode = MM.out.mode;
                 outer.in.dt = acc_conOuter;
@@ -304,13 +305,8 @@ int main() {
             } else {
                 outer.in.state = navState.segment<6>(3);
                 outer.in.posCmd = navState.segment<3>(3);
-<<<<<<< HEAD
 		outer.in.phi = navState(0);
 		outer.in.theta = navState(1);
-=======
-                outer.in.phi = navState(0);
-                outer.in.theta = navState(1);
->>>>>>> 9eda2c8f8b2d8c946e2cf7b02b1bdfb4c53f578b
                 outer.in.psi = navState(2);
                 outer.in.mode = ModeManager::NavMode::Manual;
                 outer.in.dt = acc_conOuter;

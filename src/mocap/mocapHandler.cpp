@@ -2,6 +2,8 @@
 #include "mocap/network.h"
 #include "common/MathUtils.h"
 
+#include <iostream>
+
 static Vec<3> optitrackToNED(double ot_x, double ot_y, double ot_z) {
 	return Vec<3>(-ot_y+9.144/2,-ot_x+4.572/2,-ot_z);
 }
@@ -27,8 +29,8 @@ int MocapHandler::init() {
 	return !result;
 }
 
-int MocapHandler::update() {
-	int gotPacket = readDatalink();
+bool MocapHandler::update() {
+	bool gotPacket = readDatalink();
 
 	if (gotPacket) {
 		m_quaternion = Eigen::Quaternionf(onboardMocapClient.qw, onboardMocapClient.qx, onboardMocapClient.qy, onboardMocapClient.qz).normalized();
@@ -44,7 +46,6 @@ int MocapHandler::update() {
 		m_valid = onboardMocapClient.valid;
 		m_frameNum = onboardMocapClient.frameNum;
 	}
-
 	return gotPacket;
 }
 

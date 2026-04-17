@@ -35,11 +35,6 @@ Vec<3> InnerLoop::computeWrench(
         desired_rate(2) = omega(2);
     }
 
-<<<<<<< HEAD
-    // Convert body rates (omega) to Euler rates 
-=======
-    // Convert body rates (omega) to Euler rates
->>>>>>> 9eda2c8f8b2d8c946e2cf7b02b1bdfb4c53f578b
     Vec<3> rateErr = desired_rate - omega;
 
     // Pure Integrator with Back-Calculation

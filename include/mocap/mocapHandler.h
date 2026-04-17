@@ -9,7 +9,7 @@ public:
 
 	int init();
 
-	int update();
+	bool update();
 
 	Vec<4> getMeas() const;
 
