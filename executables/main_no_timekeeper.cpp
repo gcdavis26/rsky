@@ -85,6 +85,7 @@ int main() {
 
     MocapHandler mocap;
     bool mocapInit = mocap.init();
+    bool opti_new = mocap.update();
 
     ImuLpf ekf_filter(600.0f, 250.0f);
     ImuLpf ctrl_filter(600.0f, 250.0f);
@@ -159,7 +160,6 @@ int main() {
     std::ofstream logger("datalog.csv");
     logger << "n,e,d,an,ae,ad\n";
 
-    bool opti_new  = mocap.update();
     while (true) {
         auto loop_start = clock_t::now();
         std::chrono::duration<double> dt_ch = loop_start - last_time;
@@ -203,13 +203,10 @@ int main() {
 
 
         // ---------------- EKF ----------------
-	//std::cout<<"ekfinit: " <<ekf.init <<  "\n" << "mocap: " << mocapInit << "\n\n";
         if (!ekf.init && mocapInit && opti_new) {
             ekf.initializeFromOpti(mocap.opti);
             ekf.init = true;
         }
-	//std::cout<<"ekfinit: " <<ekf.init << "\n" << "mocap: " << mocapInit << "\n\n";
-	//return 0;
 
         if ((acc_navPred >= rate_navPred) && ekf.init) {
             ekf.predict(ekf_filter.output(), acc_navPred);
@@ -295,8 +292,8 @@ int main() {
             if (autopilot) {
                 outer.in.state = navState.segment<6>(3);
                 outer.in.posCmd = MM.out.posCmd;
-		outer.in.phi = navState(0);
-		outer.in.theta = navState(1);
+		        outer.in.phi = navState(0);
+		        outer.in.theta = navState(1);
                 outer.in.psi = navState(2);
                 outer.in.mode = MM.out.mode;
                 outer.in.dt = acc_conOuter;
@@ -305,8 +302,8 @@ int main() {
             } else {
                 outer.in.state = navState.segment<6>(3);
                 outer.in.posCmd = navState.segment<3>(3);
-		outer.in.phi = navState(0);
-		outer.in.theta = navState(1);
+		        outer.in.phi = navState(0);
+		        outer.in.theta = navState(1);
                 outer.in.psi = navState(2);
                 outer.in.mode = ModeManager::NavMode::Manual;
                 outer.in.dt = acc_conOuter;

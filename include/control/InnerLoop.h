@@ -16,14 +16,14 @@ private:
     bool yawLatch = true;
     // ---- Outer loop (attitude → desired rate) ----
     static const inline Vec<3> kp_att{ 8.0, 8.0, 7.0 };
-    static const inline Vec<3> ki_att{ 0.01, 0.01, 0.0 };
+    static const inline Vec<3> ki_att{ 0.0, 0.0, 0.0 };
     double tauI_att = 0.025;
     Vec<3> x4_att = Vec<3>::Zero();
 
     // ---- Inner loop (rate → torque) ----
 
     static const inline Vec<3> kp_rate{ 0.050, 0.050, 0.01 };
-    static const inline Vec<3> ki_rate{ 0.0001, 0.0001, 0.0 };
+    static const inline Vec<3> ki_rate{ 0.00, 0.00, 0.0 };
     double tauI_rate = 0.025;
     Vec<3> x4_rate = Vec<3>::Zero();
 
