@@ -54,7 +54,7 @@ int main() {
     std::cout << std::fixed << std::setprecision(4);
 
     // --- Init objects (cloned from main.cpp, without TimeKeeper) ---
-    ModeManager MM(false);
+    ModeManager MM(true);
     OuterLoop outer;
     InnerLoop inner;
     QuadMixer mixer;
