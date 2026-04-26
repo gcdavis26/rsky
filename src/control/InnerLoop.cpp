@@ -31,9 +31,9 @@ Vec<3> InnerLoop::computeWrench(
         desired_rate(2) = yaw_rate_cmd;
     }
 
-    if(yawLatch){
+   if(yawLatch){
        desired_rate(2) = omega(2);
-    }
+   }
 
     Vec<3> rateErr = desired_rate - omega;
 

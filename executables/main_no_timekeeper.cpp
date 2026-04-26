@@ -253,6 +253,10 @@ int main() {
             double rcPsi = 0.0;
 
             rcPWM = rcin.read_ppm_vector();
+	    if (MM.out.phase  == ModeManager::MissionPhase::Terminate)
+	    {
+		rcPWM(4) = 1000;
+	    }
 
             if (rcPWM(5) > 1750) {
                 // drop stuff

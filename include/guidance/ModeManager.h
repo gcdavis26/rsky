@@ -64,8 +64,8 @@ private:
 
 	double clearDist = 1.5;
 
-	double velTol = 0.05;
-	double posTol = 0.05;
+	double velTol = 0.2;
+	double posTol = 0.12;
 
 	Vec<3> toCmd;
 	Vec<3> lndCmd;
