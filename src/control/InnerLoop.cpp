@@ -31,9 +31,9 @@ Vec<3> InnerLoop::computeWrench(
         desired_rate(2) = yaw_rate_cmd;
     }
 
-    //if(yawLatch){
-    //    desired_rate(2) = omega(2);
-    //}
+    if(yawLatch){
+       desired_rate(2) = omega(2);
+    }
 
     Vec<3> rateErr = desired_rate - omega;
 
@@ -60,7 +60,7 @@ Vec<3> InnerLoop::computeWrench(
     // Feed the safe, clamped command into the actuator low-pass filter
     x5 += ((u_clamped - x5) / tauA) * dt;
     Vec<3> wrench = x5;
-    wrench = u_clamped;
+    
 
     // Final safety clamp before outputting
     wrench(0) = clamp(wrench(0), -Mx_max, Mx_max);
