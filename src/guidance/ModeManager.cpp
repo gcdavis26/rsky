@@ -6,7 +6,7 @@ ModeManager::ModeManager(bool test) {
 	}
 void ModeManager::update() {
 	double surveyAlt = -2.0;
-	double lowAlt = -0.5;
+	double lowAlt = -1;
 
 	if (!init)
 	{ 
@@ -14,7 +14,8 @@ void ModeManager::update() {
 		toCmd(0) = in.state(3);
 		toCmd(1) = in.state(4);
 		toCmd(2) = lowAlt;
-	}
+		lndCmd(2)= .05;
+}
 
 	out.phaseTime += in.dt;
 	if (!simplemission)
