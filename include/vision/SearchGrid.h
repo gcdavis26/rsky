@@ -27,6 +27,8 @@ public:
 
     std::optional<Eigen::Vector2d> getCenter() const;
 
+    void exportToCSV(std::string filename) const;
+
 private:
     // Map Configuration
     const double GRID_RES = 0.1;

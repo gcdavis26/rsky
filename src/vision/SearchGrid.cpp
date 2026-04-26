@@ -1,9 +1,10 @@
- #include "SearchGrid.h"
+#include "SearchGrid.h"
 #include <cmath>
 #include <algorithm>
 #include <vector>
 #include <utility>
 #include <optional>
+#include <fstream>
 
 SearchGrid::SearchGrid()
     : d_yaw_rad((55.0 / 32.0)* (M_PI / 180.0)),
@@ -226,4 +227,29 @@ std::optional<Eigen::Vector2d> SearchGrid::getCenter() const {
     double avg_y = sum_y / target_blob.size();
 
     return Eigen::Vector2d(avg_x, avg_y);
+}
+
+void SearchGrid::exportToCSV(std::string filename) const {
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        return;
+    }
+
+    // Write CSV header
+    file << "row,col,avg_temp,visit_count\n";
+
+    for (int r = 0; r < GRID_ROWS; ++r) {
+        for (int c = 0; c < GRID_COLS; ++c) {
+            int idx = r * GRID_COLS + c;
+            
+            // Only export cells that the camera actually saw
+            if (thermal_map[idx].visit_count > 0) {
+                file << r << "," 
+                     << c << "," 
+                     << thermal_map[idx].getAverageTemp() << "," 
+                     << thermal_map[idx].visit_count << "\n";
+            }
+        }
+    }
+    file.close();
 }
