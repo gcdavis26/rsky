@@ -4,7 +4,7 @@
 #include <vector>
 #include <utility>
 #include <optional>
-#include <fstream>
+#include <fstream> 
 
 SearchGrid::SearchGrid()
     : d_yaw_rad((55.0 / 32.0)* (M_PI / 180.0)),
@@ -29,32 +29,33 @@ SearchGrid::Vector3D SearchGrid::rotateBodyToWorld(const Vector3D& v, double rol
     };
 }
 
+// Updated parameters to explicitly reflect North/East/Down
 bool SearchGrid::getGroundIntersection(double yaw_angle, double pitch_angle,
-    double drone_x, double drone_y, double drone_z,
+    double drone_n, double drone_e, double drone_d,
     double roll, double pitch, double yaw,
-    double& hit_x, double& hit_y) const {
+    double& hit_n, double& hit_e) const {
 
     Vector3D ray_body = { std::tan(pitch_angle), std::tan(yaw_angle), 1.0 };
     Vector3D ray_world = rotateBodyToWorld(ray_body, roll, pitch, yaw);
 
     if (ray_world.z <= 0.001) return false;
 
-    double scale = (-drone_z) / ray_world.z;
-    hit_x = drone_x + (ray_world.x * scale);
-    hit_y = drone_y + (ray_world.y * scale);
+    // drone_d is negative in the air, so -drone_d makes scale positive
+    double scale = (-drone_d) / ray_world.z;
+    hit_n = drone_n + (ray_world.x * scale);
+    hit_e = drone_e + (ray_world.y * scale);
     return true;
 }
 
 bool SearchGrid::processFrame(const std::array<double, 768>& thermal_frame, const Eigen::Matrix<double, 6, 1>& state) {
-    
-    // State was originally formatted as [x, y, z, roll, pitch, yaw]
-    // Changed to reflect EKF state formatting
-    double drone_x = state(3);
-    double drone_y = state(4);
-    double drone_z = state(5);
-    double roll = state(0);
+    double roll  = state(0);
     double pitch = state(1);
-    double yaw = state(2);
+    double yaw   = state(2);
+    
+    // Natively handle NED from EKF/Mocap
+    double drone_n = state(3); // North
+    double drone_e = state(4); // East
+    double drone_d = state(5); // Down
 
     bool frame_has_hotspot = false;
 
@@ -64,7 +65,6 @@ bool SearchGrid::processFrame(const std::array<double, 768>& thermal_frame, cons
 
             if (pixel_temp < 25.0) continue; // Low Pass filter
             
-            // If there is a pixel that we detect, then allow blob finder to map
             if (pixel_temp >= (TEMP_THRESHOLD * 0.9)) {
                 frame_has_hotspot = true;
             }
@@ -74,29 +74,34 @@ bool SearchGrid::processFrame(const std::array<double, 768>& thermal_frame, cons
             double pitch_top = (y - 12.0) * d_pitch_rad;
             double pitch_bot = (y - 11.0) * d_pitch_rad;
 
-            double hx[4], hy[4];
+            double hn[4], he[4];
             bool valid = true;
-            valid &= getGroundIntersection(yaw_left, pitch_top, drone_x, drone_y, drone_z, roll, pitch, yaw, hx[0], hy[0]);
-            valid &= getGroundIntersection(yaw_right, pitch_top, drone_x, drone_y, drone_z, roll, pitch, yaw, hx[1], hy[1]);
-            valid &= getGroundIntersection(yaw_right, pitch_bot, drone_x, drone_y, drone_z, roll, pitch, yaw, hx[2], hy[2]);
-            valid &= getGroundIntersection(yaw_left, pitch_bot, drone_x, drone_y, drone_z, roll, pitch, yaw, hx[3], hy[3]);
+            valid &= getGroundIntersection(yaw_left, pitch_top, drone_n, drone_e, drone_d, roll, pitch, yaw, hn[0], he[0]);
+            valid &= getGroundIntersection(yaw_right, pitch_top, drone_n, drone_e, drone_d, roll, pitch, yaw, hn[1], he[1]);
+            valid &= getGroundIntersection(yaw_right, pitch_bot, drone_n, drone_e, drone_d, roll, pitch, yaw, hn[2], he[2]);
+            valid &= getGroundIntersection(yaw_left, pitch_bot, drone_n, drone_e, drone_d, roll, pitch, yaw, hn[3], he[3]);
 
             if (!valid) continue;
 
-            double min_x = std::min({ hx[0], hx[1], hx[2], hx[3] });
-            double max_x = std::max({ hx[0], hx[1], hx[2], hx[3] });
-            double min_y = std::min({ hy[0], hy[1], hy[2], hy[3] });
-            double max_y = std::max({ hy[0], hy[1], hy[2], hy[3] });
+            double min_n = std::min({ hn[0], hn[1], hn[2], hn[3] });
+            double max_n = std::max({ hn[0], hn[1], hn[2], hn[3] });
+            double min_e = std::min({ he[0], he[1], he[2], he[3] });
+            double max_e = std::max({ he[0], he[1], he[2], he[3] });
 
-            // Removes cells that exist outside of the search grid
-            if (max_x < -OFFSET_X || min_x > OFFSET_X || max_y < -OFFSET_Y || min_y > OFFSET_Y) {
+            // Grid bounds: North [0, GRID_ROWS * GRID_RES], East [0, GRID_COLS * GRID_RES]
+            double max_grid_n = GRID_ROWS * GRID_RES;
+            double max_grid_e = GRID_COLS * GRID_RES;
+
+            // Eliminates OFFSET_X and OFFSET_Y logic. Checks against 0 corner.
+            if (max_n < 0 || min_n > max_grid_n || max_e < 0 || min_e > max_grid_e) {
                 continue;
             }
 
-            int col_start = std::max(0, std::min(static_cast<int>(std::floor((min_x + OFFSET_X) / GRID_RES)), GRID_COLS - 1));
-            int col_end = std::max(0, std::min(static_cast<int>(std::floor((max_x + OFFSET_X) / GRID_RES)), GRID_COLS - 1));
-            int row_start = std::max(0, std::min(static_cast<int>(std::floor((min_y + OFFSET_Y) / GRID_RES)), GRID_ROWS - 1));
-            int row_end = std::max(0, std::min(static_cast<int>(std::floor((max_y + OFFSET_Y) / GRID_RES)), GRID_ROWS - 1));
+            // Row corresponds to North, Col corresponds to East
+            int row_start = std::max(0, std::min(static_cast<int>(std::floor(min_n / GRID_RES)), GRID_ROWS - 1));
+            int row_end   = std::max(0, std::min(static_cast<int>(std::floor(max_n / GRID_RES)), GRID_ROWS - 1));
+            int col_start = std::max(0, std::min(static_cast<int>(std::floor(min_e / GRID_RES)), GRID_COLS - 1));
+            int col_end   = std::max(0, std::min(static_cast<int>(std::floor(max_e / GRID_RES)), GRID_COLS - 1));
 
             // Deposit temperatures
             for (int r = row_start; r <= row_end; ++r) {
@@ -118,7 +123,6 @@ bool SearchGrid::processFrame(const std::array<double, 768>& thermal_frame, cons
     return false;
 }
 
-
 bool SearchGrid::blob_finder() {
     std::vector<int> local_largest_blob;
 
@@ -137,12 +141,11 @@ bool SearchGrid::blob_finder() {
             // Start a search if we find a hot, scanned cell that hasn't been checked yet
             if (!algorithm_visited[idx] && thermal_map[idx].visit_count > 0 &&
                 thermal_map[idx].getAverageTemp() >= TEMP_THRESHOLD) {
-                // TEMP_THRESHOLD defined in Header file
 
                 std::vector<int> current_blob;
                 std::vector<int> stack;
 
-                bool is_fully_bounded = true; // Assume true until it touches the unknown
+                bool is_fully_bounded = true; 
 
                 // Start the flood fill from this cell
                 stack.push_back(idx);
@@ -164,7 +167,7 @@ bool SearchGrid::blob_finder() {
                         int neighbor_r = curr_r + d_row[i];
                         int neighbor_c = curr_c + d_col[i];
 
-                        // Ensure the neighbor is actually inside the 5x10m grid area
+                        // Ensure the neighbor is actually inside the grid area
                         if (neighbor_r >= 0 && neighbor_r < GRID_ROWS && neighbor_c >= 0 && neighbor_c < GRID_COLS) {
                             int neighbor_idx = neighbor_r * GRID_COLS + neighbor_c;
 
@@ -172,12 +175,11 @@ bool SearchGrid::blob_finder() {
                             if (thermal_map[neighbor_idx].visit_count == 0) {
                                 is_fully_bounded = false;
                             }
-
                             // Checks if cell is part of the fire
                             else if (!algorithm_visited[neighbor_idx] &&
                                 thermal_map[neighbor_idx].getAverageTemp() >= TEMP_THRESHOLD) {
 
-                                algorithm_visited[neighbor_idx] = true; // Mark immediately to prevent duplicates
+                                algorithm_visited[neighbor_idx] = true; 
                                 stack.push_back(neighbor_idx);
                             }
                         }
@@ -203,30 +205,31 @@ bool SearchGrid::blob_finder() {
     return false; // No fully bounded fires found this frame
 }
 
-
 std::optional<Eigen::Vector2d> SearchGrid::getCenter() const {
     if (target_blob.empty()) {
         return std::nullopt; // Safely returns "None"
     }
 
-    double sum_x = 0.0;
-    double sum_y = 0.0;
+    double sum_n = 0.0;
+    double sum_e = 0.0;
 
     for (int idx : target_blob) {
         int r = idx / GRID_COLS;
         int c = idx % GRID_COLS;
 
-        double cell_x = (c * GRID_RES) - OFFSET_X + (GRID_RES / 2.0);
-        double cell_y = (r * GRID_RES) - OFFSET_Y + (GRID_RES / 2.0);
+        // No more OFFSET subtractions, output is perfectly matched to corner-based NED
+        double cell_n = (r * GRID_RES) + (GRID_RES / 2.0);
+        double cell_e = (c * GRID_RES) + (GRID_RES / 2.0);
 
-        sum_x += cell_x;
-        sum_y += cell_y;
+        sum_n += cell_n;
+        sum_e += cell_e;
     }
 
-    double avg_x = sum_x / target_blob.size();
-    double avg_y = sum_y / target_blob.size();
+    double avg_n = sum_n / target_blob.size();
+    double avg_e = sum_e / target_blob.size();
 
-    return Eigen::Vector2d(avg_x, avg_y);
+    // Directly returns (North, East)
+    return Eigen::Vector2d(avg_n, avg_e);
 }
 
 void SearchGrid::exportToCSV(std::string filename) const {

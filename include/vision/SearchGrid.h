@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <array>
+#include <string>
 #include <Eigen/Dense>
 #include <optional>
 
@@ -27,15 +28,14 @@ public:
 
     std::optional<Eigen::Vector2d> getCenter() const;
 
+    // Exports the current thermal map to a CSV file
     void exportToCSV(std::string filename) const;
 
 private:
-    // Map Configuration
+    // Map Configuration (5m East x 10m North to fully enclose the flight area)
     const double GRID_RES = 0.1;
-    const int GRID_COLS = 50;              // X: -2.5 to 2.5
-    const int GRID_ROWS = 100;             // Y: -5.0 to 5.0
-    const double OFFSET_X = 2.5;
-    const double OFFSET_Y = 5.0;
+    const int GRID_COLS = 50;              // East: 0.0 to 5.0
+    const int GRID_ROWS = 100;             // North: 0.0 to 10.0
 
     // Detection Configuration
     const double TEMP_THRESHOLD = 35.0;
@@ -53,8 +53,9 @@ private:
     // Math Helpers
     struct Vector3D { double x, y, z; };
     Vector3D rotateBodyToWorld(const Vector3D& v, double roll, double pitch, double yaw) const;
+    
     bool getGroundIntersection(double yaw_angle, double pitch_angle,
-        double drone_x, double drone_y, double drone_z,
+        double drone_n, double drone_e, double drone_d,
         double roll, double pitch, double yaw,
-        double& hit_x, double& hit_y) const;
+        double& hit_n, double& hit_e) const;
 };
