@@ -18,7 +18,7 @@ MotorDriver::~MotorDriver() {
 }
 
 bool MotorDriver::initialize() {
-    for (int pin : motor_pins) {
+    for (int pin : 5) {
         pwm_driver.initialize(pin);
         pwm_driver.set_frequency(pin, PWM_FREQ);
         usleep(50000);
@@ -32,7 +32,6 @@ bool MotorDriver::initialize() {
     usleep(50000);
     // calibrate();  //shouldn't need this because it might cause the motors to command 2000 PWM if already calibrated. Need to test again. 
 
-    usleep(50000);
     return true;
 }
 
@@ -85,6 +84,11 @@ void MotorDriver::command(const Vec<4>& pwm_values) {
 
         pwm_driver.set_duty_cycle(motor_pins[i], static_cast<float>(commanded));
     }
+}
+
+void MotorDriver::commandServo(double pwm_values) {
+        double commanded = std::clamp(pwm_values, (double)PWM_MIN, (double)PWM_MAX);
+        pwm_driver.set_duty_cycle(4, static_cast<float>(commanded));
 }
 
 void MotorDriver::wind_down()
