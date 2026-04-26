@@ -92,7 +92,7 @@ int main() {
                 if (local_grid.processFrame(thermal_frame, current_state)) {
                     if (auto fire_location_opt = local_grid.getCenter()) {
                         Eigen::Vector2d fire_coords = *fire_location_opt;
-                        std::cout << " | FIRE DETECTED at [X: " << fire_coords(0) << ", Y: " << fire_coords(1) << "]";
+                        std::cout << " | FIRE DETECTED at [N: " << fire_coords(0) << ", E: " << fire_coords(1) << "]";
                     }
                 }
             }
