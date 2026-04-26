@@ -101,7 +101,7 @@ int main() {
     Vec<6> rcPWM = Vec<6> ::Zero();
     Vec<4> throttleTest = Vec<4>::Zero();
     Vec<6> raw;
-
+    double dropper = 1000;
     Vec<3> manVel = Vec<3>::Zero();
     double manPsi = 0.0;
 
