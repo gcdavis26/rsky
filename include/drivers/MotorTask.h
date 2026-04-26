@@ -10,6 +10,7 @@
 struct MotorState {
     Vec<4> pwmCmd = Vec<4>::Zero();
     double arm_switch_pwm = 0.0;
+    double servo_pwm = 0.0;
 };
 
 // Template class to accept either MotorDriver or MotorModel

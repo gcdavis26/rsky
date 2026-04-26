@@ -79,6 +79,7 @@ void MotorTask<MotorType>::loop() {
             else {
                 // After 1 second, send actual commands from the mixer
                 motor_.command(state_copy.pwmCmd);
+                motor_.commandServo(state_copy.servo_pwm);
             }
         }
 
