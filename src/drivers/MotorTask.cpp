@@ -15,10 +15,11 @@ MotorTask<MotorType>::~MotorTask() {
 }
 
 template <typename MotorType>
-void MotorTask<MotorType>::updateState(const Vec<4>& pwmCmd, double arm_switch_pwm) {
+void MotorTask<MotorType>::updateState(const Vec<4>& pwmCmd, double arm_switch_pwm, double servo_pwm) {
     std::lock_guard<std::mutex> lock(state_mutex_);
     current_state_.pwmCmd = pwmCmd;
     current_state_.arm_switch_pwm = arm_switch_pwm;
+    current_state_.servo_pwm = servo_pwm;
 }
 
 template <typename MotorType>

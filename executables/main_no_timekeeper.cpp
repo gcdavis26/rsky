@@ -260,6 +260,8 @@ int main() {
 
             if (rcPWM(5) > 1750) {
                 // drop stuff
+                dropper = 2000;
+                MM.in.drop = true;
             } else if (rcPWM(5) > 1250) {
                 autopilot = true;
             } else {
@@ -402,7 +404,7 @@ int main() {
             acc_conInner = 0.0;
 
             // Real commands
-            motor_task.updateState(pwmCmd, rcPWM(4));
+            motor_task.updateState(pwmCmd, rcPWM(4),dropper);
         }
         //----------------- Printing commands for testing ------------------
         // Vec<3> ierror = outer.getIError();
