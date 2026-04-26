@@ -45,12 +45,15 @@ bool SearchGrid::getGroundIntersection(double yaw_angle, double pitch_angle,
 }
 
 bool SearchGrid::processFrame(const std::array<double, 768>& thermal_frame, const Eigen::Matrix<double, 6, 1>& state) {
-    double drone_x = state(0);
-    double drone_y = state(1);
-    double drone_z = state(2); // Correct Position state later to agree with our NED formatting
-    double roll = state(3);
-    double pitch = state(4);
-    double yaw = state(5);
+    
+    // State was originally formatted as [x, y, z, roll, pitch, yaw]
+    // Changed to reflect EKF state formatting
+    double drone_x = state(3);
+    double drone_y = state(4);
+    double drone_z = state(5);
+    double roll = state(0);
+    double pitch = state(1);
+    double yaw = state(2);
 
     bool frame_has_hotspot = false;
 
