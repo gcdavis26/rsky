@@ -4,6 +4,7 @@
 #include <thread>
 #include <cmath>
 #include <array>
+#include <Eigen/Dense>
 
 #include "mocap/mocapHandler.h"
 #include "sensors/ThermalCamera.h"
@@ -17,22 +18,27 @@ double clampValue(double x, double lo, double hi) {
 int main() {
     std::cout << std::fixed << std::setprecision(4);
 
+    // Initialize Mocap Handler
     MocapHandler mocap;
     if (!mocap.init()) {
         std::cout << "Mocap failed to initialize." << std::endl;
     }
 
-    ThermalCamera thermCam(0x33, 1);
-    if (!thermCam.init()) {
+    // Initialize I2C Thermal Camera
+    ThermalCamera camera;
+    
+    // Camera class will return error if failed to initialise
+    if (!camera.init()) {
         std::cout << "Thermal Camera failed to initialize." << std::endl;
     }
 
-    std::array<double, 768> thermalBuffer;
-    double target_dt = 1.0 / 32.0;
+    std::array<double, 768> thermal_frame;
 
+    // Main 32Hz Processing Loop
     while (true) {
-        auto start = std::chrono::steady_clock::now();
+        auto start_time = std::chrono::steady_clock::now();
 
+        // Pull drone state from mocap
         mocap.update();
         Vec<3> pos = mocap.getPosition();
         
@@ -53,24 +59,26 @@ int main() {
         sinp = clampValue(sinp, -1.0, 1.0);
         double pitch = std::asin(sinp);
 
-        bool thermSuccess = thermCam.getFrame(thermalBuffer);
+        // Pull the latest 32x24 grid of temperatures from the hardware
+        bool thermSuccess = camera.getFrame(thermal_frame);
 
         std::cout << "Pos [N E D]: " << pos(0) << " " << pos(1) << " " << pos(2) << " | "
                   << "Roll: " << roll << " Pitch: " << pitch << " Yaw: " << yaw << " | ";
         
+        // Process the frame and output to console
         if (thermSuccess) {
-            std::cout << "Therm Center Temp: " << thermalBuffer[384] << std::endl;
+            std::cout << "Therm Center Temp: " << thermal_frame[384] << std::endl;
         } else {
             std::cout << "Therm Read Failed" << std::endl;
         }
 
-        auto end = std::chrono::steady_clock::now();
-        std::chrono::duration<double> diff = end - start;
-        double sleep_s = target_dt - diff.count();
-        
-        if (sleep_s > 0.0) {
-            int sleep_us = (int)(sleep_s * 1e6);
-            std::this_thread::sleep_for(std::chrono::microseconds(sleep_us));
+        // Yield CPU for the remainder of the 31.25ms (32Hz) time budget
+        auto end_time = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+
+        // Sleep until 28ms passed from start of execution
+        if (elapsed < std::chrono::milliseconds(28)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(28) - elapsed);
         }
     }
     
