@@ -5,15 +5,18 @@ Vec<3> InnerLoop::computeWrench(
     double yaw_rate_cmd,
     const Vec<3>& att,
     const Vec<3>& omega,
-    double dt)
+    double dt,
+    bool armCheck)
 {
+    Armed = armCheck;
+
     // ---- OUTER LOOP: attitude → desired rate ----
     Vec<3> attErr = wrapAngles(att_cmd - att);
 
     // True integrator on attitude error (Standard integration)
     Vec<3> attIntInput;
     attIntInput.segment<2>(0) = attErr.segment<2>(0);
-    attIntInput(2) = (yaw_rate_cmd == 0.0) ? attErr(2) : 0.0;
+    attIntInput(2) = (yaw_rate_cmd == 0.0 && Armed) ? attErr(2) : 0.0;
 
     x4_att += attIntInput * dt;
     

@@ -9,13 +9,16 @@ public:
         double yaw_rate_cmd,
         const Vec<3>& att,
         const Vec<3>& omega,
-        double dt);
+        double dt,
+        bool armCheck);
 
 private:
+    bool Armed = false;
+
     bool yawLatch = true;
     // ---- Outer loop (attitude → desired rate) ----
     static const inline Vec<3> kp_att{ 6.5,6.5, 3.0 };
-    static const inline Vec<3> ki_att{ 0.000, 0.000, 0.00};
+    static const inline Vec<3> ki_att{ 0.05, 0.05, 0.00};
     double tauI_att = 0.025;
     Vec<3> x4_att = Vec<3>::Zero();
 
