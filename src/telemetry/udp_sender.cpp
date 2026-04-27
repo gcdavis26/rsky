@@ -2,7 +2,8 @@
 #include "telemetry/udp_sender.h"
 #include <stdexcept>
 #include <utility>
-#include <mutex> // Needed for std::call_once
+#include <mutex>
+#include <iostream>
 
 using json = nlohmann::json;
 
