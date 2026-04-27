@@ -91,7 +91,11 @@ void UdpSender::resetSeq(uint32_t seq) {
 
 bool UdpSender::sendJson_(const json& j) {
     const std::string payload = j.dump();
-    if (payload.size() > 1200) return false;
+
+    if (payload.size() > 1472) {
+        std::cout << "UDP Payload too large, dropping packet." << std::endl;
+        return false;
+    }
 
     const int sent = ::sendto(
         sock_, payload.data(), static_cast<int>(payload.size()), 0,
@@ -138,6 +142,9 @@ bool UdpSender::sendFromSim(
 
     json j;
 
+    // Add the packet type identifier
+    j["type"] = "state";
+
     // seq_++ is now a thread-safe atomic post-increment
     j["seq"] = seq_++;
 
@@ -163,6 +170,22 @@ bool UdpSender::sendFromSim(
     j["euler_cmd"] = vec3ToJson(euler_cmd);
     j["battery_voltage_mv"] = battery_voltage_mv;
     j["battery_current_ma"] = battery_current_ma;
+
+    return sendJson_(j);
+}
+
+bool UdpSender::sendVisionData(std::vector<int> hot_cells, std::vector<int> blob_cells) {
+    json j;
+    
+    // Add the packet type identifier for MATLAB routing
+    j["type"] = "vision";
+
+    // Thread-safe atomic post-increment
+    j["seq"] = seq_++; 
+
+    // nlohmann::json automatically serializes vectors into JSON arrays
+    j["fire_cells"] = hot_cells; 
+    j["blob_cells"] = blob_cells;
 
     return sendJson_(j);
 }

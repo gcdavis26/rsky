@@ -3,6 +3,7 @@
 #include <Eigen/Dense>
 #include <mutex>
 #include <optional>
+#include <vector>
 
 // Thread-safe buffer to pass the 6-DOF EKF state TO the camera thread
 class StateBuffer {
@@ -45,5 +46,38 @@ public:
     }
 };
 
-// The thread task signature, now accepting both the input and output buffers
-void wildfireDetectionTask(StateBuffer& shared_state, HotspotBuffer& shared_targets);
+struct VisionData {
+    std::vector<int> hot_cells;
+    std::vector<int> blob_cells;
+    bool is_fresh = false;
+};
+
+class VisionGridBuffer {
+private:
+    VisionData data;
+    std::mutex mtx;
+
+public:
+    // Called by the vision thread
+    void update(const std::vector<int>& hot, const std::vector<int>& blob) {
+        std::lock_guard<std::mutex> lock(mtx);
+        data.hot_cells = hot;
+        data.blob_cells = blob;
+        data.is_fresh = true;
+    }
+
+    // Called by TelemetryTask. Returns true and clears the flag if data was new.
+    bool consume(std::vector<int>& out_hot, std::vector<int>& out_blob) {
+        std::lock_guard<std::mutex> lock(mtx);
+        if (data.is_fresh) {
+            out_hot = data.hot_cells;
+            out_blob = data.blob_cells;
+            data.is_fresh = false;
+            return true;
+        }
+        return false;
+    }
+};
+
+// The thread task signature, now accepting all THREE buffers
+void wildfireDetectionTask(StateBuffer& shared_state, HotspotBuffer& shared_targets, VisionGridBuffer& vision_telemetry);

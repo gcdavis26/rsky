@@ -6,7 +6,7 @@
 #include <Eigen/Dense>
 #include <unistd.h>
 
-void wildfireDetectionTask(StateBuffer& shared_state, HotspotBuffer& shared_targets) {
+void wildfireDetectionTask(StateBuffer& shared_state, HotspotBuffer& shared_targets, VisionGridBuffer& vision_telemetry) {
     
     // Initialize I2C Thermal Camera
     ThermalCamera camera;
@@ -33,6 +33,11 @@ void wildfireDetectionTask(StateBuffer& shared_state, HotspotBuffer& shared_targ
             // Process the frame. Returns true if a fully bounded fire is found.
             if (local_grid.processFrame(thermal_frame, current_state)) {
 
+                std::vector<int> hot_cells = local_grid.getHotCells();
+                std::vector<int> blob_cells = local_grid.getBlobCells();
+
+                vision_telemetry.update(hot_cells, blob_cells);
+                
                 // If a target was found, get center location
                 if (auto fire_location_opt = local_grid.getCenter()) {
 

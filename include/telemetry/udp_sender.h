@@ -57,6 +57,9 @@ public:
         double battery_voltage_mv,
         double battery_current_ma);
 
+        
+    bool sendVisionData(std::vector<int> hot_cells, std::vector<int> blob_cells);
+
 private:
     bool sendJson_(const nlohmann::json& j);
     void closeSocket_() noexcept;
