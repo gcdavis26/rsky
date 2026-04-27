@@ -66,11 +66,8 @@ int main() {
 
     RCIn rcin;
     rcin.initialize();
-
     MotorDriver motdrv;
-    //motdrv.initialize();
-    //motdriv.calibrate(); 
-
+    //motdrv.calibrate(); 
     IMUHandler imuReal;
     Vec<12> imuStats = imuReal.initialize();
     imuStats(5) = imuStats(5) + g;
@@ -258,10 +255,10 @@ int main() {
 		rcPWM(4) = 1000;
 	    }
 
-            if (rcPWM(5) > 1750) {
-                // drop stuff
+            if (rcPWM(5) > 1750 && motor_task.isArmed()) {
                 dropper = 2000;
                 MM.in.drop = true;
+		autopilot = false;
             } else if (rcPWM(5) > 1250) {
                 autopilot = true;
             } else {

@@ -11,6 +11,7 @@ public:
 
 	// Stub functions to match MotorDriver interface for MotorTask template
 	void command(const Vec<4>& pwm_values) {}
+	void commandServo(double pwm_servo) {}
 	void wind_down() {}
 
 private:

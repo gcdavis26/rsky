@@ -11,6 +11,8 @@
 
 MotorDriver::MotorDriver() {
     // Direct instantiation for Navio2
+    initialize();
+    // calibrate();
 }
 
 MotorDriver::~MotorDriver() {
@@ -18,17 +20,15 @@ MotorDriver::~MotorDriver() {
 }
 
 bool MotorDriver::initialize() {
-    for (int pin : 5) {
+    for (int pin : {0,1,2,3,4}) {
         pwm_driver.initialize(pin);
         pwm_driver.set_frequency(pin, PWM_FREQ);
-        usleep(50000);
+        usleep(500000);
         pwm_driver.enable(pin);
     }
 
-    //for (int pin : motor_pins) {
-    //    pwm_driver.set_duty_cycle(pin, (float)PWM_MIN);
-    // }
-    
+    pwm_driver.set_duty_cycle(4, (float)PWM_MIN);
+ 
     usleep(50000);
     // calibrate();  //shouldn't need this because it might cause the motors to command 2000 PWM if already calibrated. Need to test again. 
 
