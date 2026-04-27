@@ -1,6 +1,9 @@
 #include "telemetry/TelemetryTask.h"
+#include <vector>
 
-TelemetryTask::TelemetryTask(UdpSender& udp_sender) : udp_(udp_sender) {
+// Initialize the vision_buffer_ reference
+TelemetryTask::TelemetryTask(UdpSender& udp_sender, VisionGridBuffer& vision_buf) 
+    : udp_(udp_sender), vision_buffer_(vision_buf) {
 }
 
 TelemetryTask::~TelemetryTask() {
@@ -47,5 +50,16 @@ void TelemetryTask::loop() {
             battery_voltage_mv,
             battery_current_ma
         );
+
+        std::vector<int> hot_cells;
+        std::vector<int> blob_cells;
+        
+        // Attempt to consume new data from the vision thread
+        if (vision_buffer_.consume(hot_cells, blob_cells)) {
+            // Only fire off a packet if the camera actually detected heat
+            if (!hot_cells.empty()) {
+                udp_.sendVisionData(hot_cells, blob_cells);
+            }
+        }
     }
 }

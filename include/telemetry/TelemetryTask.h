@@ -39,6 +39,7 @@ public:
 
 private:
     UdpSender& udp_;
+    VisionGridBuffer& vision_buffer_;
     BatteryHandler battery_handler_;
     TelemetryState current_state_;
     std::mutex state_mutex_;
