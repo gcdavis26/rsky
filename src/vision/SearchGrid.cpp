@@ -7,8 +7,8 @@
 #include <fstream> 
 
 SearchGrid::SearchGrid()
-    : d_yaw_rad((55.0 / 32.0)* (M_PI / 180.0)),
-    d_pitch_rad((35.0 / 24.0)* (M_PI / 180.0)) {
+    : d_x_rad((55.0 / 32.0) * (M_PI / 180.0)),
+    d_y_rad((35.0 / 24.0) * (M_PI / 180.0)) {
     // Allocate exactly 5,000 cells
     thermal_map.resize(GRID_COLS * GRID_ROWS);
 }
@@ -29,13 +29,14 @@ SearchGrid::Vector3D SearchGrid::rotateBodyToWorld(const Vector3D& v, double rol
     };
 }
 
-// Updated parameters to explicitly reflect North/East/Down
-bool SearchGrid::getGroundIntersection(double yaw_angle, double pitch_angle,
+// angle_x = horizontal pixel offset from boresight (deflects ray in body +y / East)
+// angle_y = vertical   pixel offset from boresight (deflects ray in body +x / North)
+bool SearchGrid::getGroundIntersection(double angle_x, double angle_y,
     double drone_n, double drone_e, double drone_d,
     double roll, double pitch, double yaw,
     double& hit_n, double& hit_e) const {
 
-    Vector3D ray_body = { std::tan(pitch_angle), std::tan(yaw_angle), 1.0 };
+    Vector3D ray_body = { std::tan(angle_y), std::tan(angle_x), 1.0 };
     Vector3D ray_world = rotateBodyToWorld(ray_body, roll, pitch, yaw);
 
     if (ray_world.z <= 0.001) return false;
@@ -69,17 +70,17 @@ bool SearchGrid::processFrame(const std::array<double, 768>& thermal_frame, cons
                 frame_has_hotspot = true;
             }
 
-            double yaw_left = (x - 16.0) * d_yaw_rad;
-            double yaw_right = (x - 15.0) * d_yaw_rad;
-            double pitch_top = (y - 12.0) * d_pitch_rad;
-            double pitch_bot = (y - 11.0) * d_pitch_rad;
+            double angle_x_left  = (x - 16.0) * d_x_rad;
+            double angle_x_right = (x - 15.0) * d_x_rad;
+            double angle_y_top   = (y - 12.0) * d_y_rad;
+            double angle_y_bot   = (y - 11.0) * d_y_rad;
 
             double hn[4], he[4];
             bool valid = true;
-            valid &= getGroundIntersection(yaw_left, pitch_top, drone_n, drone_e, drone_d, roll, pitch, yaw, hn[0], he[0]);
-            valid &= getGroundIntersection(yaw_right, pitch_top, drone_n, drone_e, drone_d, roll, pitch, yaw, hn[1], he[1]);
-            valid &= getGroundIntersection(yaw_right, pitch_bot, drone_n, drone_e, drone_d, roll, pitch, yaw, hn[2], he[2]);
-            valid &= getGroundIntersection(yaw_left, pitch_bot, drone_n, drone_e, drone_d, roll, pitch, yaw, hn[3], he[3]);
+            valid &= getGroundIntersection(angle_x_left,  angle_y_top, drone_n, drone_e, drone_d, roll, pitch, yaw, hn[0], he[0]);
+            valid &= getGroundIntersection(angle_x_right, angle_y_top, drone_n, drone_e, drone_d, roll, pitch, yaw, hn[1], he[1]);
+            valid &= getGroundIntersection(angle_x_right, angle_y_bot, drone_n, drone_e, drone_d, roll, pitch, yaw, hn[2], he[2]);
+            valid &= getGroundIntersection(angle_x_left,  angle_y_bot, drone_n, drone_e, drone_d, roll, pitch, yaw, hn[3], he[3]);
 
             if (!valid) continue;
 
@@ -111,6 +112,15 @@ bool SearchGrid::processFrame(const std::array<double, 768>& thermal_frame, cons
                     thermal_map[idx].visit_count++;
                 }
             }
+        }
+    }
+
+    // Refresh hot_cells snapshot for telemetry
+    hot_cells.clear();
+    for (int i = 0; i < GRID_ROWS * GRID_COLS; ++i) {
+        if (thermal_map[i].visit_count > 0 &&
+            thermal_map[i].getAverageTemp() >= TEMP_THRESHOLD) {
+            hot_cells.push_back(i);
         }
     }
 
@@ -167,21 +177,25 @@ bool SearchGrid::blob_finder() {
                         int neighbor_r = curr_r + d_row[i];
                         int neighbor_c = curr_c + d_col[i];
 
-                        // Ensure the neighbor is actually inside the grid area
-                        if (neighbor_r >= 0 && neighbor_r < GRID_ROWS && neighbor_c >= 0 && neighbor_c < GRID_COLS) {
-                            int neighbor_idx = neighbor_r * GRID_COLS + neighbor_c;
+                        // Off the mapped area = unbounded (fire could extend past the grid)
+                        if (neighbor_r < 0 || neighbor_r >= GRID_ROWS ||
+                            neighbor_c < 0 || neighbor_c >= GRID_COLS) {
+                            is_fully_bounded = false;
+                            continue;
+                        }
 
-                            // Checks if camera has ever seen this cell. Ensures no positive ID for incomplete scan
-                            if (thermal_map[neighbor_idx].visit_count == 0) {
-                                is_fully_bounded = false;
-                            }
-                            // Checks if cell is part of the fire
-                            else if (!algorithm_visited[neighbor_idx] &&
-                                thermal_map[neighbor_idx].getAverageTemp() >= TEMP_THRESHOLD) {
+                        int neighbor_idx = neighbor_r * GRID_COLS + neighbor_c;
 
-                                algorithm_visited[neighbor_idx] = true; 
-                                stack.push_back(neighbor_idx);
-                            }
+                        // Checks if camera has ever seen this cell. Ensures no positive ID for incomplete scan
+                        if (thermal_map[neighbor_idx].visit_count == 0) {
+                            is_fully_bounded = false;
+                        }
+                        // Checks if cell is part of the fire
+                        else if (!algorithm_visited[neighbor_idx] &&
+                            thermal_map[neighbor_idx].getAverageTemp() >= TEMP_THRESHOLD) {
+
+                            algorithm_visited[neighbor_idx] = true;
+                            stack.push_back(neighbor_idx);
                         }
                     }
                 }

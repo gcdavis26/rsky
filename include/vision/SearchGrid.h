@@ -28,6 +28,10 @@ public:
 
     std::optional<Eigen::Vector2d> getCenter() const;
 
+    // Telemetry accessors
+    const std::vector<int>& getHotCells() const { return hot_cells; }
+    const std::vector<int>& getBlobCells() const { return target_blob; }
+
     // Exports the current thermal map to a CSV file
     void exportToCSV(std::string filename) const;
 
@@ -46,15 +50,19 @@ private:
     // Stores the grid indices of the confirmed fire
     std::vector<int> target_blob;
 
-    // Optical constants for the MLX90640
-    const double d_yaw_rad;
-    const double d_pitch_rad;
+    // Stores grid indices of all currently hot cells (avg temp >= TEMP_THRESHOLD)
+    std::vector<int> hot_cells;
+
+    // Per-pixel angular resolution for the MLX90640 (radians per pixel)
+    // d_x_rad: across image columns (horizontal). d_y_rad: across image rows (vertical).
+    const double d_x_rad;
+    const double d_y_rad;
 
     // Math Helpers
     struct Vector3D { double x, y, z; };
     Vector3D rotateBodyToWorld(const Vector3D& v, double roll, double pitch, double yaw) const;
-    
-    bool getGroundIntersection(double yaw_angle, double pitch_angle,
+
+    bool getGroundIntersection(double angle_x, double angle_y,
         double drone_n, double drone_e, double drone_d,
         double roll, double pitch, double yaw,
         double& hit_n, double& hit_e) const;

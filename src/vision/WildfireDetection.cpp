@@ -27,7 +27,7 @@ void wildfireDetectionTask(StateBuffer& shared_state, HotspotBuffer& shared_targ
         // Pull the latest 32x24 grid of temperatures from the hardware
         if (camera.getFrame(thermal_frame)) {
 
-            // Pull drone state as 6x1 Eigen Matrix (x, y, z, roll, pitch, yaw)
+            // Pull drone state as 6x1 Eigen Matrix (roll, pitch, yaw, north, east, down)
             Eigen::Matrix<double, 6, 1> current_state = shared_state.getLatest();
 
             // Process the frame. Returns true if a fully bounded fire is found.
