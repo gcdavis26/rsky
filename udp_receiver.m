@@ -166,6 +166,27 @@ Rz = @(psi) [ cos(psi)  sin(psi) 0;
 rotmBodyToNED = @(phi,th,psi) Rz(psi) * Ry(th) * Rx(phi);
 
 % =========================
+% Thermal Grid Map (Z=0 Plane)
+% =========================
+format long;
+grid_rows = 100; % North
+grid_cols = 50;  % East
+grid_res = 0.1;
+
+[E_mesh, N_mesh] = meshgrid(0:grid_res:(grid_cols*grid_res), 0:grid_res:(grid_rows*grid_res));
+Z_mesh = zeros(size(E_mesh));
+
+C_data = zeros(grid_rows, grid_cols);
+
+% Plot the surface on the axes (drawn slightly below Z=0 to avoid clipping with the shadow)
+hFireMap = surf(ax, E_mesh, N_mesh, Z_mesh - 0.01, C_data, ...
+    'EdgeColor', [0.2 0.2 0.2], 'FaceAlpha', 0.5);
+
+colormap(ax, [0.12 0.12 0.14; 1 0.8 0; 1 0 0]); 
+caxis(ax, [0 2]);
+shading(ax, 'flat'); 
+
+% =========================
 % MAIN LOOP
 % =========================
 while ishandle(ax)
@@ -191,108 +212,144 @@ while ishandle(ax)
         % mark telemetry alive
         lastRx_tic = tic;
 
-        % =========================
-        % LOG THIS SAMPLE
-        % =========================
-        t_log(end+1,1)      = s.t;
-        pos_log(end+1,1:3)  = reshape(s.pos_est,1,3);
-        vel_log(end+1,1:3)  = reshape(s.vel_est,1,3);
-        eul_log(end+1,1:3)  = reshape(s.euler_est,1,3);
-        if isfield(s,'euler_cmd')
-            eul_cmd_log(end+1,1:3) = reshape(s.euler_cmd,1,3);
+        if isfield(s, 'type')
+            if strcmp(s.type, 'state')
+                % =========================
+                % LOG THIS SAMPLE
+                % =========================
+                t_log(end+1,1)      = s.t;
+                pos_log(end+1,1:3)  = reshape(s.pos_est,1,3);
+                vel_log(end+1,1:3)  = reshape(s.vel_est,1,3);
+                eul_log(end+1,1:3)  = reshape(s.euler_est,1,3);
+                if isfield(s,'euler_cmd')
+                    eul_cmd_log(end+1,1:3) = reshape(s.euler_cmd,1,3);
+                else
+                    eul_cmd_log(end+1,1:3) = NaN(1,3);
+                end
+                hz_log(end+1,1)     = s.Hz;
+                health_log(end+1,1) = s.EKF_Health;
+                if isfield(s,'battery_voltage_mv')
+                    batt_voltage_mv_log(end+1,1) = s.battery_voltage_mv;
+                else
+                    batt_voltage_mv_log(end+1,1) = NaN;
+                end
+                if isfield(s,'battery_current_ma')
+                    batt_current_ma_log(end+1,1) = s.battery_current_ma;
+                else
+                    batt_current_ma_log(end+1,1) = NaN;
+                end
+
+                k = k + 1;
+                idx = mod(k-1,N)+1;
+
+                pe_n(idx) = s.pos_est(1);
+                pe_e(idx) = s.pos_est(2);
+                pe_d(idx) = s.pos_est(3);
+
+                if mod(k,plotEvery)~=0
+                    continue;
+                end
+
+                if k < N
+                    ii = 1:k;
+                else
+                    ii = [idx+1:N 1:idx];
+                end
+
+                % Plot coordinates are [E, N, -D]
+                X = pe_e(ii); Y = pe_n(ii); Z = -pe_d(ii);
+                set(hTrail,'XData',X,'YData',Y,'ZData',Z);
+
+                phi = s.euler_est(1);
+                th  = s.euler_est(2);
+                psi = s.euler_est(3);
+
+                p_ned = [s.pos_est(1); s.pos_est(2); s.pos_est(3)];
+                p_plot = [p_ned(2); p_ned(1); -p_ned(3)];
+                set(hGround, 'XData', p_plot(1), 'YData', p_plot(2), 'ZData', 0);
+
+                Rnb     = rotmBodyToNED(-phi, -th, -psi);   % body -> NED
+                Rplot_b = T_plot_ned * Rnb;                 % body -> plot
+
+                p_plot = [s.pos_est(2); s.pos_est(1); -s.pos_est(3)];
+
+                a = armSpan/2;
+                d1_b = (a/sqrt(2))*[ 1;  1; 0];
+                d2_b = (a/sqrt(2))*[ 1; -1; 0];
+
+                p1a = p_plot - Rplot_b*d1_b;  p1b = p_plot + Rplot_b*d1_b;
+                p2a = p_plot - Rplot_b*d2_b;  p2b = p_plot + Rplot_b*d2_b;
+
+                set(hArm1,'XData',[p1a(1) p1b(1)],'YData',[p1a(2) p1b(2)],'ZData',[p1a(3) p1b(3)]);
+                set(hArm2,'XData',[p2a(1) p2b(1)],'YData',[p2a(2) p2b(2)],'ZData',[p2a(3) p2b(3)]);
+
+                ex_b = [1;0;0]; ey_b = [0;1;0]; ez_b = [0;0;1];
+
+                px = p_plot + axisLen*(Rplot_b*ex_b);
+                py = p_plot + axisLen*(Rplot_b*ey_b);
+                pz = p_plot + axisLen*(Rplot_b*ez_b);
+
+                set(hBx,'XData',[p_plot(1) px(1)],'YData',[p_plot(2) px(2)],'ZData',[p_plot(3) px(3)]);
+                set(hBy,'XData',[p_plot(1) py(1)],'YData',[p_plot(2) py(2)],'ZData',[p_plot(3) py(3)]);
+                set(hBz,'XData',[p_plot(1) pz(1)],'YData',[p_plot(2) pz(2)],'ZData',[p_plot(3) pz(3)]);
+
+                phaseStr = phaseNames{s.phase + 1};
+                modeStr  = modeNames{s.mode  + 1};
+                armStr   = armNames{s.armed + 1};
+
+                txt = sprintf([ ...
+                    't [s]: %.2f ','Rate [Hz]: %.2f\n' ...
+                    '%s | phase: %s | mode: %s\n','EKF Health: %.2f \n' ...
+                    'Battery: V=%.3f mV  I=%.3f mA\n' ...
+                    'pos [n e d]: [% .2f % .2f % .2f]\n' ...
+                    'vel [n e d]: [% .2f % .2f % .2f]\n' ...
+                    'euler [r p y]: [% .2f % .2f % .2f]'], ...
+                    s.t, ...
+                    s.Hz, ...
+                    armStr, ...
+                    phaseStr, ...
+                    modeStr, ...
+                    s.EKF_Health,...
+                    batt_voltage_mv_log(end), batt_current_ma_log(end), ...
+                    s.pos_est(1), s.pos_est(2), s.pos_est(3), ...
+                    s.vel_est(1), s.vel_est(2), s.vel_est(3), ...
+                    s.euler_est(1), s.euler_est(2), s.euler_est(3));
+
+                set(hText,'String',txt);
+
+            elseif strcmp(s.type, 'vision')
+                % =========================
+                % PROCESS VISION GRID DATA
+                % =========================
+                grid_updated = false;
+
+                if isfield(s, 'fire_cells') && ~isempty(s.fire_cells)
+                    for i = 1:length(s.fire_cells)
+                        idx = s.fire_cells(i);
+                        r = floor(idx / grid_cols) + 1;
+                        c = mod(idx, grid_cols) + 1;
+                        C_data(r, c) = 1; 
+                    end
+                    grid_updated = true;
+                end
+
+                if isfield(s, 'blob_cells') && ~isempty(s.blob_cells)
+                    for i = 1:length(s.blob_cells)
+                        idx = s.blob_cells(i);
+                        r = floor(idx / grid_cols) + 1;
+                        c = mod(idx, grid_cols) + 1;
+                        C_data(r, c) = 2; 
+                    end
+                    grid_updated = true;
+                end
+
+                if grid_updated
+                    set(hFireMap, 'CData', C_data);
+                end
+            end
         else
-            eul_cmd_log(end+1,1:3) = NaN(1,3);
+            disp('Received unformatted packet without a type field.');
         end
-        hz_log(end+1,1)     = s.Hz;
-        health_log(end+1,1) = s.EKF_Health;
-        if isfield(s,'battery_voltage_mv')
-            batt_voltage_mv_log(end+1,1) = s.battery_voltage_mv;
-        else
-            batt_voltage_mv_log(end+1,1) = NaN;
-        end
-        if isfield(s,'battery_current_ma')
-            batt_current_ma_log(end+1,1) = s.battery_current_ma;
-        else
-            batt_current_ma_log(end+1,1) = NaN;
-        end
-
-        k = k + 1;
-        idx = mod(k-1,N)+1;
-
-        pe_n(idx) = s.pos_est(1);
-        pe_e(idx) = s.pos_est(2);
-        pe_d(idx) = s.pos_est(3);
-
-        if mod(k,plotEvery)~=0
-            continue;
-        end
-
-        if k < N
-            ii = 1:k;
-        else
-            ii = [idx+1:N 1:idx];
-        end
-
-        % Plot coordinates are [E, N, -D]
-        X = pe_e(ii); Y = pe_n(ii); Z = -pe_d(ii);
-        set(hTrail,'XData',X,'YData',Y,'ZData',Z);
-
-        phi = s.euler_est(1);
-        th  = s.euler_est(2);
-        psi = s.euler_est(3);
-
-        p_ned = [s.pos_est(1); s.pos_est(2); s.pos_est(3)];
-        p_plot = [p_ned(2); p_ned(1); -p_ned(3)];
-        set(hGround, 'XData', p_plot(1), 'YData', p_plot(2), 'ZData', 0);
-
-        Rnb     = rotmBodyToNED(-phi, -th, -psi);   % body -> NED
-        Rplot_b = T_plot_ned * Rnb;                 % body -> plot
-
-        p_plot = [s.pos_est(2); s.pos_est(1); -s.pos_est(3)];
-
-        a = armSpan/2;
-        d1_b = (a/sqrt(2))*[ 1;  1; 0];
-        d2_b = (a/sqrt(2))*[ 1; -1; 0];
-
-        p1a = p_plot - Rplot_b*d1_b;  p1b = p_plot + Rplot_b*d1_b;
-        p2a = p_plot - Rplot_b*d2_b;  p2b = p_plot + Rplot_b*d2_b;
-
-        set(hArm1,'XData',[p1a(1) p1b(1)],'YData',[p1a(2) p1b(2)],'ZData',[p1a(3) p1b(3)]);
-        set(hArm2,'XData',[p2a(1) p2b(1)],'YData',[p2a(2) p2b(2)],'ZData',[p2a(3) p2b(3)]);
-
-        ex_b = [1;0;0]; ey_b = [0;1;0]; ez_b = [0;0;1];
-
-        px = p_plot + axisLen*(Rplot_b*ex_b);
-        py = p_plot + axisLen*(Rplot_b*ey_b);
-        pz = p_plot + axisLen*(Rplot_b*ez_b);
-
-        set(hBx,'XData',[p_plot(1) px(1)],'YData',[p_plot(2) px(2)],'ZData',[p_plot(3) px(3)]);
-        set(hBy,'XData',[p_plot(1) py(1)],'YData',[p_plot(2) py(2)],'ZData',[p_plot(3) py(3)]);
-        set(hBz,'XData',[p_plot(1) pz(1)],'YData',[p_plot(2) pz(2)],'ZData',[p_plot(3) pz(3)]);
-
-        phaseStr = phaseNames{s.phase + 1};
-        modeStr  = modeNames{s.mode  + 1};
-        armStr   = armNames{s.armed + 1};
-
-        txt = sprintf([ ...
-            't [s]: %.2f ','Rate [Hz]: %.2f\n' ...
-            '%s | phase: %s | mode: %s\n','EKF Health: %.2f \n' ...
-            'Battery: V=%.3f mV  I=%.3f mA\n' ...
-            'pos [n e d]: [% .2f % .2f % .2f]\n' ...
-            'vel [n e d]: [% .2f % .2f % .2f]\n' ...
-            'euler [r p y]: [% .2f % .2f % .2f]'], ...
-            s.t, ...
-            s.Hz, ...
-            armStr, ...
-            phaseStr, ...
-            modeStr, ...
-            s.EKF_Health,...
-            batt_voltage_mv_log(end), batt_current_ma_log(end), ...
-            s.pos_est(1), s.pos_est(2), s.pos_est(3), ...
-            s.vel_est(1), s.vel_est(2), s.vel_est(3), ...
-            s.euler_est(1), s.euler_est(2), s.euler_est(3));
-
-        set(hText,'String',txt);
 
         drawnow limitrate
 
