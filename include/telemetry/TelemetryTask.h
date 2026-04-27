@@ -26,6 +26,8 @@ struct TelemetryState {
 
 class TelemetryTask {
 public:
+
+    // Updated constructor to accept the vision buffer
     TelemetryTask(UdpSender& udp_sender, VisionGridBuffer& vision_buf);
     ~TelemetryTask();
 
