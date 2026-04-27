@@ -83,17 +83,17 @@ private:
 	double ki_sweep_e = 0.01;
 	double ki_sweep_d = 0.25;
 
-	double maxAtt = 10 * PI / 180;
+	double maxAtt = 5 * PI / 180;
 	double Fz_min = 0.0;
 	double Fz_max = 4.0 * mass * g;
 
-	double kpn = 4;
-	double kpe = 4;
+	double kpn = 2.25;
+	double kpe = 2.25;
 
 	double kpd = 3.75;
 
-	double kdn = 1.25;
-	double kde = 1.25;
+	double kdn = 1.5;
+	double kde = 1.5;
 	double kdd = 3.5;
 
 	double kin = 0.01;

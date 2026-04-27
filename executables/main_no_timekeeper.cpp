@@ -250,7 +250,7 @@ int main() {
         Vec<15> navState = ekf.getx();
 
         // ---------------- Mode Manager ----------------
-        if ((acc_MM >= rate_MM) && ekfHealthy && motor_task.isArmed()) {
+        if ((acc_MM >= rate_MM) && ekfHealthy) {
             MM.in.state = navState;
             MM.in.dt = acc_MM;
             MM.in.detected = false;
