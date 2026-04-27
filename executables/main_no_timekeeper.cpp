@@ -101,7 +101,7 @@ int main() {
     Vec<6> rcPWM = Vec<6> ::Zero();
     Vec<4> throttleTest = Vec<4>::Zero();
     Vec<6> raw;
-
+    double dropper = 1000;
     Vec<3> manVel = Vec<3>::Zero();
     double manPsi = 0.0;
 
@@ -253,9 +253,15 @@ int main() {
             double rcPsi = 0.0;
 
             rcPWM = rcin.read_ppm_vector();
+	    if (MM.out.phase  == ModeManager::MissionPhase::Terminate)
+	    {
+		rcPWM(4) = 1000;
+	    }
 
             if (rcPWM(5) > 1750) {
                 // drop stuff
+                dropper = 2000;
+                MM.in.drop = true;
             } else if (rcPWM(5) > 1250) {
                 autopilot = true;
             } else {
@@ -398,7 +404,7 @@ int main() {
             acc_conInner = 0.0;
 
             // Real commands
-            motor_task.updateState(pwmCmd, rcPWM(4));
+            motor_task.updateState(pwmCmd, rcPWM(4),dropper);
         }
         //----------------- Printing commands for testing ------------------
         // Vec<3> ierror = outer.getIError();

@@ -10,7 +10,7 @@ private:
 	Vec<4> clampThrusts(const Vec<4>& T);
 
 	double arm_length = 0.10;
-	double k_yaw = 0.001;
+	double k_yaw = 0.01;
 	double T_min = 0.0;
 	double T_max = 2.0 * mass * g;
 

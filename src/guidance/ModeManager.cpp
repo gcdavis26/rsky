@@ -14,7 +14,7 @@ void ModeManager::update() {
 		toCmd(0) = in.state(3);
 		toCmd(1) = in.state(4);
 		toCmd(2) = lowAlt;
-		lndCmd(2)= .05;
+		lndCmd(2)= -.15;
 }
 
 	out.phaseTime += in.dt;
@@ -79,6 +79,7 @@ void ModeManager::update() {
 		case MissionPhase::Terminate:
 			out.mode = NavMode::Waypoint;
 			out.posCmd = in.state.segment<3>(3);
+			std::exit(0);
 			break;
 		}
 	}
@@ -106,8 +107,8 @@ void ModeManager::update() {
 			out.mode = NavMode::Waypoint;
 			lndCmd.segment<2>(0) = toCmd.segment<2>(0);
 			out.posCmd.segment<2>(0) = lndCmd.segment<2>(0);
-			out.posCmd(2) = 0.0;
-			if (reachedWaypoint(in.state.segment<6>(3), out.posCmd)) {
+			out.posCmd(2) = lndCmd(2);
+			if (reachedWaypoint(in.state.segment<6>(3), out.posCmd) || (out.phaseTime >= 10 && in.state(5) > -0.2)) {
 				advancePhase(MissionPhase::Terminate);
 			}
 			break;
@@ -120,8 +121,8 @@ void ModeManager::update() {
 }
 
 bool ModeManager::reachedWaypoint(const Vec<6>&state,const Vec<3>& cmd) {
-	double posErr = (cmd - state.segment<3>(0)).norm();
-	double velErr = state.segment<3>(3).norm();
+	double posErr = (cmd - state.segment<3>(0)).cwiseAbs().maxCoeff();
+	double velErr = state.segment<3>(3).cwiseAbs().maxCoeff();
 
 	return (posErr < posTol) && (velErr < velTol);
 }

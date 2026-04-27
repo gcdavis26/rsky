@@ -87,18 +87,18 @@ private:
 	double Fz_min = 0.0;
 	double Fz_max = 4.0 * mass * g;
 
-	double kpn = 3;
-	double kpe = 3;
+	double kpn = 4;
+	double kpe = 4;
 
-	double kpd = 3.0;
+	double kpd = 3.75;
 
 	double kdn = 1.25;
 	double kde = 1.25;
-	double kdd = 4.0;
+	double kdd = 3.5;
 
 	double kin = 0.01;
 	double kie = 0.01;
-	double kid = 0.25;
+	double kid = 0.4;
 
 	double kivn = 0.1;
 	double kive = 0.1;

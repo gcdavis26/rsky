@@ -27,13 +27,14 @@ public:
     bool isArmed() const;
 
     void command(const Vec<4>& pwm_values);
+    void commandServo(double pwm_values);
 
     void wind_down();
 
 private:
     bool armed = false;
     RCOutput_Navio2 pwm_driver;
-    const std::vector<int> motor_pins = { 0, 1, 2, 3 }; //
+    const std::vector<int> motor_pins = { 0, 1, 2, 3}; //
 };
 
 #endif
