@@ -358,14 +358,16 @@ int main() {
             Eigen::Matrix<double, 6, 1> vision_state;
 
             if (autopilot && ekfHealthy) {
-		outer.out.attCmd(2) = 0.0;
+		        outer.out.attCmd(2) = 0.0;
                 momentsCmd =
                     inner.computeWrench(
                         outer.out.attCmd,
                         0.0,
                         navState.segment<3>(0),
                         ctrl_filter.output().segment<3>(3) - imuStats.segment<3>(0),
-                        acc_conInner);
+                        acc_conInner,
+                        motor_task.isArmed());
+                        
 
                 // Drone is using EKF, pass EKF attitude and position
                 //vision_state = navState.head<6>(); camr
@@ -377,7 +379,8 @@ int main() {
                         manPsi,
                         navState.segment<3>(0),
                         ctrl_filter.output().segment<3>(3) - imuStats.segment<3>(0),
-                        acc_conInner);
+                        acc_conInner,
+                        motor_task.isArmed());
 
                 // Drone is using EKF, pass EKF attitude and position
                 //vision_state = navState.head<6>(); camr
@@ -390,7 +393,8 @@ int main() {
                         manPsi,
                         AHRSAtt,
                         ctrl_filter.output().segment<3>(3) - imuStats.segment<3>(0),
-                        acc_conInner);
+                        acc_conInner,
+                        motor_task.isArmed());
 
                 double den = cos(attManual(0)) * cos(attManual(1));
                 den = clamp(den, 0.2, 1.0);
@@ -409,7 +413,8 @@ int main() {
                         0.0,
                         AHRSAtt,
                         ctrl_filter.output().segment<3>(3) - imuStats.segment<3>(0),
-                        acc_conInner);
+                        acc_conInner,
+                        motor_task.isArmed());
 
                 double den = cos(AHRSAtt(0)) * cos(AHRSAtt(1));
                 den = clamp(den, 0.2, 1.0);
