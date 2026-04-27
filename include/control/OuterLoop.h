@@ -65,25 +65,27 @@ private:
 	};
 	SweepState sweep;
 
-	double buffer = 1.5;
-	double n_min = 0 + buffer;
-	double n_max = 9.144 - buffer;
+	double buffer = 2.25;
+	//double n_min = 0 + buffer;
+	double n_min = 0 + 1.5 * buffer;
+	double n_max = 9.144 - 1.5 * buffer;
+	//double n_max = 9.144 - buffer;
 	double e_min = 0 + buffer;
 	double e_max = 4.572 - buffer;
 	double n_margin = 0.50;
 	double deStripe = 0.0;
 
 	double v_sweep = 1.0;
-	double kp_cross = 3;
-	double kd_cross = 1.25;
-	double kVel = 1.25;
+	double kp_cross = 2.25;
+	double kd_cross = 1.5;
+	double kVel = 1.0;
 	double surveyAlt = -2.0;
 
-	double ki_sweep_n = 0.01;
-	double ki_sweep_e = 0.01;
-	double ki_sweep_d = 0.25;
+	double ki_sweep_n = 0.1;
+	double ki_sweep_e = 0.1;
+	double ki_sweep_d = 0.4;
 
-	double maxAtt = 5 * PI / 180;
+	double maxAtt = 10 * PI / 180;
 	double Fz_min = 0.0;
 	double Fz_max = 4.0 * mass * g;
 
