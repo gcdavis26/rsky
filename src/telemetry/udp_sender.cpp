@@ -1,5 +1,6 @@
 // udp_sender.cpp
 #include "telemetry/udp_sender.h"
+#include <iostream>
 #include <stdexcept>
 #include <utility>
 #include <mutex> // Needed for std::call_once

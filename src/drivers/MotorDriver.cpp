@@ -23,7 +23,7 @@ bool MotorDriver::initialize() {
     for (int pin : {0,1,2,3,4}) {
         pwm_driver.initialize(pin);
         pwm_driver.set_frequency(pin, PWM_FREQ);
-        usleep(500000);
+        usleep(50000);
         pwm_driver.enable(pin);
     }
 

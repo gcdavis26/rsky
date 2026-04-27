@@ -6,6 +6,7 @@
 #include <chrono>
 #include "telemetry/udp_sender.h"
 #include "sensors/BatteryHandler.h"
+#include "vision/WildfireDetection.h"
 
 // Define a struct to hold all telemetry data safely
 struct TelemetryState {
@@ -25,7 +26,7 @@ struct TelemetryState {
 
 class TelemetryTask {
 public:
-    TelemetryTask(UdpSender& udp_sender);
+    TelemetryTask(UdpSender& udp_sender, VisionGridBuffer& vision_buf);
     ~TelemetryTask();
 
     // Copy latest state from main loop
