@@ -65,7 +65,7 @@ bool SearchGrid::processFrame(const std::array<double, 768>& thermal_frame, cons
         for (int x = 0; x < 32; ++x) {
             double pixel_temp = thermal_frame[y * 32 + x];
 
-            if (pixel_temp < 25.0) continue; // Low Pass filter
+            if (pixel_temp < 23.0) continue; // Low Pass filter
             
             if (pixel_temp >= (TEMP_THRESHOLD * 0.9)) {
                 frame_has_hotspot = true;
@@ -225,8 +225,9 @@ std::optional<Eigen::Vector2d> SearchGrid::getCenter() const {
         return std::nullopt; // Safely returns "None"
     }
 
-    double sum_n = 0.0;
-    double sum_e = 0.0;
+    double sum_n_weighted = 0.0;
+    double sum_e_weighted = 0.0;
+    double total_temp_weight = 0.0;
 
     for (int idx : target_blob) {
         int r = idx / GRID_COLS;
@@ -236,15 +237,28 @@ std::optional<Eigen::Vector2d> SearchGrid::getCenter() const {
         double cell_n = (r * GRID_RES) + (GRID_RES / 2.0);
         double cell_e = (c * GRID_RES) + (GRID_RES / 2.0);
 
-        sum_n += cell_n;
-        sum_e += cell_e;
+        // Retrieve the cell's average temperature to use as the weight
+        double cell_temp = thermal_map[idx].getAverageTemp();
+
+        // Accumulate the weighted positions
+        sum_n_weighted += cell_n * cell_temp;
+        sum_e_weighted += cell_e * cell_temp;
+        
+        // Accumulate the total weight
+        total_temp_weight += cell_temp;
     }
 
-    double avg_n = sum_n / target_blob.size();
-    double avg_e = sum_e / target_blob.size();
+    // Safety check to prevent division by zero (though temperatures should be >= TEMP_THRESHOLD)
+    if (total_temp_weight == 0.0) {
+        return std::nullopt;
+    }
+
+    // Divide the weighted sum by the total weight to find the thermal center of mass
+    double weighted_avg_n = sum_n_weighted / total_temp_weight;
+    double weighted_avg_e = sum_e_weighted / total_temp_weight;
 
     // Directly returns (North, East)
-    return Eigen::Vector2d(avg_n, avg_e);
+    return Eigen::Vector2d(weighted_avg_n, weighted_avg_e);
 }
 
 void SearchGrid::exportToCSV(std::string filename) const {
