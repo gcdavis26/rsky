@@ -23,7 +23,7 @@
 #include "sensors/IMUHandler.h"
 #include "mocap/mocapHandler.h"
 #include "vision/WildfireDetection.h"
-
+#include <string>
 #include <fstream>
 
 
@@ -52,11 +52,21 @@ void configureThread(std::thread& target_thread, int priority, int core_id = -1)
     }
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    int calib = 0;
+    if(argc>=2){
+	std::string arg = argv[1];
+	if (arg == "1") {
+		calib = 1;
+	}
+	else if (arg != "0"){
+		std::cerr << "Error: argument must be 0 or 1" << "\n";
+	}
+    }
     std::cout << std::fixed << std::setprecision(4);
 
     // --- Init objects (cloned from main.cpp, without TimeKeeper) ---
-    ModeManager MM(true);
+    ModeManager MM(false);
     OuterLoop outer;
     InnerLoop inner;
     QuadMixer mixer;
@@ -71,7 +81,7 @@ int main() {
 
     RCIn rcin;
     rcin.initialize();
-    MotorDriver motdrv;
+    MotorDriver motdrv(calib);
     //motdrv.calibrate(); 
     IMUHandler imuReal;
     Vec<12> imuStats = imuReal.initialize();
@@ -164,14 +174,12 @@ int main() {
     std::ofstream logger("datalog.csv");
     logger << "n,e,d,an,ae,ad\n";
 
-/* camr
     std::thread vision_thread(
         wildfireDetectionTask, 
         std::ref(shared_state), 
         std::ref(shared_targets), 
         std::ref(vision_buffer)
     );
-*/
 
     while (true) {
         auto loop_start = clock_t::now();
@@ -370,7 +378,7 @@ int main() {
                         
 
                 // Drone is using EKF, pass EKF attitude and position
-                //vision_state = navState.head<6>(); camr
+                vision_state = navState.head<6>();
 
             } else if (!autopilot && ekfHealthy) {
                 momentsCmd =
@@ -383,7 +391,7 @@ int main() {
                         motor_task.isArmed());
 
                 // Drone is using EKF, pass EKF attitude and position
-                //vision_state = navState.head<6>(); camr
+                vision_state = navState.head<6>();
 
             } else if (!autopilot && !ekfHealthy) {
                 attManual(2) = AHRSAtt(2);
@@ -403,8 +411,8 @@ int main() {
                 outer.out.Fz = clamp(Fz_base / den, 0, 2 * mass * g);
 
                 // Drone is using AHRS, pass AHRS attitude and EKF position
-                //vision_state << AHRSAtt(0), AHRSAtt(1), AHRSAtt(2), camr
-                                //navState(3), navState(4), navState(5); camr
+                vision_state << AHRSAtt(0), AHRSAtt(1), AHRSAtt(2), 
+                                navState(3), navState(4), navState(5);
 
             } else { // Autopilot ON, EKF UNHEALTHY
                 momentsCmd =
@@ -423,11 +431,11 @@ int main() {
                 outer.out.Fz = clamp(Fz_base / den, 0.0, 2.0 * mass * g);
 
                 // Drone is using AHRS, pass AHRS attitude and EKF position
-                //vision_state << AHRSAtt(0), AHRSAtt(1), AHRSAtt(2), camr
-                                //navState(3), navState(4), navState(5); camr
+                vision_state << AHRSAtt(0), AHRSAtt(1), AHRSAtt(2),
+                                navState(3), navState(4), navState(5);
             }
 
-            //shared_state.update(vision_state); camr
+            shared_state.update(vision_state);
 
             wrenchCmd << outer.out.Fz,
                 momentsCmd(0),
@@ -502,7 +510,7 @@ int main() {
         telemetry_thread.join();
     }
 
-    //vision_thread.detach(); 
+    vision_thread.detach(); 
 
     return 0;
 }

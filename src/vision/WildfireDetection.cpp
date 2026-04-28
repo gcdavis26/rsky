@@ -5,6 +5,7 @@
 #include <thread>
 #include <Eigen/Dense>
 #include <unistd.h>
+#include <iostream>
 
 void wildfireDetectionTask(StateBuffer& shared_state, HotspotBuffer& shared_targets, VisionGridBuffer& vision_telemetry) {
     
@@ -43,6 +44,8 @@ void wildfireDetectionTask(StateBuffer& shared_state, HotspotBuffer& shared_targ
 
                     // Unwrap the std::optional into a Eigen 2x1 matrix
                     Eigen::Vector2d fire_coords = *fire_location_opt;
+
+		    std::cout << "Fire Found " << fire_coords << std::endl;
 
                     // Pass the 2x1 matrix to the main control loop via the shared buffer
                     shared_targets.update(fire_coords);

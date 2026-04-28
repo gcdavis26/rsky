@@ -15,9 +15,13 @@ Vec<3> InnerLoop::computeWrench(
 
     // True integrator on attitude error (Standard integration)
     Vec<3> attIntInput;
-    attIntInput.segment<2>(0) = attErr.segment<2>(0);
-    attIntInput(2) = (yaw_rate_cmd == 0.0 && Armed) ? attErr(2) : 0.0;
-
+    if (Armed) {
+      attIntInput.segment<2>(0) = attErr.segment<2>(0);
+      attIntInput(2) = (yaw_rate_cmd == 0.0) ? attErr(2) : 0.0;
+    }
+    else {
+	attIntInput = Vec<3>::Zero();
+    }
     x4_att += attIntInput * dt;
     
     // Standard anti-windup clamp for the outer loop

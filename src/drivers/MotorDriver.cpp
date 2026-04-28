@@ -9,10 +9,12 @@
 // End Code control over motors at the end: motors.wind_down()
 
 
-MotorDriver::MotorDriver() {
+MotorDriver::MotorDriver(int calib) {
     // Direct instantiation for Navio2
     initialize();
-    // calibrate();
+    if(calib) {
+	calibrate();
+    }
 }
 
 MotorDriver::~MotorDriver() {

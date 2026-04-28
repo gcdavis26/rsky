@@ -121,6 +121,7 @@ Vec<3> OuterLoop::sweepControl(Vec<3>& sweepErr) {
     Vec<3> vel = in.state.segment<3>(3);
 
     if (!sweep.init) {
+	sweep.numStr = std::max(2,sweep.numStr);
         double widthE = e_max - e_min;
         deStripe = widthE / (sweep.numStr - 1);
         sweep.stripeIdx = 1;

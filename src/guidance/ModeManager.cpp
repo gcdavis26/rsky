@@ -5,7 +5,7 @@ ModeManager::ModeManager(bool test) {
 	simplemission = test; //this is for simple milestone flight
 	}
 void ModeManager::update() {
-	double surveyAlt = -2.0;
+	double surveyAlt = -1.0;
 	double lowAlt = -1.0;
 
 	if (!init)
@@ -59,6 +59,7 @@ void ModeManager::update() {
 			out.posCmd(2) = lowAlt;
 			if (reachedWaypoint(in.state.segment<6>(3), out.posCmd) && in.drop) {
 				computelndCmd(in.state.segment<3>(3));
+				advancePhase(MissionPhase::GoToLand);
 			}
 			break;
 		case MissionPhase::GoToLand:
@@ -80,7 +81,6 @@ void ModeManager::update() {
 		case MissionPhase::Terminate:
 			out.mode = NavMode::Waypoint;
 			out.posCmd = in.state.segment<3>(3);
-			std::exit(0);
 			break;
 		}
 	}

@@ -51,7 +51,7 @@ int MLX90640_I2CRead(uint8_t slaveAddr, uint16_t startAddress, uint16_t nMemAddr
 
     int result;
     char cmd[2] = {(char)(startAddress >> 8), (char)(startAddress & 0xFF)};
-    char buf[1664];
+    char buf[2048];
     uint16_t *p = data;
     struct i2c_msg i2c_messages[2];
     struct i2c_rdwr_ioctl_data i2c_messageset[1];

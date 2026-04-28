@@ -35,6 +35,8 @@ public:
     // Exports the current thermal map to a CSV file
     void exportToCSV(std::string filename) const;
 
+    void printVisitedCells() const;
+
 private:
     // Map Configuration (5m East x 10m North to fully enclose the flight area)
     const double GRID_RES = 0.1;
@@ -42,7 +44,7 @@ private:
     const int GRID_ROWS = 100;             // North: 0.0 to 10.0
 
     // Detection Configuration
-    const double TEMP_THRESHOLD = 35.0;
+    const double TEMP_THRESHOLD = 34.0;
 
     // The actual memory buffer for the map
     std::vector<GridCell> thermal_map;

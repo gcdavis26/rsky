@@ -5,6 +5,7 @@
 #include <utility>
 #include <optional>
 #include <fstream> 
+#include <iostream>
 
 SearchGrid::SearchGrid()
     : d_x_rad((55.0 / 32.0) * (M_PI / 180.0)),
@@ -201,7 +202,7 @@ bool SearchGrid::blob_finder() {
                 }
 
                 // ONLY accept the blob if it is fully enclosed by cold cells AND large enough
-                if (is_fully_bounded && current_blob.size() >= 5) {
+                if (is_fully_bounded && current_blob.size() >= 4) {
                     if (current_blob.size() > local_largest_blob.size()) {
                         local_largest_blob = std::move(current_blob);
                     }
@@ -269,4 +270,22 @@ void SearchGrid::exportToCSV(std::string filename) const {
         }
     }
     file.close();
+}
+
+
+void SearchGrid::printVisitedCells() const {
+    std::cout << "\n========== GROUND STATE (1 SEC UPDATE) ==========\n";
+    int count = 0;
+    for (int r = 0; r < GRID_ROWS; ++r) {
+        for (int c = 0; c < GRID_COLS; ++c) {
+            int idx = r * GRID_COLS + c;
+            if (thermal_map[idx].visit_count > 0) {
+                std::cout << "[N:" << r << " E:" << c << "]=" 
+                          << thermal_map[idx].getAverageTemp() << "C  ";
+                count++;
+            }
+        }
+    }
+    std::cout << "\nTotal Cells Mapped: " << count 
+              << "\n=================================================\n";
 }

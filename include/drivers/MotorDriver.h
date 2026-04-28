@@ -16,7 +16,7 @@
 
 class MotorDriver {
 public:
-    MotorDriver();
+    MotorDriver(int calib);
     ~MotorDriver();
 
     bool initialize();

@@ -106,8 +106,8 @@ int main() {
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
         // Sleep until 28ms passed from start of execution
-        if (elapsed < std::chrono::milliseconds(28)) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(28) - elapsed);
+        if (elapsed < std::chrono::milliseconds(26)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(26) - elapsed);
         }
     }
     

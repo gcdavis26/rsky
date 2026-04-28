@@ -9,6 +9,7 @@
 
 ThermalCamera::ThermalCamera(int address, int bus)
     : i2c_addr(address), i2c_bus(bus), fd(-1), emissivity(0.95) {
+    init();
 }
 
 ThermalCamera::~ThermalCamera() {
@@ -48,11 +49,14 @@ bool ThermalCamera::init() {
 }
 
 bool ThermalCamera::getFrame(std::array<double, 768>& buffer) {
-    if (fd < 0) return false;
+    if (fd < 0){
+ 	return false;
+    }
 
     // Fetch the raw data
-    if (MLX90640_GetFrameData(i2c_addr, frameData) != 0) {
-        return false;
+    if (MLX90640_GetFrameData(i2c_addr, frameData) <  0) {
+	std::cout << MLX90640_GetFrameData(i2c_addr, frameData) << "\n";
+	return false;
     }
 
     // Calculate reflected temperature and convert to absolute temperatures

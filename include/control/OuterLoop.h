@@ -59,16 +59,16 @@ private:
 	struct SweepState {
 		int stripeIdx = 1;
 		int dir = 1;
-		int numStr = 1;
+		int numStr = 3;
 		int pass = 1;
 		bool init = false;
 	};
 	SweepState sweep;
 
-	double buffer = 2.25;
+	double buffer = 1.5;
 	//double n_min = 0 + buffer;
-	double n_min = 0 + 1.5 * buffer;
-	double n_max = 9.144 - 1.5 * buffer;
+	double n_min = 0 + 1 * buffer;
+	double n_max = 9.144 - 1 * buffer;
 	//double n_max = 9.144 - buffer;
 	double e_min = 0 + buffer;
 	double e_max = 4.572 - buffer;
@@ -78,8 +78,8 @@ private:
 	double v_sweep = 1.0;
 	double kp_cross = 2.25;
 	double kd_cross = 1.5;
-	double kVel = 1.0;
-	double surveyAlt = -2.0;
+	double kVel = 1.5;
+	double surveyAlt = -1.0;
 
 	double ki_sweep_n = 0.1;
 	double ki_sweep_e = 0.1;
@@ -96,11 +96,11 @@ private:
 
 	double kdn = 1.5;
 	double kde = 1.5;
-	double kdd = 3.5;
+	double kdd = 2.9;
 
 	double kin = 0.01;
 	double kie = 0.01;
-	double kid = 0.4;
+	double kid = 0.55;
 
 	double kivn = 0.1;
 	double kive = 0.1;
