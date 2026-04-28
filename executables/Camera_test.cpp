@@ -50,6 +50,8 @@ int main() {
     SearchGrid local_grid;
     std::array<double, 768> thermal_frame;
 
+    bool fire_seen = false;
+
     std::cout << "Starting 32Hz Vision Loop. Press Ctrl+C to exit and save map." << std::endl;
 
     // Main 32Hz Processing Loop controlled by the signal flag
@@ -92,6 +94,7 @@ int main() {
                 if (local_grid.processFrame(thermal_frame, current_state)) {
                     if (auto fire_location_opt = local_grid.getCenter()) {
                         Eigen::Vector2d fire_coords = *fire_location_opt;
+			fire_seen = true;
                         std::cout << " | FIRE DETECTED at [N: " << fire_coords(0) << ", E: " << fire_coords(1) << "]";
                     }
                 }
@@ -100,6 +103,10 @@ int main() {
         } else {
             std::cout << "Therm Read Failed" << std::endl;
         }
+
+	if(fire_seen){
+		std::cout<<"Fire has been seen \n";
+	}
 
         // Yield CPU for the remainder of the 31.25ms (32Hz) time budget
         auto end_time = std::chrono::steady_clock::now();

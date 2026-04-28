@@ -25,7 +25,7 @@ public:
 
     // Scans the map for fully bounded fires. Returns true if a valid target is stored.
     bool blob_finder();
-
+ 
     std::optional<Eigen::Vector2d> getCenter() const;
 
     // Telemetry accessors
@@ -44,7 +44,7 @@ private:
     const int GRID_ROWS = 100;             // North: 0.0 to 10.0
 
     // Detection Configuration
-    const double TEMP_THRESHOLD = 34.0;
+    const double TEMP_THRESHOLD = 27.5;
 
     // The actual memory buffer for the map
     std::vector<GridCell> thermal_map;

@@ -259,9 +259,13 @@ int main(int argc, char* argv[]) {
 
         // ---------------- Mode Manager ----------------
         if ((acc_MM >= rate_MM) && ekfHealthy) {
+            MM.in.detected = false;
+	    if (shared_targets.getLatest()) {
+		MM.in.detected = true;
+		MM.in.targPos.segment<2>(0) = *shared_targets.getLatest();
+	    }
             MM.in.state = navState;
             MM.in.dt = acc_MM;
-            MM.in.detected = false;
             MM.update();
             acc_MM = 0.0;
         }
@@ -276,11 +280,14 @@ int main(int argc, char* argv[]) {
 	    {
 		rcPWM(4) = 1000;
 	    }
-
-            if (rcPWM(5) > 1750 && motor_task.isArmed()) {
+	    if (MM.in.drop == true) {
+		dropper = 2000;
+	    }
+            if ((rcPWM(5) > 1750) && motor_task.isArmed()) {
                 dropper = 2000;
                 MM.in.drop = true;
 		autopilot = false;
+		//std::cout << dropper << "\n";
             } else if (rcPWM(5) > 1250) {
                 autopilot = true;
             } else {

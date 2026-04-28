@@ -63,11 +63,15 @@ bool SearchGrid::processFrame(const std::array<double, 768>& thermal_frame, cons
 
     for (int y = 0; y < 24; ++y) {
         for (int x = 0; x < 32; ++x) {
-            double pixel_temp = thermal_frame[y * 32 + x];
+
+	    int fx = 31 - x;
+	    int fy = 23 - y;
+
+            double pixel_temp = thermal_frame[fy * 32 + fx];
 
             if (pixel_temp < 23.0) continue; // Low Pass filter
-            
-            if (pixel_temp >= (TEMP_THRESHOLD * 0.9)) {
+           
+            if (pixel_temp >= (TEMP_THRESHOLD)) {
                 frame_has_hotspot = true;
             }
 
@@ -135,7 +139,9 @@ bool SearchGrid::processFrame(const std::array<double, 768>& thermal_frame, cons
 }
 
 bool SearchGrid::blob_finder() {
-    std::vector<int> local_largest_blob;
+    std::vector<int> best_blob;
+    double highest_blob_temp = 0.0;
+    const double CRITICAL_TEMP = 35.0;
 
     // Keep track of which cells the algorithm has already processed
     std::vector<bool> algorithm_visited(GRID_ROWS * GRID_COLS, false);
@@ -157,6 +163,8 @@ bool SearchGrid::blob_finder() {
                 std::vector<int> stack;
 
                 bool is_fully_bounded = true; 
+                double local_max_temp = 0.0;
+                int local_hottest_idx = -1; // Track the exact index of the hottest pixel in this cluster
 
                 // Start the flood fill from this cell
                 stack.push_back(idx);
@@ -169,6 +177,13 @@ bool SearchGrid::blob_finder() {
                     // Add this cell to our growing fire blob
                     current_blob.push_back(curr_idx);
 
+                    // Check if this cell is the new hottest in the blob
+                    double temp = thermal_map[curr_idx].getAverageTemp();
+                    if (temp > local_max_temp) {
+                        local_max_temp = temp;
+                        local_hottest_idx = curr_idx;
+                    }
+
                     // Convert 1D index back to 2D to check neighbors
                     int curr_r = curr_idx / GRID_COLS;
                     int curr_c = curr_idx % GRID_COLS;
@@ -178,7 +193,7 @@ bool SearchGrid::blob_finder() {
                         int neighbor_r = curr_r + d_row[i];
                         int neighbor_c = curr_c + d_col[i];
 
-                        // Off the mapped area = unbounded (fire could extend past the grid)
+                        // Off the mapped area = unbounded
                         if (neighbor_r < 0 || neighbor_r >= GRID_ROWS ||
                             neighbor_c < 0 || neighbor_c >= GRID_COLS) {
                             is_fully_bounded = false;
@@ -187,11 +202,9 @@ bool SearchGrid::blob_finder() {
 
                         int neighbor_idx = neighbor_r * GRID_COLS + neighbor_c;
 
-                        // Checks if camera has ever seen this cell. Ensures no positive ID for incomplete scan
                         if (thermal_map[neighbor_idx].visit_count == 0) {
                             is_fully_bounded = false;
                         }
-                        // Checks if cell is part of the fire
                         else if (!algorithm_visited[neighbor_idx] &&
                             thermal_map[neighbor_idx].getAverageTemp() >= TEMP_THRESHOLD) {
 
@@ -201,24 +214,38 @@ bool SearchGrid::blob_finder() {
                     }
                 }
 
-                // ONLY accept the blob if it is fully enclosed by cold cells AND large enough
+                // Case 1: The fire is completely visible and bounded by cold cells. 
+                // Accept the FULL cluster to calculate a weighted center of mass.
                 if (is_fully_bounded && current_blob.size() >= 4) {
-                    if (current_blob.size() > local_largest_blob.size()) {
-                        local_largest_blob = std::move(current_blob);
+                    if (local_max_temp > highest_blob_temp) {
+                        highest_blob_temp = local_max_temp;
+                        best_blob = std::move(current_blob);
+                    }
+                } 
+
+                // Case 2: The fire is NOT fully bounded (e.g. cut off by the camera edge)
+                // BUT it contains a critical 35C pixel. Disregard the blob rules and lock 
+                // strictly onto the single hottest cell to use as the center.
+                else if (local_max_temp >= CRITICAL_TEMP) {
+                    if (local_max_temp > highest_blob_temp) {
+                        highest_blob_temp = local_max_temp;
+                        best_blob.clear();
+                        best_blob.push_back(local_hottest_idx); 
                     }
                 }
             }
         }
     }
 
-    // If we found a valid fire, store it in the class member and return true
-    if (!local_largest_blob.empty()) {
-        target_blob = std::move(local_largest_blob);
+    // If we found a valid fire (either full blob or single critical pixel)
+    if (!best_blob.empty()) {
+        target_blob = std::move(best_blob);
         return true;
     }
 
-    return false; // No fully bounded fires found this frame
+    return false; 
 }
+
 
 std::optional<Eigen::Vector2d> SearchGrid::getCenter() const {
     if (target_blob.empty()) {

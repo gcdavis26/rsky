@@ -5,17 +5,17 @@ ModeManager::ModeManager(bool test) {
 	simplemission = test; //this is for simple milestone flight
 	}
 void ModeManager::update() {
-	double surveyAlt = -1.0;
-	double lowAlt = -1.0;
+	double surveyAlt = -1.5;
+	double lowAlt = -.75;
 
 	if (!init)
 	{ 
 		init = true;
 		toCmd(0) = in.state(3);
 		toCmd(1) = in.state(4);
-		toCmd(2) = lowAlt;
-		//lndCmd(2)= -.15;
-		lndCmd(2) = -0.25;
+		toCmd(2) = surveyAlt;
+		lndCmd(2)= -.15;
+		//lndCmd(2) = -0.25;
 }
 
 	out.phaseTime += in.dt;
@@ -49,7 +49,7 @@ void ModeManager::update() {
 			out.mode = NavMode::Waypoint;
 			out.posCmd.segment<2>(0) = in.targPos.segment<2>(0);
 			out.posCmd(2) = surveyAlt;
-			if (reachedWaypoint(in.state.segment<6>(3), out.posCmd) && out.phaseTime >= 5.0) {
+			if (reachedWaypoint(in.state.segment<6>(3), out.posCmd) && out.phaseTime >= 10.0) {
 				advancePhase(MissionPhase::DescendToTarget);
 			}
 			break;
@@ -57,9 +57,10 @@ void ModeManager::update() {
 			out.mode = NavMode::Waypoint;
 			out.posCmd.segment<2>(0) = in.targPos.segment<2>(0);
 			out.posCmd(2) = lowAlt;
-			if (reachedWaypoint(in.state.segment<6>(3), out.posCmd) && in.drop) {
+			if (reachedWaypoint(in.state.segment<6>(3), out.posCmd) && out.phaseTime >= 5.0) {
 				computelndCmd(in.state.segment<3>(3));
 				advancePhase(MissionPhase::GoToLand);
+				in.drop = true;
 			}
 			break;
 		case MissionPhase::GoToLand:
