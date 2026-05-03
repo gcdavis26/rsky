@@ -9,18 +9,12 @@
 #include <csignal>
 
 
-volatile std::sig_atomic_t keep_running_main = 1;
-
-void sigint_handler_main(int signum) {
-    keep_running_main = 0;
-}
+extern volatile std::sig_atomic_t keep_running;
 
 void wildfireDetectionTask(StateBuffer& shared_state, HotspotBuffer& shared_targets, VisionGridBuffer& vision_telemetry) {
     
     // Initialize I2C Thermal Camera
     ThermalCamera camera;
-
-    std::signal(SIGINT, sigint_handler_main);
     
     // Camera class will return error if failed to initialise
     if (!camera.init()) return;
@@ -32,7 +26,7 @@ void wildfireDetectionTask(StateBuffer& shared_state, HotspotBuffer& shared_targ
     double target_dt = 1.0 / 32.0;
 
     // Main 32Hz Processing Loop
-    while (keep_running_main) {
+    while (keep_running) {
         auto start_time = std::chrono::steady_clock::now();
 
         // Pull the latest 32x24 grid of temperatures from the hardware

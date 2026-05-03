@@ -6,6 +6,7 @@
 #include <pthread.h>
 #include <sched.h>
 #include <functional>
+#include <csignal>
 
 #include "common/MathUtils.h"
 #include "common/LowPass.h"
@@ -26,7 +27,11 @@
 #include <string>
 #include <fstream>
 
+volatile std::sig_atomic_t keep_running = 1;
 
+void sigint_handler(int signum) {
+    keep_running = 0;
+}
 
 // Helper function to set priority and pin a std::thread
 void configureThread(std::thread& target_thread, int priority, int core_id = -1) {
@@ -53,6 +58,9 @@ void configureThread(std::thread& target_thread, int priority, int core_id = -1)
 }
 
 int main(int argc, char* argv[]) {
+
+    std::signal(SIGINT, sigint_handler);
+
     int calib = 0;
     if(argc>=2){
 	std::string arg = argv[1];
@@ -181,7 +189,7 @@ int main(int argc, char* argv[]) {
         std::ref(vision_buffer)
     );
 
-    while (true) {
+    while (keep_running) {
         auto loop_start = clock_t::now();
         std::chrono::duration<double> dt_ch = loop_start - last_time;
         double dt = dt_ch.count();
@@ -507,6 +515,8 @@ int main(int argc, char* argv[]) {
 
     }
 
+    std::cout << "\nStopping threads..." << std::endl;
+
     motor_task.stop();
     if (motor_thread.joinable()) {
         motor_thread.join();
@@ -517,8 +527,12 @@ int main(int argc, char* argv[]) {
         telemetry_thread.join();
     }
 
-    vision_thread.detach(); 
+    // Change .detach() to .join() so the main program waits 
+    // for the vision thread to finish writing the CSV before dying!
+    if (vision_thread.joinable()) {
+        vision_thread.join();
+    }
 
+    std::cout << "Program exited cleanly." << std::endl;
     return 0;
 }
-
