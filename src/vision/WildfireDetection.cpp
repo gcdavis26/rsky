@@ -77,4 +77,7 @@ void wildfireDetectionTask(StateBuffer& shared_state, HotspotBuffer& shared_targ
             }
         }
     }
+
+    std::cout << "\nExiting... Exporting thermal map to ground_state.csv" << std::endl;
+    local_grid.exportToCSV("ground_state.csv");
 }
