@@ -74,8 +74,8 @@ void ModeManager::update() {
 		case MissionPhase::DescendToLand:
 			out.mode = NavMode::Waypoint;
 			out.posCmd.segment<2>(0) = lndCmd.segment<2>(0);
-			out.posCmd(2) = 0.0;
-			if (reachedWaypoint(in.state.segment<6>(3), out.posCmd) && out.phaseTime >= 5.0) {
+			out.posCmd(2) = lndCmd(2);
+			if (reachedWaypoint(in.state.segment<6>(3), out.posCmd) || (out.phaseTime >= 5.0 && in.state(5) >= -0.2)) {
 				advancePhase(MissionPhase::Terminate);
 			}
 			break;
