@@ -127,6 +127,8 @@ void ModeManager::update() {
 			out.mode = NavMode::Waypoint;
 			out.posCmd = in.state.segment<3>(3);
 			break;
+		default:
+			break;
 		}
 	}
 }

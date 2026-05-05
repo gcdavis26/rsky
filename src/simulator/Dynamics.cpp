@@ -13,7 +13,6 @@ Vec<12> Dynamics::getTrueState() {
 
 void Dynamics::step(double dt, const Vec<4>& bodyWrench) {
 
-	Vec<3> pos = state.segment<3>(0);
 	Vec<3> vel = state.segment<3>(3);
 
 	Vec<3> euler = state.segment<3>(6);

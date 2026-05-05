@@ -6,16 +6,16 @@ static inline double clampd(double v, double lo, double hi) {
 }
 
 AHRS::AHRS()
-    : AHRSbias(Vec<6>::Zero()),
+    : q(Eigen::Quaterniond::Identity()),
     bg(Vec<3>::Zero()),
-    q(Eigen::Quaterniond::Identity())
+    AHRSbias(Vec<6>::Zero())
 {
 }
 
 AHRS::AHRS(const Vec<6>& bias)
-    : AHRSbias(bias),
+    : q(Eigen::Quaterniond::Identity()),
     bg(Vec<3>::Zero()),
-    q(Eigen::Quaterniond::Identity())
+    AHRSbias(bias)
 {
 }
 

@@ -9,12 +9,12 @@ static Vec<3> optitrackToNED(double ot_x, double ot_y, double ot_z) {
 }
 
 MocapHandler::MocapHandler() :
+	m_valid(0),
+	q_prev(Vec<4>::Zero()),
 	m_ned(Vec<4>::Zero()),
 	m_quaternion(Eigen::Quaternionf::Identity()),
-	m_valid(0),
 	m_frameNum(0)
 {
-	q_prev = Vec<4>::Zero();
 	q_prev << 1.0,0.0,0.0,0.0;
 }
 

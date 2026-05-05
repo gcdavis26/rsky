@@ -214,7 +214,6 @@ int readDatalink( ) {
 
 	struct port_ref *s = &thisPort;
 	int gotPacket = 0, newBytes;
-  unsigned short rxCsum;
 	int done = 0, index = 0;
 	unsigned char *bf;
 
@@ -233,7 +232,7 @@ int readDatalink( ) {
       memcpy( &datalinkHeader, bf, sizeof( datalinkHeader_ref ) );
 
       if ( datalinkCheckSumCompute( bf, sizeof( struct datalinkHeader_ref ) - sizeof( int ) * 2 ) == datalinkHeader.hcsum &&
-        datalinkHeader.messageSize >= sizeof( struct datalinkHeader_ref ) &&
+        datalinkHeader.messageSize >= (int)sizeof( struct datalinkHeader_ref ) &&
         datalinkHeader.messageSize < BUFFERSIZE )
 			{
         //printf("Header checksum ok\n");
@@ -246,7 +245,7 @@ int readDatalink( ) {
             switch( datalinkHeader.messageID )
             {
               case DATALINK_MESSAGE_OPTITRACK:
-                if( datalinkHeader.messageSize == sizeof( struct onboardMocapClient_ref ) ) {
+                if( datalinkHeader.messageSize == (int)sizeof( struct onboardMocapClient_ref ) ) {
                     memcpy( &onboardMocapClient, bf, datalinkHeader.messageSize );
 /*
                     printf("Pos_x=%.2f\n",onboardMocapClient.pos_x);

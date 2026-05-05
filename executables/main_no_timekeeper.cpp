@@ -30,6 +30,7 @@
 volatile std::sig_atomic_t keep_running = 1;
 
 void sigint_handler(int signum) {
+    (void)signum;
     keep_running = 0;
 }
 
