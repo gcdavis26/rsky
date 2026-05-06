@@ -356,7 +356,7 @@ int Ublox::configureSolutionRate(std::uint16_t meas_rate,
     msg.nav_rate     = nav_rate;
     msg.timeref      = timeref;
 
-    _sendMessage(CLASS_CFG, MSG_CFG_RATE, &msg, sizeof(CfgNavRate));
+    return _sendMessage(CLASS_CFG, MSG_CFG_RATE, &msg, sizeof(CfgNavRate));
 }
 
 int Ublox::_sendMessage(std::uint8_t msg_class, std::uint8_t msg_id, void *msg, std::uint16_t size)

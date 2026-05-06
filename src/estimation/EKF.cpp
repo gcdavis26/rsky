@@ -104,8 +104,6 @@ void EKF::predictImpl(const ImuMeas& imu, double dt) {
 }
 
 void EKF::correctImpl(const OptiMeas& opti) {
-    const Mat<NX, NX> I = Mat<NX, NX>::Identity();
-
     // z = [pos_ned; psi]
     Vec<4> z;
     z(0) = wrapToPi(opti.psi);
@@ -213,7 +211,7 @@ Vec<EKF::NX> EKF::f_nonlin(const Vec<NX>& x,
 Mat<EKF::NX, EKF::NX> EKF::computeF(const Vec<NX>& x,
     const ImuMeas& imu,
     const Vec<3>& omega_dot,
-    const Vec<NX>& k1) const
+    const Vec<NX>& /*k1*/) const
 {
     Mat<NX, NX> A;
     A.setZero();

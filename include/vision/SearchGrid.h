@@ -44,7 +44,7 @@ private:
     const int GRID_ROWS = 100;             // North: 0.0 to 10.0
 
     // Detection Configuration
-    const double TEMP_THRESHOLD = 27.5;
+    const double TEMP_THRESHOLD = 29.0;
 
     // The actual memory buffer for the map
     std::vector<GridCell> thermal_map;
